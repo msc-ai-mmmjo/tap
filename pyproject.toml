@@ -5,3 +5,10 @@ description = "Exposing LLM uncertainty, unfairness, and other related trustwort
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
+
+[dependency-groups]
+dev = [
+    "pyrefly>=0.47.0",
+    "pytest>=9.0.2",
+    "ruff>=0.14.11",
+]
