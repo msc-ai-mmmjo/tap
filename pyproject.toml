@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Exposing LLM uncertainty, unfairness, and other related trustworthiness metrics to users at response time.Exposing LLM uncertainty, unfairness, and other related trustworthiness metrics to users at response time."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "gradio>=6.3.0",
+]
 
 [dependency-groups]
 dev = [
