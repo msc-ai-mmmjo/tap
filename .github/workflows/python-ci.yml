@@ -29,8 +29,14 @@ jobs:
       - name: 🎨 Format Check
         run: pixi run format-check
 
-      - name: 🔎 Type Check
+      - name: 🕵️ Type Check
         run: pixi run typecheck
 
       - name: 🧪 Run Tests
         run: pixi run test
+
+      - name: 👮 PR Conventional Commit Validation
+        uses: ytanikin/pr-conventional-commits@1.5.1
+        with:
+          task_types: '["feat","fix","docs","test","ci","refactor","perf","chore","revert"]'
+          title_regex: 'SWE-\\d{2,3}'
