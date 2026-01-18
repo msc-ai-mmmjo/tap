@@ -1,16 +1,71 @@
 [project]
 name = "msc-ai-group-project"
 version = "0.1.0"
-description = "Exposing LLM uncertainty, unfairness, and other related trustworthiness metrics to users at response time.Exposing LLM uncertainty, unfairness, and other related trustworthiness metrics to users at response time."
+description = "Exposing LLM uncertainty, unfairness, and other related trustworthiness metrics to users at response time."
 readme = "README.md"
-requires-python = ">=3.12"
-dependencies = [
-    "gradio>=6.3.0",
-]
+requires-python = ">=3.13"
 
-[dependency-groups]
-dev = [
-    "pyrefly>=0.47.0",
-    "pytest>=9.0.2",
-    "ruff>=0.14.11",
-]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# =============================================
+# PIXI CONFIGURATION - All dependency management
+# =============================================
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64"]
+
+# ---------------------------------------------
+# Dependencies (conda-forge)
+# ---------------------------------------------
+[tool.pixi.dependencies]
+python = "3.13.*"
+pytest = ">=9.0"
+ruff = ">=0.8"
+
+# ---------------------------------------------
+# Dependencies (PyPI)
+# ---------------------------------------------
+[tool.pixi.pypi-dependencies]
+gradio = ">=6.3.0"
+pyrefly = ">=0.47.0"
+
+# ---------------------------------------------
+# CUDA Feature (for GPU users)
+# ---------------------------------------------
+[tool.pixi.feature.cuda.system-requirements]
+cuda = "12.4"
+
+# ---------------------------------------------
+# Environments
+# ---------------------------------------------
+[tool.pixi.environments]
+default = { solve-group = "default" }
+cuda = { features = ["cuda"], solve-group = "cuda" }
+
+# ---------------------------------------------
+# Tasks
+# ---------------------------------------------
+[tool.pixi.tasks]
+# Linting
+lint = "ruff check ."
+lint-fix = "ruff check . --fix"
+
+# Formatting
+format = "ruff format ."
+format-check = "ruff format . --check"
+
+# Testing
+test = "pytest"
+test-cov = "pytest --cov"
+
+# Type checking
+typecheck = "pyrefly check ."
+
+# Application
+serve = "python interface.py"
+
+# CI (runs all checks)
+check = { depends-on = ["lint", "format-check", "typecheck", "test"] }
