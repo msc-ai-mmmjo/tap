@@ -13,3 +13,7 @@ _It may also be helpful to include a before & after screenshot_
 | Before | After |
 | ----------- | ----------- |
 | _Before image here_ | _After image here |
+
+## Testing
+
+_If relevant, describe how you tested your change_
