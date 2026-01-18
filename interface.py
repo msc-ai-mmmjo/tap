@@ -52,13 +52,20 @@ with gr.Blocks() as demo:
     # Below is the sidebar area where we keep metrics
     with gr.Sidebar(label="Metrics"):
         gr.Markdown("### Metrics")
-        
+
         metric_choice = gr.Radio(
-            ["Uncertainty", "Hallucinations", "Inference Cost", "Factuality", "Safety", "Privacy"],
+            [
+                "Uncertainty",
+                "Hallucinations",
+                "Inference Cost",
+                "Factuality",
+                "Safety",
+                "Privacy",
+            ],
             label="Select View",
-            value="Uncertainty"
+            value="Uncertainty",
         )
-        
+
         # slider to mimic what we have in Figma
         gr.Slider(0, 1, value=0.5, label="Confidence Threshold")
 
