@@ -14,23 +14,23 @@ jobs:
     runs-on: ubuntu-24.04  # Pinned for reproducibility
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Setup Pixi
+      - name: 📦 Setup Pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
           pixi-version: v0.63.1  # Pinned for reproducibility
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
-      - name: Lint
+      - name: 🔍 Lint
         run: pixi run lint
 
-      - name: Format Check
+      - name: 🎨 Format Check
         run: pixi run format-check
 
-      - name: Type Check
+      - name: 🔎 Type Check
         run: pixi run typecheck
 
-      - name: Run Tests
+      - name: 🧪 Run Tests
         run: pixi run test

@@ -110,14 +110,12 @@ The key insight: `pixi.lock` is auto-generated, so you never manually edit it. J
 - Always run `pixi install` after pulling/rebasing (dependencies may have changed)
 - Use `pixi run check` before pushing to catch issues early
 
-### Commit message style
+### PR titles
 
-Use conventional commits:
+PRs get squashed when merging into main, so **PR titles should follow conventional commit format**:
 
 ```
 type: short description
-
-Longer explanation if needed.
 ```
 
 Types: `feat`, `fix`, `docs`, `refactor`, `test`, `build`, `ci`
@@ -127,11 +125,7 @@ Examples:
 - `fix: handle empty response from LLM`
 - `docs: update installation instructions`
 
-### Rebase and squash when merging into main
-
-- Before merging your PR: rebase onto latest main
-- Squash related commits into logical units
-- Keep the PR history clean and meaningful
+Individual commits within a branch don't need to follow this strictly - just keep them reasonably descriptive for your own sanity during development.
 
 ## Extra tools
 
