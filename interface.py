@@ -49,6 +49,29 @@ def mock_inference(prompt):
 
 # Design the Interface
 with gr.Blocks() as demo:
+    # Below is the sidebar area where we keep metrics
+    with gr.Sidebar(label="Metrics"):
+        gr.Markdown("### Metrics")
+
+        metric_choice = gr.Radio(
+            [
+                "Uncertainty",
+                "Hallucinations",
+                "Inference Cost",
+                "Factuality",
+                "Safety",
+                "Privacy",
+            ],
+            label="Select View",
+            value="Uncertainty",
+        )
+
+        # slider to mimic what we have in Figma
+        gr.Slider(0, 1, value=0.5, label="Confidence Threshold")
+
+        gr.Markdown("🐈 `thorp.thorp@machenta.com`", elem_classes="bottom-info")
+
+    # Below is the main content area
     gr.Markdown("# 🧠 LLM Uncertainty Visualizer")
 
     with gr.Row():
