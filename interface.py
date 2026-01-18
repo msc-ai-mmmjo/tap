@@ -20,6 +20,7 @@ Usage:
 import gradio as gr
 import random
 
+
 # Create Mock Data
 # This will come from the Model in the real interface
 def mock_inference(prompt):
@@ -27,12 +28,12 @@ def mock_inference(prompt):
     # Format: [(token_text, label_or_score)]
     # Use a score from 0 to 1 representing certainty
     tokens = ["The", " capital", " of", " Mars", " is", "...wait", " unknown", "."]
-    
+
     # Randomly assign "confidence" scores to simulate uncertainty
     output_data = []
     for token in tokens:
-        score = random.random() # Random number between 0.0 and 1.0
-        
+        score = random.random()  # Random number between 0.0 and 1.0
+
         # Assign a label based on the score for the MVP
         if score > 0.9:
             label = "Certain"
@@ -40,19 +41,22 @@ def mock_inference(prompt):
             label = "Uncertain"
         else:
             label = "Hallucination?"
-            
+
         output_data.append((token, label))
-    
+
     return output_data
+
 
 # Design the Interface
 with gr.Blocks() as demo:
     gr.Markdown("# 🧠 LLM Uncertainty Visualizer")
-    
+
     with gr.Row():
-        input_box = gr.Textbox(label="Enter your prompt", placeholder="What is the capital of Mars?")
+        input_box = gr.Textbox(
+            label="Enter your prompt", placeholder="What is the capital of Mars?"
+        )
         btn = gr.Button("Generate")
-    
+
     output_display = gr.HighlightedText(
         label="Model Response (Color indicates Uncertainty)",
         combine_adjacent=False,
