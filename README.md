@@ -34,7 +34,7 @@ Pixi is increasingly preferred by ML researchers for its speed and reproducibili
 curl -fsSL https://pixi.sh/install.sh | bash
 ```
 
-Restart your terminal after installation.
+Restart your terminal after installation, e.g with `exec bash`.
 
 ### Running tasks
 
