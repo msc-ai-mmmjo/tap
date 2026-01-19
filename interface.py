@@ -46,9 +46,11 @@ def mock_inference(prompt):
 
     return output_data
 
+
 # Dummy function to be replaced with backend behaviour for slider and radio buttons
 def dummy_fn(*args):
     return [("hello", "world")]
+
 
 # Design the Interface
 with gr.Blocks() as demo:
@@ -94,7 +96,9 @@ with gr.Blocks() as demo:
 
     # dummy HighlightedText output
     dummy_output_display = gr.Textbox(visible=False)
-    metric_choice.change(fn=dummy_fn, inputs=metric_choice, outputs=dummy_output_display)
+    metric_choice.change(
+        fn=dummy_fn, inputs=metric_choice, outputs=dummy_output_display
+    )
     slider.change(fn=dummy_fn, inputs=slider, outputs=dummy_output_display)
 
 # Launch
