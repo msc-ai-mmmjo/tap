@@ -11,14 +11,15 @@ proves successful, ideas from our design in Figma will be implemented here.
 
 Usage:
     To run this application locally:
-    $ uv run app.py
+    $ gradio interface.py
 
     To run on a specific port:
-    $ uv run app.py --port 8080
+    $ gradio interface.py --port 8080
 """
 
 import gradio as gr
 import random
+from huggingface_hub import InferenceClient
 
 
 # Create Mock Data
@@ -46,6 +47,14 @@ def mock_inference(prompt):
 
     return output_data
 
+# Run LLM model inference --> complete later
+def inference():
+    pass
+
+
+def hide_textbox():
+    return gr.Textbox(visible=False)
+
 
 # Dummy function to be replaced with backend behaviour for slider and radio buttons
 def dummy_fn(*args):
@@ -54,6 +63,42 @@ def dummy_fn(*args):
 
 # Design the Interface
 with gr.Blocks() as demo:
+
+    # Application heading
+    gr.Markdown("<center><h1>🧠 LLM Uncertainty Visualizer</h1></center>")
+    gr.Markdown("<center>subtitle of the project: can add a brief description of the interface here<center>") 
+
+    # Textboxes
+    prompt = gr.Textbox(label="Please enter your prompt:", placeholder="What is the capital of Mars?", lines=3, max_lines=8)
+    token = gr.Textbox(label="Hugging Face Token")
+
+    # Buttons
+    with gr.Group():
+        with gr.Row():
+            generate_btn = gr.Button("Generate", variant="primary")
+            metrics_btn = gr.Button("Take a peek", variant="secondary")
+
+    # Create heatmap over a mock output response
+    output_display = gr.HighlightedText(
+        label="Model Response (Color indicates Uncertainty)",
+        combine_adjacent=False,
+        show_legend=True,
+    )
+    
+    # Produce output: run the mock_inference function when generate button is clicked
+    gr.on(
+        triggers = [prompt.submit, generate_btn.click],
+        fn=hide_textbox,
+        inputs=None,
+        outputs=[token],
+    ).then(
+        fn=mock_inference,
+        inputs=prompt,
+        outputs=output_display,
+        show_progress="hidden"
+    )
+
+
     # Below is the sidebar area where we keep metrics
     with gr.Sidebar(label="Metrics"):
         gr.Markdown("### Metrics")
@@ -74,25 +119,9 @@ with gr.Blocks() as demo:
         # slider to mimic what we have in Figma
         slider = gr.Slider(0, 1, value=0.5, label="Confidence Threshold")
 
+        gr.Slider(0, 1, value=0.5, label="Confidence Threshold")
         gr.Markdown("🐈 `thorp.thorp@machenta.com`", elem_classes="bottom-info")
 
-    # Below is the main content area
-    gr.Markdown("# 🧠 LLM Uncertainty Visualizer")
-
-    with gr.Row():
-        input_box = gr.Textbox(
-            label="Enter your prompt", placeholder="What is the capital of Mars?"
-        )
-        btn = gr.Button("Generate")
-
-    output_display = gr.HighlightedText(
-        label="Model Response (Color indicates Uncertainty)",
-        combine_adjacent=False,
-        show_legend=True,
-    )
-
-    # Connect the logic
-    btn.click(fn=mock_inference, inputs=input_box, outputs=output_display)
 
     # dummy HighlightedText output
     dummy_output_display = gr.Textbox(visible=False)
