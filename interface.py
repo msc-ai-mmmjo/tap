@@ -39,7 +39,7 @@ def inference(prompt, hf_token, model, model_name):
     except Exception as e:
         yield f"Client Error: {str(e)}"
         return
-    
+
     # Prepare the message for the model
     messages = [{"role": "user", "content": prompt}]
 
@@ -52,11 +52,11 @@ def inference(prompt, hf_token, model, model_name):
     try:
         # API Call
         stream = client.chat_completion(
-            messages, 
-            max_tokens=500, 
+            messages,
+            max_tokens=500,
             stream=True,
             logprobs=True,  # request token probability data
-            top_logprobs=1  # we only need the top choice
+            top_logprobs=1,  # we only need the top choice
         )
 
         for chunk in stream:
@@ -69,17 +69,18 @@ def inference(prompt, hf_token, model, model_name):
             # wrap in a safety check to ensure text generation does not stop if probability data is missing
             try:
                 # Check if the logprobs exist and if 'content' (list of logprob objects) is an iterable
-                if (chunk.choices and 
-                    chunk.choices[0].logprobs and 
-                    hasattr(chunk.choices[0].logprobs, 'content') and 
-                    chunk.choices[0].logprobs.content):
-
+                if (
+                    chunk.choices
+                    and chunk.choices[0].logprobs
+                    and hasattr(chunk.choices[0].logprobs, "content")
+                    and chunk.choices[0].logprobs.content
+                ):
                     for lp in chunk.choices[0].logprobs.content:
                         token_text = lp.token
                         log_score = lp.logprob
                         # Convert Logit to Probability (0.0 to 1.0)
                         prob = math.exp(log_score)
-                        
+
                         # Determine label based on Confidence (tune these thresholds as fit)
                         if prob > 0.9:
                             label = "Certain"
@@ -92,12 +93,12 @@ def inference(prompt, hf_token, model, model_name):
                         heatmap_data.append((token_text, label))
 
             except Exception:
-                # If logprobs fail for one token, just ignore. 
+                # If logprobs fail for one token, just ignore.
                 pass
 
             # Yield both the visible text and the hidden probability data
             yield f"**{model_name} Response:**\n\n{partial_text}", heatmap_data
-    
+
     except Exception as e:
         # If the token is invalid or the model is busy, show the error
         yield f"API Error: {str(e)}\n\n*Tip: Check if your token is valid and has 'Read' permissions.*"
@@ -116,9 +117,9 @@ def reset_ui():
     3. Hides the old Heatmap.
     """
     return (
-        gr.Textbox(visible=False),        # Token box
-        gr.Markdown(visible=True, value="### Generating..."), # Text Output
-        gr.HighlightedText(visible=False) # Heatmap
+        gr.Textbox(visible=False),  # Token box
+        gr.Markdown(visible=True, value="### Generating..."),  # Text Output
+        gr.HighlightedText(visible=False),  # Heatmap
     )
 
 
@@ -129,17 +130,25 @@ def dummy_fn(*args):
 
 # Design the Interface
 with gr.Blocks() as demo:
-
     # Application heading
     gr.Markdown("<center><h1>🧠 LLM Uncertainty Visualizer</h1></center>")
-    gr.Markdown("<center>subtitle of the project: can add a brief description of the interface here<center>") 
+    gr.Markdown(
+        "<center>subtitle of the project: can add a brief description of the interface here<center>"
+    )
 
     # State storage: holds the logprob data until needed
     logprob_state = gr.State([])
 
     # Input area
-    prompt = gr.Textbox(label="Please enter your prompt:", value="Please explain Deep Learning in simple terms to a 10-year old", lines=3, max_lines=8)
-    token = gr.Textbox(label="Hugging Face Token", type="password", placeholder="Paste token (hf_...)")
+    prompt = gr.Textbox(
+        label="Please enter your prompt:",
+        value="Please explain Deep Learning in simple terms to a 10-year old",
+        lines=3,
+        max_lines=8,
+    )
+    token = gr.Textbox(
+        label="Hugging Face Token", type="password", placeholder="Paste token (hf_...)"
+    )
 
     # Buttons
     with gr.Group():
@@ -158,9 +167,12 @@ with gr.Blocks() as demo:
             combine_adjacent=False,
             show_legend=True,
             visible=False,  # hidden start
-            color_map={"Certain": "#cbf0cc", "Uncertain": "#ffeea8", "High Entropy": "#ffc4c4"}
+            color_map={
+                "Certain": "#cbf0cc",
+                "Uncertain": "#ffeea8",
+                "High Entropy": "#ffc4c4",
+            },
         )
-    
 
     # Sidebar: metric selection (not connected yet)
     with gr.Sidebar(label="Metrics"):
@@ -184,32 +196,32 @@ with gr.Blocks() as demo:
 
         gr.Slider(0, 1, value=0.5, label="Confidence Threshold")
         gr.Markdown("🐈 `thorp.thorp@machenta.com`", elem_classes="bottom-info")
-    
 
     # --- Wiring ---
 
     # Event 1: Click Generate
     # Runs inference, updates text box, and saves the data to 'logprob_state'
     gr.on(
-        triggers = [prompt.submit, generate_btn.click],
+        triggers=[prompt.submit, generate_btn.click],
         fn=reset_ui,
         inputs=None,
         outputs=[token, model_output, output_metrics],
     ).then(
-        fn=partial(inference, model="meta-llama/Meta-Llama-3-8B-Instruct", model_name="Llama 3-8B Instruct"),
+        fn=partial(
+            inference,
+            model="meta-llama/Meta-Llama-3-8B-Instruct",
+            model_name="Llama 3-8B Instruct",
+        ),
         inputs=[prompt, token],
         outputs=[model_output, logprob_state],
-        show_progress="hidden"
+        show_progress="hidden",
     )
 
     # Event 2: Click "Visualize Uncertainty"
     # Reads 'logprobs_state', hides text, shows heatmap
     metrics_btn.click(
-        fn=toggle_view,
-        inputs=[logprob_state],
-        outputs=[model_output, output_metrics]
+        fn=toggle_view, inputs=[logprob_state], outputs=[model_output, output_metrics]
     )
-
 
     # dummy HighlightedText output
     dummy_output_display = gr.Textbox(visible=False)
