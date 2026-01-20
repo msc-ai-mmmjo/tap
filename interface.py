@@ -47,6 +47,11 @@ def mock_inference(prompt):
     return output_data
 
 
+# Dummy function to be replaced with backend behaviour for slider and radio buttons
+def dummy_fn(*args):
+    return [("hello", "world")]
+
+
 # Design the Interface
 with gr.Blocks() as demo:
     # Below is the sidebar area where we keep metrics
@@ -67,7 +72,7 @@ with gr.Blocks() as demo:
         )
 
         # slider to mimic what we have in Figma
-        gr.Slider(0, 1, value=0.5, label="Confidence Threshold")
+        slider = gr.Slider(0, 1, value=0.5, label="Confidence Threshold")
 
         gr.Markdown("🐈 `thorp.thorp@machenta.com`", elem_classes="bottom-info")
 
@@ -88,6 +93,13 @@ with gr.Blocks() as demo:
 
     # Connect the logic
     btn.click(fn=mock_inference, inputs=input_box, outputs=output_display)
+
+    # dummy HighlightedText output
+    dummy_output_display = gr.Textbox(visible=False)
+    metric_choice.change(
+        fn=dummy_fn, inputs=metric_choice, outputs=dummy_output_display
+    )
+    slider.change(fn=dummy_fn, inputs=slider, outputs=dummy_output_display)
 
 # Launch
 if __name__ == "__main__":
