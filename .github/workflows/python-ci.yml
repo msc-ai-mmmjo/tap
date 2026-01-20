@@ -8,7 +8,7 @@ on:
 
 permissions:
   contents: read
-  pull_request: read
+  pull-requests: read
 
 jobs:
   ci:
