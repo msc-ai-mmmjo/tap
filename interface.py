@@ -18,41 +18,52 @@ Usage:
 """
 
 import gradio as gr
-import random
+from functools import partial
 from huggingface_hub import InferenceClient
 
+# Run LLM model inference
+def inference(prompt, hf_token, model, model_name):
+    """
+    Connects to Hugging Face to generate text.
+    """
+    # Validation: ensure a token is present
+    if not hf_token or not hf_token.strip():
+        yield "Error: Please enter a Hugging Face Token to generate text."
+        return
 
-# Create Mock Data
-# This will come from the Model in the real interface
-def mock_inference(prompt):
-    # Fake response broken into tokens
-    # Format: [(token_text, label_or_score)]
-    # Use a score from 0 to 1 representing certainty
-    tokens = ["The", " capital", " of", " Mars", " is", "...wait", " unknown", "."]
+    # Initialize the client with the user's specific token
+    try:
+        client = InferenceClient(model=model, token=hf_token)
+    except Exception as e:
+        yield f"Client Error: {str(e)}"
+        return
+    
+    # Prepare the message for the model
+    messages = [{"role": "user", "content": prompt}]
 
-    # Randomly assign "confidence" scores to simulate uncertainty
-    output_data = []
-    for token in tokens:
-        score = random.random()  # Random number between 0.0 and 1.0
+    # Build the response incrementally for the streaming effect
+    partial_text = ""
 
-        # Assign a label based on the score for the MVP
-        if score > 0.9:
-            label = "Certain"
-        elif score > 0.5:
-            label = "Uncertain"
-        else:
-            label = "Hallucination?"
+    try:
+        # Stream the response
+        stream = client.chat_completion(messages, max_tokens=500, stream=True)
 
-        output_data.append((token, label))
+        for chunk in stream:
+            # Check if there is new content in this chunk
+            if chunk.choices and chunk.choices[0].delta.content:
+                new_content = chunk.choices[0].delta.content
+                partial_text += new_content
 
-    return output_data
-
-# Run LLM model inference --> complete later
-def inference():
-    pass
+                # Yield the updated text to the UI immediately
+                yield f"**{model_name} Response:**\n\n{partial_text}"
+    
+    except Exception as e:
+        # If the token is invalid or the model is busy, show the error
+        yield f"API Error: {str(e)}\n\n*Tip: Check if your token is valid and has 'Read' permissions.*"
 
 
 def hide_textbox():
+    # Helper to visually hide the token box after clicking (optional UX choice)
     return gr.Textbox(visible=False)
 
 
@@ -68,22 +79,18 @@ with gr.Blocks() as demo:
     gr.Markdown("<center><h1>🧠 LLM Uncertainty Visualizer</h1></center>")
     gr.Markdown("<center>subtitle of the project: can add a brief description of the interface here<center>") 
 
-    # Textboxes
-    prompt = gr.Textbox(label="Please enter your prompt:", placeholder="What is the capital of Mars?", lines=3, max_lines=8)
-    token = gr.Textbox(label="Hugging Face Token")
+    # Input area
+    prompt = gr.Textbox(label="Please enter your prompt:", value="Please explain Deep Learning in simple terms to a 10-year old", lines=3, max_lines=8)
+    token = gr.Textbox(label="Hugging Face Token", type="password", placeholder="Paste token (hf_...)")
 
     # Buttons
     with gr.Group():
         with gr.Row():
             generate_btn = gr.Button("Generate", variant="primary")
             metrics_btn = gr.Button("Take a peek", variant="secondary")
-
-    # Create heatmap over a mock output response
-    output_display = gr.HighlightedText(
-        label="Model Response (Color indicates Uncertainty)",
-        combine_adjacent=False,
-        show_legend=True,
-    )
+    
+    # Model outputs
+    model_output = gr.Markdown("### Response will appear here ...")
     
     # Produce output: run the mock_inference function when generate button is clicked
     gr.on(
@@ -92,11 +99,24 @@ with gr.Blocks() as demo:
         inputs=None,
         outputs=[token],
     ).then(
-        fn=mock_inference,
-        inputs=prompt,
-        outputs=output_display,
+        fn=partial(inference, model="meta-llama/Meta-Llama-3-8B-Instruct", model_name="Llama 3-8B Instruct"),
+        inputs=[prompt, token],
+        outputs=[model_output],
         show_progress="hidden"
     )
+
+    # # Create heatmap over model output response
+    # output_metrics = gr.HighlightedText(
+    #     label="Model Response (Color indicates Uncertainty)",
+    #     combine_adjacent=False,
+    #     show_legend=True,
+    # )
+
+    # # Show metrics overlayed on model output
+    # metrics_btn.click(
+    #     lambda : gr.Row(visible=False), # clear row
+    #     outputs=output_metrics
+    # )
 
 
     # Below is the sidebar area where we keep metrics
@@ -132,4 +152,4 @@ with gr.Blocks() as demo:
 
 # Launch
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(share=True)
