@@ -69,3 +69,9 @@ serve = "python interface.py"
 
 # CI (runs all checks)
 check = { depends-on = ["lint", "format-check", "typecheck", "test"] }
+
+[tool.pyrefly]
+project-includes = [
+    "**/*.py*",
+    "**/*.ipynb",
+]
