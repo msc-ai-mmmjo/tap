@@ -2,7 +2,7 @@ name: Discord Notification
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/discord-bot]  # Remove feat/discord-bot after testing
   workflow_dispatch:
     inputs:
       message:
