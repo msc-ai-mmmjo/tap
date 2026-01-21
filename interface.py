@@ -17,27 +17,29 @@ Usage:
     $ gradio interface.py --port 8080
 """
 
-import gradio as gr
 import math
+from collections.abc import Generator
 from functools import partial
+
+import gradio as gr
 from huggingface_hub import InferenceClient
 
+# Types
+HeatmapData = list[tuple[str, float | str | None]]
 
-# Connect to Hugging face to run LLM inference
-def inference(prompt, hf_token, model, model_name):
-    """
-    Generates text and calculates uncertainties.
-    """
-    # Validation: ensure a token is present
+
+def inference(
+    prompt: str, hf_token: str, model: str, model_name: str
+) -> Generator[tuple[str, HeatmapData], None, None]:
+    """Generates text and calculates uncertainties."""
     if not hf_token or not hf_token.strip():
-        yield "Error: Please enter a Hugging Face Token to generate text."
+        yield "Please enter a Hugging Face Token.", []
         return
 
-    # Initialize the client with the user's specific token
     try:
         client = InferenceClient(model=model, token=hf_token)
     except Exception as e:
-        yield f"Client Error: {str(e)}"
+        yield f"Client Error: {e}", []
         return
 
     # Prepare the message for the model
@@ -47,7 +49,7 @@ def inference(prompt, hf_token, model, model_name):
     partial_text = ""
 
     # Initialize (token, label) tuple for the probability heatmap
-    heatmap_data = []
+    heatmap_data: HeatmapData = []
 
     try:
         # API Call
@@ -61,70 +63,61 @@ def inference(prompt, hf_token, model, model_name):
 
         for chunk in stream:
             # 1. Process text
-            if chunk.choices and chunk.choices[0].delta.content:
-                new_content = chunk.choices[0].delta.content
-                partial_text += new_content
-
-            # 2. Process logprobs
-            # wrap in a safety check to ensure text generation does not stop if probability data is missing
             try:
-                # Check if the logprobs exist and if 'content' (list of logprob objects) is an iterable
-                if (
-                    chunk.choices
-                    and chunk.choices[0].logprobs
-                    and hasattr(chunk.choices[0].logprobs, "content")
-                    and chunk.choices[0].logprobs.content
-                ):
-                    for lp in chunk.choices[0].logprobs.content:
-                        token_text = lp.token
-                        log_score = lp.logprob
-                        # Convert Logit to Probability (0.0 to 1.0)
-                        prob = math.exp(log_score)
+                new_content = chunk.choices[0].delta.content
+                if new_content:
+                    partial_text += new_content
+            except (AttributeError, IndexError):
+                pass
 
-                        # Determine label based on Confidence (tune these thresholds as fit)
-                        if prob > 0.9:
-                            label = "Certain"
-                        elif prob > 0.6:
-                            label = "Uncertain"
-                        else:
-                            label = "High Entropy"
+            # Process logprobs (one token per streaming chunk)
+            try:
+                logprobs = chunk.choices[0].logprobs
+                if logprobs is None or logprobs.content is None:
+                    continue
+                lp = logprobs.content[0]
+                prob = math.exp(lp.logprob)
 
-                        # Append to stored data list for later visualization
-                        heatmap_data.append((token_text, label))
+                if prob > 0.9:
+                    label = "Certain"
+                elif prob > 0.6:
+                    label = "Uncertain"
+                else:
+                    label = "High Entropy"
 
-            except Exception:
-                # If logprobs fail for one token, just ignore.
+                heatmap_data.append((lp.token, label))
+            except (AttributeError, IndexError, TypeError):
                 pass
 
             # Yield both the visible text and the hidden probability data
             yield f"**{model_name} Response:**\n\n{partial_text}", heatmap_data
 
     except Exception as e:
-        # If the token is invalid or the model is busy, show the error
-        yield f"API Error: {str(e)}\n\n*Tip: Check if your token is valid and has 'Read' permissions.*"
+        yield (
+            f"API Error: {e}\n\n*Tip: Check if your token is valid and has 'Read' permissions.*",
+            [],
+        )
 
 
-def toggle_view(heatmap_data):
-    # Helper to swap views: hides plain text and shows heatmap.
-    return gr.update(visible=False), gr.update(visible=True, value=heatmap_data)
-
-
-def reset_ui():
-    """
-    Helper to prepare the UI for a new prompt:
-    1. Hides the token box (optional preference).
-    2. Shows the plain text Markdown box.
-    3. Hides the old Heatmap.
-    """
+def toggle_view(heatmap_data: HeatmapData) -> tuple[gr.Markdown, gr.HighlightedText]:
+    """Swaps views: hides plain text and shows heatmap."""
     return (
-        gr.Textbox(visible=False),  # Token box
-        gr.Markdown(visible=True, value="### Generating..."),  # Text Output
-        gr.HighlightedText(visible=False),  # Heatmap
+        gr.Markdown(visible=False),
+        gr.HighlightedText(visible=True, value=heatmap_data),
+    )
+
+
+def reset_ui() -> tuple[gr.Textbox, gr.Markdown, gr.HighlightedText]:
+    """Prepares the UI for a new prompt."""
+    return (
+        gr.Textbox(visible=False),
+        gr.Markdown(visible=True, value="### Generating..."),
+        gr.HighlightedText(visible=False),
     )
 
 
 # Dummy function to be replaced with backend behaviour for slider and radio buttons
-def dummy_fn(*args):
+def dummy_fn(*args: object) -> HeatmapData:
     return [("hello", "world")]
 
 
@@ -191,10 +184,7 @@ with gr.Blocks() as demo:
             value="Uncertainty",
         )
 
-        # slider to mimic what we have in Figma
         slider = gr.Slider(0, 1, value=0.5, label="Confidence Threshold")
-
-        gr.Slider(0, 1, value=0.5, label="Confidence Threshold")
         gr.Markdown("🐈 `thorp.thorp@machenta.com`", elem_classes="bottom-info")
 
     # --- Wiring ---
