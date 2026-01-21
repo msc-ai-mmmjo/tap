@@ -1,0 +1,27 @@
+name: Discord Notification
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Custom message to send (optional)'
+        required: false
+        default: 'Manual test notification'
+
+jobs:
+  notify:
+    runs-on: ubuntu-24.04  # Pinned for reproducibility
+    steps:
+      - name: Discord notification
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          title: ${{ github.event_name == 'workflow_dispatch' && 'Manual Test' || 'Push to main' }}
+          description: |
+            ${{ github.event_name == 'workflow_dispatch' && inputs.message || format('New commit by {0}', github.actor) }}
+
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+          color: 0x00ff00
