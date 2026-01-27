@@ -10,7 +10,15 @@ permissions:
 
 jobs:
   ci:
-    runs-on: ubuntu-24.04  # Pinned for reproducibility
+    name: CI (${{ matrix.label }})
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            label: GitHub
+          - runner: blacksmith-4vcpu-ubuntu-2404
+            label: Blacksmith
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - uses: actions/checkout@v6
@@ -18,7 +26,7 @@ jobs:
       - name: 📦 Setup Pixi
         uses: prefix-dev/setup-pixi@v0.9.3
         with:
-          pixi-version: v0.63.1  # Pinned for reproducibility
+          pixi-version: v0.63.1
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
@@ -34,6 +42,9 @@ jobs:
       - name: 🧪 Run Tests
         run: pixi run test
 
+  pr-validation:
+    runs-on: ubuntu-24.04
+    steps:
       - name: 👮 PR Conventional Commit Validation
         uses: ytanikin/pr-conventional-commits@1.5.1
         with:
