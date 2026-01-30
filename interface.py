@@ -123,9 +123,9 @@ def dummy_fn(*args: object) -> HeatmapData:
 # Design the Interface
 with gr.Blocks() as demo:
     # Application heading
-    gr.Markdown("<center><h1>🧠 Trustworthy Answer Protocol</h1></center>")
+    gr.Markdown("<center><h1>🧠 LLM Uncertainty Visualizer</h1></center>")
     gr.Markdown(
-        "<center>Exposing LLM uncertainty and other related trustworthiness metrics to users at response time.<center>"
+        "<center>subtitle of the project: can add a brief description of the interface here<center>"
     )
 
     # State storage: holds the logprob data until needed
