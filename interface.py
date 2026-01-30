@@ -107,10 +107,9 @@ def toggle_view(heatmap_data: HeatmapData) -> tuple[gr.Markdown, gr.HighlightedT
     )
 
 
-def reset_ui() -> tuple[gr.Textbox, gr.Markdown, gr.HighlightedText]:
+def reset_ui() -> tuple[gr.Markdown, gr.HighlightedText]:
     """Prepares the UI for a new prompt."""
     return (
-        gr.Textbox(visible=False),
         gr.Markdown(visible=True, value="### Generating..."),
         gr.HighlightedText(visible=False),
     )
@@ -195,7 +194,7 @@ with gr.Blocks() as demo:
         triggers=[prompt.submit, generate_btn.click],
         fn=reset_ui,
         inputs=None,
-        outputs=[token, model_output, output_metrics],
+        outputs=[model_output, output_metrics],
     ).then(
         fn=partial(
             inference,
