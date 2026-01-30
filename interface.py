@@ -221,13 +221,4 @@ with gr.Blocks() as demo:
 
 # Launch
 if __name__ == "__main__":
-    demo.launch(
-        share=True,
-        theme=gr.themes.Origin(
-            primary_hue="teal",
-            secondary_hue="slate",
-            neutral_hue="zinc",
-            spacing_size="sm",
-            radius_size="md",
-        ),
-    )
+    demo.launch(share=True)
