@@ -122,15 +122,7 @@ def dummy_fn(*args: object) -> HeatmapData:
 
 
 # Design the Interface
-with gr.Blocks(
-    theme=gr.themes.Origin(
-        primary_hue="teal",
-        secondary_hue="slate",
-        neutral_hue="zinc",
-        spacing_size="sm",
-        radius_size="md",
-    )
-) as demo:
+with gr.Blocks() as demo:
     # Application heading
     gr.Markdown("<center><h1>🧠 Trustworthy Answer Protocol</h1></center>")
     gr.Markdown(
@@ -230,4 +222,13 @@ with gr.Blocks(
 
 # Launch
 if __name__ == "__main__":
-    demo.launch(share=True)
+    demo.launch(
+        share=True,
+        theme=gr.themes.Origin(
+            primary_hue="teal",
+            secondary_hue="slate",
+            neutral_hue="zinc",
+            spacing_size="sm",
+            radius_size="md",
+        ),
+    )
