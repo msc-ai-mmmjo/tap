@@ -5,6 +5,7 @@ Backend business logic, separated from the Gradio interface.
 from collections.abc import Generator
 import math
 
+import gradio as gr
 from huggingface_hub import InferenceClient
 
 from constants import HeatmapData
@@ -12,16 +13,16 @@ from constants import HeatmapData
 
 def inference(
     message: str, history: list[dict], hf_token: str, model: str, model_name: str
-) -> Generator[str, None, None]:
+) -> Generator[tuple[str, list | gr.HighlightedText], None, None]:
     """Generates text and calculates uncertainties."""
     if not hf_token or not hf_token.strip():
-        yield "Please enter a Hugging Face Token."  # , []
+        yield "Please enter a Hugging Face Token.", []
         return
 
     try:
-        client = InferenceClient(model=model, token=hf_token)
+        client = InferenceClient(model, token=hf_token)
     except Exception as e:
-        yield f"Client Error: {e}"  # , []
+        yield f"Client Error: {e}", []
         return
 
     # Prepare the message for the model
@@ -72,7 +73,13 @@ def inference(
                 pass
 
             # Yield both the visible text and the hidden probability data
-            yield f"**{model_name} Response:**\n\n{partial_text}"  # , heatmap_data
+            yield (
+                f"**{model_name} Response:**\n\n{partial_text}",
+                gr.HighlightedText(value=heatmap_data),
+            )
 
     except Exception as e:
-        yield f"API Error: {e}\n\n*Tip: Check if your token is valid and has 'Read' permissions.*"
+        yield (
+            f"API Error: {e}\n\n*Tip: Check if your token is valid and has 'Read' permissions.*",
+            [],
+        )
