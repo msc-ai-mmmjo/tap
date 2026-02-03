@@ -21,7 +21,6 @@ with gr.Blocks() as demo:
         label="Uncertainty Heatmap",
         combine_adjacent=False,
         show_legend=True,
-        visible=False,  # hidden start
         color_map={
             "Certain": "#cbf0cc",
             "Uncertain": "#ffeea8",
@@ -32,6 +31,8 @@ with gr.Blocks() as demo:
     chat = gr.ChatInterface(
         fn=partial(inference, model=MODEL, model_name=MODEL_NAME),
         additional_inputs=[token],
+        additional_outputs=[output_metrics],
+        save_history=True,
     )
 
     # Sidebar: metric selection (not connected yet)
