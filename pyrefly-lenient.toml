@@ -1,0 +1,19 @@
+# Lenient pyrefly config for CI/non-GPU environments
+# Stubs CUDA-only deps as Any since they're not installed in default env
+# GPU users should use `pixi run typecheck` for strict checking
+
+search-path = ["."]
+project-includes = [
+    "**/*.py*",
+    "**/*.ipynb",
+]
+replace-imports-with-any = [
+    "torch",
+    "torch.*",
+    "llama_cpp",
+    "llama_cpp.*",
+    "transformers",
+    "transformers.*",
+    "tqdm",
+    "tqdm.*",
+]

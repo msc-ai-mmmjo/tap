@@ -2,6 +2,19 @@
 
 Exposing LLM uncertainty, unfairness, and other related trustworthiness metrics to users at response time.
 
+## Kernel Language Entropy
+
+Implemented KLE ([arXiv:2405.20003](https://arxiv.org/abs/2405.20003)) for measuring semantic uncertainty. Uses [Qwen3-8B-GGUF](https://huggingface.co/Qwen/Qwen3-8B-GGUF) for generation and [ModernBERT-large-nli](https://huggingface.co/tasksource/ModernBERT-large-nli) for NLI scoring.
+
+**Requires CUDA 12.4 exactly.** Install with:
+
+```bash
+pixi install -e cuda
+pixi run -e cuda download-models
+```
+
+See [kernel_entropy/README.md](kernel_entropy/README.md) for usage.
+
 # Contributing guide
 
 ## Pixi installation
