@@ -206,3 +206,8 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 .gradio/
+
+# Large model files
+models/*.gguf
+models/.cache/
+models/ModernBERT-large-nli/
