@@ -16,9 +16,23 @@ with gr.Blocks() as demo:
     token = gr.Textbox(
         label="Hugging Face Token", type="password", placeholder="Paste token (hf_...)"
     )
+
+    output_metrics = gr.HighlightedText(
+        label="Uncertainty Heatmap",
+        combine_adjacent=False,
+        show_legend=True,
+        color_map={
+            "Certain": "#cbf0cc",
+            "Uncertain": "#ffeea8",
+            "High Entropy": "#ffc4c4",
+        },
+    )
+
     chat = gr.ChatInterface(
         fn=partial(inference, model=MODEL, model_name=MODEL_NAME),
         additional_inputs=[token],
+        additional_outputs=[output_metrics],
+        save_history=True,
     )
 
     # Sidebar: metric selection (not connected yet)
