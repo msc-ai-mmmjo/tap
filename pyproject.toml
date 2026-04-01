@@ -29,12 +29,26 @@ platforms = ["linux-64", "osx-64", "osx-arm64"]
 python = "3.13.*"
 pytest = ">=9.0"
 ruff = ">=0.8"
+python-dotenv = ">=1.2.2,<2"
 
 # ---------------------------------------------
 # CUDA Feature (for GPU users)
 # ---------------------------------------------
 [tool.pixi.feature.cuda.system-requirements]
 cuda = "12.4"
+
+# (linux-64 only)
+
+[tool.pixi.feature.cuda.target.linux-64.dependencies]
+pytorch = ">=2.6"
+flash-attn = ">=2.8.3,<3"
+sentencepiece = ">=0.2.1,<0.3"
+
+[tool.pixi.feature.cuda.target.linux-64.pypi-dependencies]
+ai2-olmo-core = { version = "==2.4.0", extras = ["transformers", "wandb"] }
+hf-transfer = "*"
+peft = "*"
+datasets = "*"
 
 # ---------------------------------------------
 # Environments
