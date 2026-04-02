@@ -7,7 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from huggingface_hub import InferenceClient
 from pydantic import BaseModel
 
-from mock_metrics import mock_claim_confidence, mock_robustness_status, mock_security_status
+from mock_metrics import (
+    mock_claim_confidence,
+    mock_robustness_status,
+    mock_security_status,
+)
 
 _env_path = Path(__file__).resolve().parent.parent / ".env"
 if _env_path.exists():

@@ -26,7 +26,9 @@ def mock_claim_confidence(claim_text: str) -> dict:
         ]
     )
     has_numbers = bool(
-        re.search(r"\d+\s*(mg|ml|mcg|kg|%|days|weeks|hours|minutes)", claim_text.lower())
+        re.search(
+            r"\d+\s*(mg|ml|mcg|kg|%|days|weeks|hours|minutes)", claim_text.lower()
+        )
     )
 
     if hedging:
