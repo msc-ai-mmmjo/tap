@@ -62,7 +62,7 @@ def call_hf_model(messages: list[dict]) -> str:
 
     client = InferenceClient(MODEL, token=hf_token)
     response = client.chat_completion(messages, max_tokens=500)
-    return response.choices[0].message.content
+    return response.choices[0].message.content or ""
 
 
 @app.post("/api/analyse")

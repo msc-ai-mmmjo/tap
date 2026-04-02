@@ -97,3 +97,6 @@ project-includes = [
     "**/*.py*",
     "**/*.ipynb",
 ]
+project-excludes = [
+    "demo/**",
+]
