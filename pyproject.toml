@@ -87,6 +87,7 @@ typecheck = { cmd = "pyrefly check .", default-environment = "cuda" }
 
 # Application
 serve = "python interface.py"
+demo-api = "cd demo/backend && uvicorn server:app --port 8000 --ws none"
 
 # CI (runs all checks)
 check = { depends-on = ["lint", "format-check", "typecheck", "test"] }
