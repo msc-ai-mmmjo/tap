@@ -8,6 +8,7 @@ dependencies = [
     "gradio>=6.3.0",
     "huggingface-hub",
     "pyrefly>=0.47.0",
+    "python-dotenv>=1.1.0",
 ]
 
 [build-system]

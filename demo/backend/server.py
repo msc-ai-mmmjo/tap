@@ -2,6 +2,7 @@ import os
 import re
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from huggingface_hub import InferenceClient
@@ -13,13 +14,7 @@ from mock_metrics import (
     mock_security_status,
 )
 
-_env_path = Path(__file__).resolve().parent.parent / ".env"
-if _env_path.exists():
-    for line in _env_path.read_text().splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            key, _, val = line.partition("=")
-            os.environ.setdefault(key.strip(), val.strip())
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
 
