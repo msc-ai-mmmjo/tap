@@ -30,6 +30,8 @@ jobs:
 
       - name: 🕵️ Type Check
         if: always()
+        env:
+          CONDA_OVERRIDE_CUDA: "12.4"
         run: pixi run typecheck
 
       - name: 🧪 Run Tests
