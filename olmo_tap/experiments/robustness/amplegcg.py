@@ -82,7 +82,7 @@ class AmpleGCG:
         # generate and slice off original prompt
         output = self.model.generate(
             **model_input, generation_config=self.gen_config, trust_remote_code=True
-        )[:, input_size:] # shape (num_return_seq, 20)
+        )[:, input_size:]  # shape (num_return_seq, 20)
 
         # returns list of len = num_return_seq (each element is a suffix)
         decoded = self.tokenizer.batch_decode(output, skip_special_tokens=True)
