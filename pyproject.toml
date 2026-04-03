@@ -6,13 +6,16 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "gradio>=6.3.0",
-    "huggingface-hub>=1.3.2,<2",
+    "huggingface-hub",
     "pyrefly>=0.47.0",
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["olmo_tap"]
 
 # =============================================
 # PIXI CONFIGURATION - All dependency management
@@ -45,10 +48,13 @@ flash-attn = ">=2.8.3,<3"
 sentencepiece = ">=0.2.1,<0.3"
 
 [tool.pixi.feature.cuda.target.linux-64.pypi-dependencies]
-ai2-olmo-core = { version = "==2.4.0", extras = ["transformers", "wandb"] }
+ai2-olmo-core = { git = "https://github.com/msc-ai-mmmjo/OLMo-core.git", rev = "f10228300ddb7c809d42efbda8c3bae137bf5069", extras = ["transformers", "wandb"] }
+transformers = ">=4.45,<5"
+tokenizers = ">=0.20"
 hf-transfer = "*"
 peft = "*"
 datasets = "*"
+msc-ai-group-project = { path = ".", editable = true }
 
 # ---------------------------------------------
 # Environments
