@@ -48,8 +48,8 @@ flash-attn = ">=2.8.3,<3"
 sentencepiece = ">=0.2.1,<0.3"
 
 [tool.pixi.feature.cuda.target.linux-64.pypi-dependencies]
-ai2-olmo-core = { git = "https://github.com/msc-ai-mmmjo/OLMo-core.git", rev = "f10228300ddb7c809d42efbda8c3bae137bf5069", extras = ["transformers", "wandb"] }
-transformers = ">=4.45,<5"
+ai2-olmo-core = { git = "https://github.com/msc-ai-mmmjo/OLMo-core.git", rev = "521ad5a8cddcf65fee4447b384cc2a12dfc732e9", extras = ["transformers", "wandb"] }
+transformers = ">=5.0"
 tokenizers = ">=0.20"
 hf-transfer = "*"
 peft = "*"
