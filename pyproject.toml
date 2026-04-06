@@ -46,6 +46,7 @@ cuda = "12.4"
 pytorch = ">=2.6"
 flash-attn = ">=2.8.3,<3"
 sentencepiece = ">=0.2.1,<0.3"
+fsspec = "<=2026.2.0"
 
 [tool.pixi.feature.cuda.target.linux-64.pypi-dependencies]
 ai2-olmo-core = { git = "https://github.com/msc-ai-mmmjo/OLMo-core.git", rev = "521ad5a8cddcf65fee4447b384cc2a12dfc732e9", extras = ["transformers", "wandb"] }
@@ -53,7 +54,7 @@ transformers = ">=5.0"
 tokenizers = ">=0.20"
 hf-transfer = "*"
 peft = "*"
-datasets = "*"
+datasets = ">=2.10"
 msc-ai-group-project = { path = ".", editable = true }
 
 # ---------------------------------------------
