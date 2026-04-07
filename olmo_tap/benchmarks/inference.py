@@ -8,7 +8,7 @@ import torch
 
 from olmo_core.nn.attention import AttentionBackendName, Attention
 from olmo_core.nn.transformer import Transformer, TransformerBlock
-from olmo_core.nn.transformer.config import TransformerConfig
+from olmo_core.nn.transformer.config import TransformerConfig, TransformerBlockConfig
 from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
 
 VOCAB_SIZE = 100352
@@ -35,7 +35,8 @@ def init_kv_cache(model, batch_size, max_seq_len):
 
 def build_baseline_model(dtype=torch.bfloat16, device="cuda"):
     config = TransformerConfig.olmo2_1B_v2(vocab_size=VOCAB_SIZE)
-    config.block.sequence_mixer.backend = AttentionBackendName.flash_2
+    block_config = cast(TransformerBlockConfig, config.block)
+    block_config.sequence_mixer.backend = AttentionBackendName.flash_2
     model = config.build(init_device="cpu")
     model.to(device=device, dtype=dtype)
     model.eval()
@@ -114,8 +115,12 @@ def benchmark_decode(
     positions = list(range(0, gen_length, step_interval))
     results = {"positions": positions, "per_position": {}}
 
+    if not managers or managers[0] is None:
+        return results  # TODO: better error handling logic
+
     for m in managers:
-        m.zero_cache()
+        if m is not None:
+            m.zero_cache()
     last_token = forward_and_sample(model, prompt_ids).unsqueeze(0).unsqueeze(0)
 
     for step in range(gen_length):
