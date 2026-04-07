@@ -62,7 +62,7 @@ def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None]:
     base_ds = load_dataset("openlifescienceai/medmcqa", split="train", streaming=False)
     assert isinstance(base_ds, Dataset), f"Expected Dataset, got {type(base_ds)}"
     shard_ds = base_ds.shard(num_shards=config.num_shards, index=config.shard_id)
-    shard_ds = shard_ds.select_columns(["question", "cop"])
+    shard_ds = shard_ds.select_columns(["question", "opa", "opb", "opc", "opd", "cop"])
 
     shard_ds = shard_ds.map(
         preprocess_example,
@@ -70,7 +70,7 @@ def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None]:
             "tokenizer": tokenizer,
             "max_seq_len": config.max_seq_len,
         },
-        remove_columns=["question", "final_decision"],
+        remove_columns=["question", "opa", "opb", "opc", "opd", "cop"],
     )
     shard_ds.set_format("torch")
 
