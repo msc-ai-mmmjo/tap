@@ -8,7 +8,7 @@ import torch
 
 from olmo_core.nn.attention import AttentionBackendName, Attention
 from olmo_core.nn.transformer import Transformer, TransformerBlock
-from olmo_core.nn.transformer.config import TransformerConfig, TransformerBlockConfig
+from olmo_core.nn.transformer.config import TransformerConfig
 from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
 
 VOCAB_SIZE = 100352
