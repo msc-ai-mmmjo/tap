@@ -5,7 +5,7 @@ Data loading for security head SFT finetuning on PubMedQA.
 from typing import cast, Any
 from torch.utils.data import DataLoader
 from datasets import load_dataset
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 from olmo_tap.experiments.utils.config import TrainingConfig
 
@@ -21,7 +21,7 @@ def format_question(question: str) -> str:
 
 def preprocess_example(
     example: dict[str, str],
-    tokenizer: AutoTokenizer,
+    tokenizer: PreTrainedTokenizerBase,
     max_seq_len: int,
     A_token_id: int,
     B_token_id: int,
@@ -30,7 +30,6 @@ def preprocess_example(
     question = format_question(example["question"])
     messages = [{"role": "user", "content": question}]
 
-    assert tokenizer is not None
     prompt = tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
     )
