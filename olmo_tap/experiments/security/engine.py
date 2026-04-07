@@ -12,25 +12,24 @@ import torch
 import torch.nn as nn
 import wandb
 
-from olmo_tap.experiments.utils.config import ExperimentConfig
+from olmo_tap.experiments.utils.config import ExperimentConfig, TrainingConfig
 from olmo_tap.experiments.security.data import load_shard
 
+def get_mcq_logits(logits: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
+    return logits[:, [config.A_token_id, config.B_token_id, config.C_token_id, config.D_token_id]]
 
 def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
     t_config = exp_config.train
     device = exp_config.device
     model.train()
 
-    dataloader, val_dataloader, B_token_id = load_shard(t_config)
+    dataloader, val_dataloader = load_shard(t_config)
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     ckpt_dir = Path(t_config.output_dir) / run_id / "checkpoints"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-    criterion = nn.CrossEntropyLoss(
-        reduction="none" if t_config.class_weight_B > 1.0 else "mean"
-    )
-    weight_B = t_config.class_weight_B
+    criterion = nn.CrossEntropyLoss(reduction="mean")
 
     global_step = 0
     for epoch in range(t_config.num_epochs):
@@ -43,12 +42,9 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
 
             # (n_heads, batch, seq, vocab) -> head 0, last position
             logits = model(input_ids, return_logits=True)[0, :, -1, :]
+            mcq_logits = get_mcq_logits(logits, t_config)
 
-            loss = criterion(logits, labels)
-            if weight_B > 1.0:
-                sample_weights = torch.where(labels == B_token_id, weight_B, 1.0)
-                loss = (loss * sample_weights).mean()
-
+            loss = criterion(mcq_logits, labels)
             loss.backward()
             optimizer.step()
             scheduler.step()
@@ -84,12 +80,9 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
                     input_ids = batch["input_ids"].to(device)
                     labels = batch["label"].to(device)
                     logits = model(input_ids, return_logits=True)[0, :, -1, :]
-                    val_loss = criterion(logits, labels)
-                    if weight_B > 1.0:
-                        sample_weights = torch.where(
-                            labels == B_token_id, weight_B, 1.0
-                        )
-                        val_loss = (val_loss * sample_weights).mean()
+                    mcq_logits = get_mcq_logits(logits, t_config)
+
+                    val_loss = criterion(mcq_logits, labels)
                     val_loss_total += val_loss.item()
                     val_steps += 1
             val_loss_avg = val_loss_total / val_steps if val_steps > 0 else 0.0
