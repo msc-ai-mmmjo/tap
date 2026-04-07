@@ -6,11 +6,8 @@ from pathlib import Path
 import torch
 
 from olmo_core.nn.attention import AttentionBackendName
-from olmo_core.nn.transformer import (
-    HydraTransformer,
-    HydraTransformerConfig,
-    TransformerConfig,
-)
+from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
+from olmo_core.nn.transformer.config import TransformerConfig
 
 VOCAB_SIZE = 100352
 
@@ -71,7 +68,11 @@ def forward_and_sample(model, input_ids):
 
 
 def benchmark_ttft(model, prompt_ids, warmup_ms=100.0, rep_ms=1000.0):
-    from benchmarks.harness import benchmark, compute_stats, filter_outliers_iqr
+    from olmo_tap.benchmarks.harness import (
+        benchmark,
+        compute_stats,
+        filter_outliers_iqr,
+    )
 
     managers = get_all_kv_cache_managers(model)
 
@@ -94,7 +95,11 @@ def benchmark_ttft(model, prompt_ids, warmup_ms=100.0, rep_ms=1000.0):
 def benchmark_decode(
     model, prompt_ids, gen_length=128, step_interval=8, warmup_ms=100.0, rep_ms=1000.0
 ):
-    from benchmarks.harness import benchmark, compute_stats, filter_outliers_iqr
+    from olmo_tap.benchmarks.harness import (
+        benchmark,
+        compute_stats,
+        filter_outliers_iqr,
+    )
 
     managers = get_all_kv_cache_managers(model)
     positions = list(range(0, gen_length, step_interval))
@@ -235,7 +240,7 @@ def main():
     with open(out_dir / "results.json", "w") as f:
         json.dump(results, f, indent=2)
 
-    from benchmarks.plotting import plot_results
+    from olmo_tap.benchmarks.plotting import plot_results
 
     plot_results(results, out_dir)
 
