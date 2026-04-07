@@ -10,7 +10,7 @@ We expect the final Hydra to look something like:
 """
 
 from dataclasses import dataclass, field
-from .constants import VOCAB_SIZE, WEIGHTS_DIR
+from olmo_tap.constants import VOCAB_SIZE, WEIGHTS_DIR
 
 
 @dataclass

@@ -2,6 +2,7 @@
 Data loading for security head SFT finetuning on PubMedQA.
 """
 
+from typing import cast, Any
 from torch.utils.data import DataLoader
 from datasets import load_dataset
 from transformers import AutoTokenizer
@@ -30,14 +31,14 @@ def preprocess_example(
     messages = [{"role": "user", "content": question}]
     prompt = tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
-    )
+    )  #  type: ignore
     encoding = tokenizer(
         prompt,
         padding="max_length",
         truncation=True,
         max_length=max_seq_len,
         return_tensors="pt",
-    )
+    )  #  type: ignore
 
     label = A_token_id if example["final_decision"] == "yes" else B_token_id
 
@@ -72,13 +73,13 @@ def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None, i
     shard_ds.set_format("torch")
 
     if config.val_split > 0:
-        split = shard_ds.train_test_split(test_size=config.val_split, seed=config.seed)
+        split = shard_ds.train_test_split(test_size=config.val_split, seed=config.seed)  # type: ignore
         train_ds, val_ds = split["train"], split["test"]
     else:
         train_ds, val_ds = shard_ds, None
 
     train_dataloader = DataLoader(
-        train_ds,
+        cast(Any, train_ds),
         batch_size=config.batch_size,
         shuffle=True,
         drop_last=True,
@@ -88,7 +89,7 @@ def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None, i
     val_dataloader = None
     if val_ds is not None:
         val_dataloader = DataLoader(
-            val_ds,
+            cast(Any, val_ds),
             batch_size=config.batch_size,
             shuffle=False,
             drop_last=False,

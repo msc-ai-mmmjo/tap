@@ -126,7 +126,7 @@ def main():
     args = parse_args()
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)
+    tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)  # type: ignore
     A_id = tokenizer.encode("A", add_special_tokens=False)[0]
     B_id = tokenizer.encode("B", add_special_tokens=False)[0]
 
@@ -165,7 +165,7 @@ def main():
         ckpt = torch.load(args.checkpoint, map_location=device)
         state = ckpt["head_state_dict"] if "head_state_dict" in ckpt else ckpt
         model.heads[0].load_state_dict(state)
-        model.heads[0].merge_and_unload()
+        model.heads[0].merge_and_unload()  #  type: ignore
         model.to(dtype=torch.bfloat16)
         model.eval()
 
