@@ -27,7 +27,11 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
     device = exp_config.device
     model.train()
 
-    dataloader, val_dataloader = load_shard(t_config)
+    dataloader, val_dataloader, A_id, B_id, C_id, D_id = load_shard(t_config)
+    t_config.A_token_id = A_id
+    t_config.B_token_id = B_id
+    t_config.C_token_id = C_id
+    t_config.D_token_id = D_id
 
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     ckpt_dir = Path(t_config.output_dir) / run_id / "checkpoints"

@@ -54,10 +54,16 @@ def preprocess_example(
     }
 
 
-def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None]:
+def load_shard(
+    config: TrainingConfig,
+) -> tuple[DataLoader, DataLoader | None, int, int, int, int]:
     """Load a MedMCQA shard, tokenize prompts, return (train_dl, val_dl)."""
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
     assert tokenizer is not None
+    A_id = tokenizer.encode("A", add_special_tokens=False)[0]
+    B_id = tokenizer.encode("B", add_special_tokens=False)[0]
+    C_id = tokenizer.encode("C", add_special_tokens=False)[0]
+    D_id = tokenizer.encode("D", add_special_tokens=False)[0]
 
     base_ds = load_dataset("openlifescienceai/medmcqa", split="train", streaming=False)
     assert isinstance(base_ds, Dataset), f"Expected Dataset, got {type(base_ds)}"
@@ -98,4 +104,4 @@ def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None]:
             num_workers=config.num_workers,
         )
 
-    return train_dataloader, val_dataloader
+    return train_dataloader, val_dataloader, A_id, B_id, C_id, D_id
