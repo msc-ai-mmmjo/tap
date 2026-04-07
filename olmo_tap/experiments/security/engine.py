@@ -1,8 +1,6 @@
 """
-Security head SFT training loop.
-
-Standard cross-entropy on the last-position logits against the ground-truth
-answer token (A or B) for each PubMedQA question.
+Security Finetuning protocol.
+Training for mcq correctness with CrossEntropy
 """
 
 from datetime import datetime

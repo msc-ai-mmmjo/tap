@@ -1,5 +1,5 @@
 """
-Data loading for security head SFT finetuning on PubMedQA.
+Data loading for security head SFT finetuning on MedMCQA.
 """
 
 from torch.utils.data import DataLoader
