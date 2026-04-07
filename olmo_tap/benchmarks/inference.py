@@ -2,12 +2,14 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import cast, Any
 
 import torch
 
-from olmo_core.nn.attention import AttentionBackendName
-from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
+from olmo_core.nn.attention import AttentionBackendName, Attention
+from olmo_core.nn.transformer import Transformer, TransformerBlock
 from olmo_core.nn.transformer.config import TransformerConfig
+from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
 
 VOCAB_SIZE = 100352
 
@@ -44,13 +46,20 @@ def get_all_kv_cache_managers(model):
     managers = []
     if isinstance(model, HydraTransformer):
         for block in model.trunk.blocks.values():
-            managers.append(block.attention.kv_cache_manager)
+            attn = cast(TransformerBlock, block).attention
+            if isinstance(attn, Attention):
+                managers.append(attn.kv_cache_manager)
         for head in model.heads:
-            for block in head.blocks.values():
-                managers.append(block.attention.kv_cache_manager)
+            for block in cast(Transformer, head).blocks.values():
+                attn = cast(TransformerBlock, block).attention
+                if isinstance(attn, Attention):
+                    managers.append(attn.kv_cache_manager)
     else:
-        for block in model.blocks.values():
-            managers.append(block.attention.kv_cache_manager)
+        for block in cast(Transformer, model).blocks.values():
+            attn = cast(TransformerBlock, block).attention
+            if isinstance(attn, Attention):
+                managers.append(attn.kv_cache_manager)
+
     return managers
 
 
@@ -145,9 +154,9 @@ def make_output_dir():
     # find existing runs for today, auto-increment
     existing = [d.name for d in base.iterdir() if d.name.startswith(today)]
     run_nums = [
-        int(re.search(r"run(\d+)", name).group(1))
+        int(match.group(1))
         for name in existing
-        if re.search(r"run(\d+)", name)
+        if (match := re.search(r"run(\d+)", name)) is not None
     ]
     next_run = max(run_nums, default=0) + 1
 
@@ -234,7 +243,7 @@ def main():
             ]
         },
     }
-    results["metadata"] = metadata
+    results["metadata"] = cast(Any, metadata)
 
     out_dir = make_output_dir()
     with open(out_dir / "results.json", "w") as f:

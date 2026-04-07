@@ -56,6 +56,7 @@ hf-transfer = "*"
 peft = "*"
 datasets = ">=2.10"
 scipy = "*"
+matplotlib = "*"
 msc-ai-group-project = { path = ".", editable = true }
 
 # ---------------------------------------------
