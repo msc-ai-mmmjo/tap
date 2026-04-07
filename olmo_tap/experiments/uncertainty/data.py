@@ -1,6 +1,6 @@
 from datasets import load_dataset
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, SentencePieceBackend, TokenizersBackend
 
 from olmo_tap.experiments.utils.config import TrainingConfig
 
@@ -16,7 +16,9 @@ def format_second_pass(pre: str, ans: str) -> str:
 
 
 def preprocess_example(
-    example: dict[str, str], tokenizer: AutoTokenizer, max_seq_len: int
+    example: dict[str, str],
+    tokenizer: TokenizersBackend | SentencePieceBackend,
+    max_seq_len: int,
 ) -> dict:
     """Pre-tokenize first pass and both second-pass variants (A and B).
 
@@ -72,6 +74,7 @@ def preprocess_example(
 
 def load_shard(config: TrainingConfig) -> tuple[DataLoader, int, int]:
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
+    assert tokenizer is not None
     A_id = tokenizer.encode("A", add_special_tokens=False)[0]
     B_id = tokenizer.encode("B", add_special_tokens=False)[0]
 
@@ -89,7 +92,7 @@ def load_shard(config: TrainingConfig) -> tuple[DataLoader, int, int]:
     shard_ds.set_format("torch")
 
     dataloader = DataLoader(
-        shard_ds,
+        shard_ds,  # type: ignore[arg-type]
         batch_size=config.batch_size,
         shuffle=True,
         drop_last=True,

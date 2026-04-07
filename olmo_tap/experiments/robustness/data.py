@@ -1,6 +1,7 @@
 from datasets import load_dataset
+from datasets.arrow_dataset import Dataset
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, SentencePieceBackend, TokenizersBackend
 
 from olmo_tap.experiments.robustness.amplegcg import AmpleGCG
 from olmo_tap.experiments.utils.config import TrainingConfig
@@ -12,7 +13,10 @@ def format_example(question: str) -> str:
 
 
 def preprocess_example(
-    example: dict[str, str], tokenizer: AutoTokenizer, gcg: AmpleGCG, max_seq_len: int
+    example: dict[str, str],
+    tokenizer: TokenizersBackend | SentencePieceBackend,
+    gcg: AmpleGCG,
+    max_seq_len: int,
 ) -> dict:
     # TODO: allow for more than one returned adv_token (if we decide this is even useful)
     assert gcg.num_return_seq == 1, (
@@ -61,12 +65,14 @@ def preprocess_example(
 
 def load_shard(config: TrainingConfig, gcg: AmpleGCG) -> tuple[DataLoader, int, int]:
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
+    assert tokenizer is not None
     A_id = tokenizer.encode("A", add_special_tokens=False)[0]
     B_id = tokenizer.encode("B", add_special_tokens=False)[0]
 
     base_ds = load_dataset(
         "qiaojin/PubMedQA", "pqa_artificial", split="train", streaming=False
     )
+    assert isinstance(base_ds, Dataset), f"Expected Dataset, got {type(base_ds)}"
     shard_ds = base_ds.shard(num_shards=config.num_shards, index=config.shard_id)
     shard_ds = shard_ds.select_columns(["question", "final_decision"])
 
@@ -82,7 +88,7 @@ def load_shard(config: TrainingConfig, gcg: AmpleGCG) -> tuple[DataLoader, int, 
     shard_ds.set_format("torch")
 
     dataloader = DataLoader(
-        shard_ds,
+        shard_ds,  # type: ignore[arg-type]
         batch_size=config.batch_size,
         shuffle=True,
         drop_last=True,

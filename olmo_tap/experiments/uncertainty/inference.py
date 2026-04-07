@@ -28,6 +28,7 @@ def main():
 
     model = load_for_inference(CHECKPOINT_PATH, exp_config)
     tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)
+    assert tokenizer is not None
 
     for prompt in TEST_PROMPTS:
         messages = [{"role": "user", "content": prompt}]

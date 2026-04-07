@@ -8,8 +8,11 @@ logits, which can be averaged or otherwise combined downstream.
 
 import logging
 from dataclasses import dataclass, replace
+from typing import cast
 
+from olmo_core.nn.attention import Attention
 from olmo_core.nn.config import ModelConfig
+from olmo_core.nn.transformer.block import TransformerBlock
 from olmo_core.nn.transformer.model import Transformer
 from olmo_core.nn.transformer.config import TransformerConfig
 import torch
@@ -41,6 +44,11 @@ class HydraTransformerConfig(ModelConfig):
         self.validate()
 
     def validate(self):
+        if isinstance(self.base_config.block, dict):
+            raise ValueError(
+                "HydraTransformerConfig does not support heterogeneous block configs "
+                "(base_config.block must be a TransformerBlockConfig, not a dict)"
+            )
         total = self.trunk_layers + self.head_layers
         expected = self.base_config.n_layers
         if total != expected:
@@ -117,6 +125,7 @@ class HydraTransformerConfig(ModelConfig):
 
     @property
     def num_params(self) -> int:
+        assert not isinstance(self.base_config.block, dict)
         d = self.base_config.d_model
         block_params = self.base_config.block.num_params(d)
 
@@ -166,10 +175,14 @@ class HydraTransformer(nn.Module):
     def init_kv_cache(self, batch_size: int, max_seq_len: int):
         """Initialize KV caches for all blocks in trunk and heads."""
         for block in self.trunk.blocks.values():
-            block.attention.init_kv_cache_manager(batch_size, max_seq_len)
+            attn = cast(TransformerBlock, block).attention
+            if isinstance(attn, Attention):
+                attn.init_kv_cache_manager(batch_size, max_seq_len)
         for head in self.heads:
-            for block in head.blocks.values():
-                block.attention.init_kv_cache_manager(batch_size, max_seq_len)
+            for block in cast(Transformer, head).blocks.values():
+                attn = cast(TransformerBlock, block).attention
+                if isinstance(attn, Attention):
+                    attn.init_kv_cache_manager(batch_size, max_seq_len)
 
     def forward(self, input_ids: torch.Tensor, **kwargs) -> torch.Tensor:
         """

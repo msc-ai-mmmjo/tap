@@ -12,7 +12,7 @@ def load_for_inference(
 
     state = torch.load(checkpoint_path, map_location=exp_config.model.device)
     model.heads[0].load_state_dict(state)
-    model.heads[0] = model.heads[0].merge_and_unload()
+    model.heads[0] = model.heads[0].merge_and_unload()  # type: ignore[not-callable]
 
     model.eval()
     return model

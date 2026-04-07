@@ -46,6 +46,8 @@ def main():
 
     # Tokenize with chat template.
     tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)
+    assert tokenizer is not None
+
     prompt = "What is the capital of France?"
     messages = [{"role": "user", "content": prompt}]
     chat_prompt = tokenizer.apply_chat_template(

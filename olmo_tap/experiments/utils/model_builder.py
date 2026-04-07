@@ -6,11 +6,13 @@ Builds a HydraOLMo model with:
 head is frozen
 """
 
+from typing import cast
+
 from olmo_core.nn.hf.convert import convert_state_from_hf
 from peft import LoraConfig, get_peft_model
 from safetensors.torch import load_file
 import torch
-from transformers import AutoConfig
+from transformers import AutoConfig, PreTrainedModel
 
 from olmo_tap.experiments.utils.config import HydraLoRAConfig
 from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
@@ -46,7 +48,7 @@ def build_finetuning_model(config: HydraLoRAConfig) -> HydraTransformer:
         bias="none",
     )
     # we always perform LoRA on the 0th head, any other head instantiated in training is frozen
-    model.heads[0] = get_peft_model(model.heads[0], lora_config)
+    model.heads[0] = get_peft_model(cast(PreTrainedModel, model.heads[0]), lora_config)
 
     # all params except LoRA params are frozen
     model.requires_grad_(False)

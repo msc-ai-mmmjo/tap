@@ -26,6 +26,7 @@ class AmpleGCG:
             model_name, torch_dtype=torch.bfloat16
         ).to(device)
         tokenizer = AutoTokenizer.from_pretrained(model_name)
+        assert tokenizer is not None
         tokenizer.padding_side = "left"
 
         if not tokenizer.pad_token:
