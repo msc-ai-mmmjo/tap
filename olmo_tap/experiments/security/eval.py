@@ -109,10 +109,10 @@ def evaluate(
             total[label] += 1
             correct[label] += pred == label
 
-        tot_correct, tot_q = sum(correct), sum(total)
+    tot_correct, tot_q = sum(correct), sum(total)
 
     return {
-        "accuracy": tot_correct / tot_q if total > 0 else 0,
+        "accuracy": tot_correct / tot_q if tot_q > 0 else 0,
         "total": tot_q,
         "correct": tot_correct,
         "accuracy_A": correct[0] / total[0] if total[0] > 0 else 0,

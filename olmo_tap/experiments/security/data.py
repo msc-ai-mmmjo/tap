@@ -54,7 +54,7 @@ def preprocess_example(
     }
 
 
-def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None, int]:
+def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader]:
     """Load a MedMCQA shard, tokenize prompts, return (train_dl, val_dl)."""
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
     assert tokenizer is not None
