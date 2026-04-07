@@ -10,8 +10,7 @@ We expect the final Hydra to look something like:
 """
 
 from dataclasses import dataclass, field
-
-from olmo_tap.constants import VOCAB_SIZE, WEIGHTS_DIR
+from .constants import VOCAB_SIZE, WEIGHTS_DIR
 
 
 @dataclass
@@ -86,3 +85,4 @@ class ExperimentConfig:
         # ensure num_shards = n_heads
         self.train.num_shards = self.model.n_heads_final
         self.model.device = self.device
+        self.train.seed = self.seed
