@@ -35,8 +35,7 @@ def init_kv_cache(model, batch_size, max_seq_len):
 
 def build_baseline_model(dtype=torch.bfloat16, device="cuda"):
     config = TransformerConfig.olmo2_1B_v2(vocab_size=VOCAB_SIZE)
-    block_config = cast(TransformerBlockConfig, config.block)
-    block_config.sequence_mixer.backend = AttentionBackendName.flash_2
+    config.block.sequence_mixer.backend = AttentionBackendName.flash_2  # type: ignore
     model = config.build(init_device="cpu")
     model.to(device=device, dtype=dtype)
     model.eval()
@@ -199,7 +198,7 @@ def run_benchmarks(model, prompt_ids, cfg, label):
         cfg["warmup_ms"],
         cfg["rep_ms"],
     )
-    tps_values = [v["tps"] for v in decode["per_position"].values()]
+    tps_values = [v["tps"] for v in decode["per_position"].values()]  # type: ignore
     avg_tps = sum(tps_values) / len(tps_values)
     print(f"  Avg TPS: {avg_tps:.1f} tokens/sec")
 
