@@ -2,7 +2,7 @@
     "n_heads": 5,
     "heads_depth": 3,
     "prompt_length": 512,
-    "generation_length": 128,
+    "max_seq_len": 128,
     "decode_step_interval": 8,
     "warmup_ms": 100.0,
     "rep_ms": 1000.0,
