@@ -100,4 +100,5 @@ project-includes = [
 ]
 project-excludes = [
     "demo/**",
+    "olmo_tap/**",
 ]
