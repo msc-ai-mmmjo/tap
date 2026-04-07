@@ -2,9 +2,9 @@
 Data loading for security head SFT finetuning on PubMedQA.
 """
 
-from typing import cast, Any
 from torch.utils.data import DataLoader
 from datasets import load_dataset
+from datasets.arrow_dataset import Dataset
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 from olmo_tap.experiments.utils.config import TrainingConfig
@@ -59,6 +59,7 @@ def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None, i
     base_ds = load_dataset(
         "qiaojin/PubMedQA", "pqa_artificial", split="train", streaming=False
     )
+    assert isinstance(base_ds, Dataset), f"Expected Dataset, got {type(base_ds)}"
     shard_ds = base_ds.shard(num_shards=config.num_shards, index=config.shard_id)
     shard_ds = shard_ds.select_columns(["question", "final_decision"])
 
@@ -81,7 +82,7 @@ def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None, i
         train_ds, val_ds = shard_ds, None
 
     train_dataloader = DataLoader(
-        cast(Any, train_ds),
+        train_ds,  # type: ignore[arg-type]
         batch_size=config.batch_size,
         shuffle=True,
         drop_last=True,
@@ -91,7 +92,7 @@ def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None, i
     val_dataloader = None
     if val_ds is not None:
         val_dataloader = DataLoader(
-            cast(Any, val_ds),
+            val_ds,  # type: ignore[arg-type]
             batch_size=config.batch_size,
             shuffle=False,
             drop_last=False,

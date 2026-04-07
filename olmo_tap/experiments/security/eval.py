@@ -151,8 +151,8 @@ def main():
         model.eval()
     else:
         # Load finetuned model from checkpoint
-        from ..utils.model_builder import build_finetuning_model
-        from ..utils.config import HydraLoRAConfig
+        from olmo_tap.experiments.utils.model_builder import build_finetuning_model
+        from olmo_tap.experiments.utils.config import HydraLoRAConfig
 
         m_config = HydraLoRAConfig(
             n_heads_final=1,
