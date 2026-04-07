@@ -126,7 +126,8 @@ def main():
     args = parse_args()
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)  # type: ignore
+    tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)
+    assert tokenizer is not None
     A_id = tokenizer.encode("A", add_special_tokens=False)[0]
     B_id = tokenizer.encode("B", add_special_tokens=False)[0]
 

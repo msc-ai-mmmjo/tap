@@ -29,16 +29,18 @@ def preprocess_example(
     """Tokenize the question prompt and store the ground-truth answer token ID."""
     question = format_question(example["question"])
     messages = [{"role": "user", "content": question}]
+
+    assert tokenizer is not None
     prompt = tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
-    )  #  type: ignore
+    )
     encoding = tokenizer(
         prompt,
         padding="max_length",
         truncation=True,
         max_length=max_seq_len,
         return_tensors="pt",
-    )  #  type: ignore
+    )
 
     label = A_token_id if example["final_decision"] == "yes" else B_token_id
 
@@ -51,6 +53,7 @@ def preprocess_example(
 def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None, int]:
     """Load a PubMedQA shard, tokenize prompts, return (train_dl, val_dl)."""
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
+    assert tokenizer is not None
     A_id = tokenizer.encode("A", add_special_tokens=False)[0]
     B_id = tokenizer.encode("B", add_special_tokens=False)[0]
 
