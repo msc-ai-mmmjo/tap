@@ -57,6 +57,15 @@ class TrainingConfig:
     output_dir: str = "experiments/uncertainty/outputs"
     checkpoint_every_n_steps: int = 250
 
+    # validation
+    val_split: float = 0.0  # 0.0 = no val, e.g. 0.1 = 10% held out
+
+    # class imbalance: weight for B (minority) class, 1.0 = no reweighting
+    class_weight_B: float = 1.0
+
+    # seed (propagated from ExperimentConfig)
+    seed: int = field(init=False)
+
     # token IDs
     # convention: A/B used for correct/incorrect in uncertainty
     A_token_id: int = field(init=False)
