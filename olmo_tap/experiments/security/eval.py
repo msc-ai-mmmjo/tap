@@ -166,7 +166,7 @@ def main():
         ckpt = torch.load(args.checkpoint, map_location=device)
         state = ckpt["head_state_dict"] if "head_state_dict" in ckpt else ckpt
         model.heads[0].load_state_dict(state)
-        model.heads[0].merge_and_unload()  #  type: ignore
+        model.heads[0].merge_and_unload()  # type: ignore[not-callable]
         model.to(dtype=torch.bfloat16)
         model.eval()
 
