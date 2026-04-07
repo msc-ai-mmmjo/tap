@@ -48,8 +48,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lora-r", type=int, default=16)
     return parser.parse_args()
 
+
 def get_mcq_logits(logits: torch.Tensor, token_ids: list[int]) -> torch.Tensor:
     return logits[:, token_ids]
+
 
 @torch.no_grad()
 def evaluate(
@@ -94,7 +96,9 @@ def evaluate(
         # and standard models (batch, seq, vocab)
         logits = model(input_ids, return_logits=True)
         if logits.dim() == 4:
-            logits = get_mcq_logits(logits[0, :, -1, :], token_ids)  # head 0, last position
+            logits = get_mcq_logits(
+                logits[0, :, -1, :], token_ids
+            )  # head 0, last position
         else:
             logits = get_mcq_logits(logits[:, -1, :], token_ids)  # last position
 
@@ -103,7 +107,7 @@ def evaluate(
 
         for pred, label in zip(preds, labels):
             total[label] += 1
-            correct[label] += (pred == label)
+            correct[label] += pred == label
 
         tot_correct, tot_q = sum(correct), sum(total)
 

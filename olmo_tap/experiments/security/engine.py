@@ -15,8 +15,12 @@ import wandb
 from olmo_tap.experiments.utils.config import ExperimentConfig, TrainingConfig
 from olmo_tap.experiments.security.data import load_shard
 
+
 def get_mcq_logits(logits: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
-    return logits[:, [config.A_token_id, config.B_token_id, config.C_token_id, config.D_token_id]]
+    return logits[
+        :, [config.A_token_id, config.B_token_id, config.C_token_id, config.D_token_id]
+    ]
+
 
 def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
     t_config = exp_config.train
