@@ -55,6 +55,7 @@ tokenizers = ">=0.20"
 hf-transfer = "*"
 peft = "*"
 datasets = ">=2.10"
+scipy = "*"
 msc-ai-group-project = { path = ".", editable = true }
 
 # ---------------------------------------------
