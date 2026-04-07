@@ -58,9 +58,12 @@ class TrainingConfig:
     output_dir: str = "experiments/uncertainty/outputs"
     checkpoint_every_n_steps: int = 250
 
-    # token IDs: A (Yes), B (No)
+    # token IDs
+    # convention: A/B used for yes/no in uncertainty
     A_token_id: int = field(init=False)
     B_token_id: int = field(init=False)
+    C_token_id: int = field(init=False)
+    D_token_id: int = field(init=False)
 
 
 @dataclass
