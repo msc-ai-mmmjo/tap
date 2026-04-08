@@ -50,7 +50,7 @@ def train(
     device = exp_config.device
     model.train()
 
-    mcq_dataloader, val_dataloader, A_id, B_id, C_id, D_id = load_shard(t_config)
+    mcq_dataloader, A_id, B_id, C_id, D_id = load_shard(t_config)
     t_config.A_token_id = A_id
     t_config.B_token_id = B_id
     t_config.C_token_id = C_id
@@ -69,71 +69,41 @@ def train(
     mcq_per_sft = t_config.mcq_per_sft
 
     global_step = 0
-    for epoch in range(t_config.num_epochs):
-        epoch_loss = 0.0
-        epoch_steps = 0
-        mcq_count = 0
+    mcq_count = 0
 
-        for batch in mcq_dataloader:
-            loss = mcq_step(model, batch, mcq_criterion, device)
-            backward_step(loss, optimizer, scheduler)
+    for batch in mcq_dataloader:
+        loss = mcq_step(model, batch, mcq_criterion, device)
+        backward_step(loss, optimizer, scheduler)
+
+        global_step += 1
+        mcq_count += 1
+
+        wandb.log(
+            {
+                "train/loss_mcq": loss.item(),
+                "train/lr": scheduler.get_last_lr()[0],
+            },
+            step=global_step,
+        )
+
+        if sft_iter is not None and mcq_count % mcq_per_sft == 0:
+            sft_batch = next(sft_iter)
+            sft_loss = sft_step(model, sft_batch, sft_criterion, device)
+            backward_step(sft_loss, optimizer, scheduler)
 
             global_step += 1
-            epoch_loss += loss.item()
-            epoch_steps += 1
-            mcq_count += 1
 
             wandb.log(
                 {
-                    "train/loss": loss.item(),
-                    "train/loss_mcq": loss.item(),
+                    "train/loss_sft": sft_loss.item(),
                     "train/lr": scheduler.get_last_lr()[0],
-                    "train/epoch": epoch,
                 },
                 step=global_step,
             )
 
-            if sft_iter is not None and mcq_count % mcq_per_sft == 0:
-                sft_batch = next(sft_iter)
-                sft_loss = sft_step(model, sft_batch, sft_criterion, device)
-                backward_step(sft_loss, optimizer, scheduler)
-
-                global_step += 1
-                epoch_loss += sft_loss.item()
-                epoch_steps += 1
-
-                wandb.log(
-                    {
-                        "train/loss": sft_loss.item(),
-                        "train/loss_sft": sft_loss.item(),
-                        "train/lr": scheduler.get_last_lr()[0],
-                        "train/epoch": epoch,
-                    },
-                    step=global_step,
-                )
-
-            if global_step % t_config.checkpoint_every_n_steps == 0:
-                path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
-                torch.save(model.heads[0].state_dict(), path)
-
-        avg_loss = epoch_loss / epoch_steps if epoch_steps > 0 else 0.0
-        log_dict = {"train/epoch_avg_loss": avg_loss}
-
-        # validation (MCQ only)
-        if val_dataloader is not None:
-            model.eval()
-            val_loss_total = 0.0
-            val_steps = 0
-            with torch.no_grad():
-                for batch in val_dataloader:
-                    val_loss = mcq_step(model, batch, mcq_criterion, device)
-                    val_loss_total += val_loss.item()
-                    val_steps += 1
-            val_loss_avg = val_loss_total / val_steps if val_steps > 0 else 0.0
-            log_dict["val/epoch_avg_loss"] = val_loss_avg
-            model.train()
-
-        wandb.log(log_dict, step=global_step)
+        if global_step % t_config.checkpoint_every_n_steps == 0:
+            path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
+            torch.save(model.heads[0].state_dict(), path)
 
     final_path = ckpt_dir / "checkpoint_final.pt"
     torch.save(

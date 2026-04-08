@@ -28,17 +28,10 @@ PUBMEDQA_SIZE = 211_269
 
 
 def compute_total_steps(
-    num_shards: int,
-    batch_size: int,
-    num_epochs: int,
-    val_split: float = 0.0,
-    mcq_per_sft: int = 0,
+    num_shards: int, batch_size: int, mcq_per_sft: int = 0,
 ) -> int:
     """Compute total training steps from dataset geometry (no data loading needed)."""
-    shard_size = PUBMEDQA_SIZE // num_shards
-    train_size = int(shard_size * (1 - val_split))
-    mcq_steps_per_epoch = train_size // batch_size  # drop_last=True in DataLoader
-    mcq_steps = mcq_steps_per_epoch * num_epochs
+    mcq_steps = (PUBMEDQA_SIZE // num_shards) // batch_size  # drop_last=True
     sft_steps = mcq_steps // mcq_per_sft if mcq_per_sft > 0 else 0
     return mcq_steps + sft_steps
 
@@ -52,7 +45,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--val", action="store_true")
     parser.add_argument("--lora-r", type=int, default=16)
     parser.add_argument("--full-data", action="store_true")
     parser.add_argument("--mcq-per-sft", type=int, default=0)
@@ -84,7 +76,6 @@ def main():
         output_dir="experiments/security/outputs/full_data"
         if args.full_data
         else f"experiments/security/outputs/shard_{args.shard_id}",
-        val_split=0.1 if args.val else 0.0,
         mcq_per_sft=args.mcq_per_sft,
     )
     exp_config = ExperimentConfig(
@@ -105,8 +96,6 @@ def main():
     total_steps = compute_total_steps(
         num_shards=n_heads,
         batch_size=args.batch_size,
-        num_epochs=args.num_epochs,
-        val_split=t_config.val_split,
         mcq_per_sft=args.mcq_per_sft,
     )
 
