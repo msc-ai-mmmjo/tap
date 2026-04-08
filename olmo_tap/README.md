@@ -1,6 +1,8 @@
-# First-timers' Guide to Running Scripts on the `ada` Server
+# Guide to Running Scripts on the `ada` Server
 
 For experimentation, testing, etc.
+
+## First-timers' Set-up
 
 1. Log into a DoC login node; `<num>` can be any of 1 to 5
 
@@ -27,7 +29,7 @@ For experimentation, testing, etc.
     PIXI_HOME=/vol/bitbucket/$USER/.pixi /vol/bitbucket/$USER/.pixi/bin/pixi self-update --version 0.63.2
     ```
 
-4) Add to your shell config
+4. Add to your shell config
 
     ```shell
     export PIXI_HOME="/vol/bitbucket/$USER/.pixi"
@@ -40,11 +42,11 @@ For experimentation, testing, etc.
     source ~/.bashrc  # or source ~/.zshrc
     ```
 
- 5. Clone our repo and install dependencies
+5. Clone our repo and install dependencies
 
     ```shell
     cd /vol/bitbucket/$USER
-    git git@github.com:msc-ai-mmmjo/tap.git
+    git clone git@github.com:msc-ai-mmmjo/tap.git
     cd tap
     pixi install -e cuda
     ```
@@ -80,3 +82,24 @@ For experimentation, testing, etc.
     ```shell
     CUDA_VISIBLE_DEVICES=1 pixi run -e cuda python olmo_tap/experiments/hydra_demo.py
     ```
+
+
+## For those who have done the setup already
+
+1. Log into `ada`
+
+2. Update our repo
+
+    ```shell
+    cd /vol/bitbucket/$USER/tap
+    git pull
+    ```
+    
+    Update dependencies
+
+    ```shell
+    cd tap
+    pixi install -e cuda
+    ```
+
+3. Do whatever it is you wanted to
