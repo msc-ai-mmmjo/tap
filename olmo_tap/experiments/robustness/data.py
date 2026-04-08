@@ -77,7 +77,7 @@ def preprocess_example(
     }
 
 
-def load_shard(config: TrainingConfig, gcg: AmpleGCG) -> tuple[DataLoader]:
+def load_shard(config: TrainingConfig, gcg: AmpleGCG) -> DataLoader:
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
     assert tokenizer is not None
 
