@@ -47,7 +47,7 @@ def preprocess_example(
         return_tensors="pt",
     )
 
-    label = token_ids[example["cop"]]
+    label = token_ids[int(example["cop"])]
 
     return {
         "input_ids": encoding["input_ids"].squeeze(0),
