@@ -1,21 +1,16 @@
-import os
 import re
-from pathlib import Path
 
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from huggingface_hub import InferenceClient
 from pydantic import BaseModel
 
-from constants import MODEL
+from constants import HF_TOKEN, MODEL
 from react_app.backend.mock_metrics import (
     mock_claim_confidence,
     mock_robustness_status,
     mock_security_status,
 )
-
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 app = FastAPI(title="Trustworthy Answer Protocol — API")
 app.add_middleware(
@@ -50,11 +45,10 @@ def decompose_into_claims(text: str) -> list[str]:
 
 def call_hf_model(messages: list[dict]) -> str:
     """Call the HF model using the same approach as the Gradio app."""
-    hf_token = os.getenv("HF_TOKEN")
-    if not hf_token:
+    if not HF_TOKEN:
         raise ValueError("HF_TOKEN environment variable not set")
 
-    client = InferenceClient(MODEL, token=hf_token)
+    client = InferenceClient(MODEL, token=HF_TOKEN)
     response = client.chat_completion(messages, max_tokens=500)
     return response.choices[0].message.content or ""
 

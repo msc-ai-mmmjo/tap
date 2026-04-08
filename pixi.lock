@@ -3094,12 +3094,11 @@ packages:
 - pypi: ./
   name: msc-ai-group-project
   version: 0.1.0
-  sha256: c3df91a1832021ac480fc5a3d7c6e34de305eb27ee235158fb0d0dd47f0076d9
+  sha256: bad2a6a4c7f0c38d12074943b9b2a0d05e52a05c9294f61ee925cc7482aa4206
   requires_dist:
   - gradio>=6.3.0
   - huggingface-hub
   - pyrefly>=0.47.0
-  - python-dotenv>=1.1.0
   requires_python: '>=3.13'
 - pypi: https://files.pythonhosted.org/packages/7f/74/d2c27e03cb84251dfe7249b8e82923643c6d48fa4883b9476b025e7dc7eb/multiprocess-0.70.19-py313-none-any.whl
   name: multiprocess

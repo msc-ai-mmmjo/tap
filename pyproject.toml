@@ -8,7 +8,6 @@ dependencies = [
     "gradio>=6.3.0",
     "huggingface-hub",
     "pyrefly>=0.47.0",
-    "python-dotenv>=1.1.0",
 ]
 
 [build-system]
@@ -97,8 +96,4 @@ check = { depends-on = ["lint", "format-check", "typecheck", "test"] }
 project-includes = [
     "**/*.py*",
     "**/*.ipynb",
-]
-project-excludes = [
-    "react_app/**",
-    "olmo_tap/**",
 ]
