@@ -22,13 +22,19 @@ from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
 from olmo_core.nn.hf.convert import convert_state_from_hf
 
 
-def format_question(question: str) -> str:
-    """Wrap a raw PubMedQA question with the A/B classification preamble."""
+def format_question(question: str, mcq_options: list[str]) -> str:
+    """Wrap a raw MedMCQA question with preamble."""
     preamble = (
-        "Answer the following medical diagnosis question "
-        "with either the letter A (Yes) or B (No):\n"
+        "Answer the following medical question with the according letter (A, B, C, D): "
     )
-    return preamble + question
+    return (
+        preamble
+        + question
+        + f"A: {mcq_options[0]}, "
+        + f"B: {mcq_options[1]}, "
+        + f"C: {mcq_options[2]}, "
+        + f"D: {mcq_options[3]}"
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -43,35 +49,35 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def get_mcq_logits(logits: torch.Tensor, token_ids: list[int]) -> torch.Tensor:
+    return logits[:, token_ids]
+
+
 @torch.no_grad()
 def evaluate(
     model,
     tokenizer,
     dataset,
-    A_id: int,
-    B_id: int,
+    token_ids: list[int],
     batch_size: int,
     max_seq_len: int,
     device: str,
 ) -> dict:
-    """Run A/B classification eval, return accuracy metrics."""
-    correct = 0
-    total = 0
-    correct_A = 0
-    total_A = 0
-    correct_B = 0
-    total_B = 0
+    """Run classification eval, return accuracy metrics."""
+    correct = [0, 0, 0, 0]
+    total = [0, 0, 0, 0]
 
     model.eval()
 
     for i in tqdm(range(0, len(dataset), batch_size), desc="Evaluating"):
         batch = dataset[i : i + batch_size]
         questions = batch["question"]
-        labels = batch["final_decision"]
+        labels = batch["cop"]
 
         prompts = []
         for q in questions:
-            messages = [{"role": "user", "content": format_question(q)}]
+            mcq_options = [q["opa"], q["opb"], q["opc"], q["opd"]]
+            messages = [{"role": "user", "content": format_question(q, mcq_options)}]
             prompt = tokenizer.apply_chat_template(
                 messages, tokenize=False, add_generation_prompt=True
             )
@@ -90,35 +96,33 @@ def evaluate(
         # and standard models (batch, seq, vocab)
         logits = model(input_ids, return_logits=True)
         if logits.dim() == 4:
-            logits = logits[0, :, -1, :]  # head 0, last position
+            logits = get_mcq_logits(
+                logits[0, :, -1, :], token_ids
+            )  # head 0, last position
         else:
-            logits = logits[:, -1, :]  # last position
+            logits = get_mcq_logits(logits[:, -1, :], token_ids)  # last position
 
-        # Compare A vs B logit
-        A_logits = logits[:, A_id]
-        B_logits = logits[:, B_id]
-        preds = torch.where(A_logits > B_logits, 1, 0)  # 1=A(yes), 0=B(no)
+        # find argmax logit indices to verify correctness
+        preds = torch.argmax(logits, dim=-1)
 
         for pred, label in zip(preds, labels):
-            gt = 1 if label == "yes" else 0
-            is_correct = pred.item() == gt
-            correct += is_correct
-            total += 1
-            if gt == 1:
-                total_A += 1
-                correct_A += is_correct
-            else:
-                total_B += 1
-                correct_B += is_correct
+            total[label] += 1
+            correct[label] += pred == label
+
+    tot_correct, tot_q = sum(correct), sum(total)
 
     return {
-        "accuracy": correct / total if total > 0 else 0,
-        "total": total,
-        "correct": correct,
-        "accuracy_A": correct_A / total_A if total_A > 0 else 0,
-        "accuracy_B": correct_B / total_B if total_B > 0 else 0,
-        "total_A": total_A,
-        "total_B": total_B,
+        "accuracy": tot_correct / tot_q if tot_q > 0 else 0,
+        "total": tot_q,
+        "correct": tot_correct,
+        "accuracy_A": correct[0] / total[0] if total[0] > 0 else 0,
+        "accuracy_B": correct[1] / total[1] if total[1] > 0 else 0,
+        "accuracy_C": correct[2] / total[2] if total[2] > 0 else 0,
+        "accuracy_D": correct[3] / total[3] if total[3] > 0 else 0,
+        "total_A": total[0],
+        "total_B": total[1],
+        "total_C": total[2],
+        "total_D": total[3],
     }
 
 
@@ -130,6 +134,9 @@ def main():
     assert tokenizer is not None
     A_id = tokenizer.encode("A", add_special_tokens=False)[0]
     B_id = tokenizer.encode("B", add_special_tokens=False)[0]
+    C_id = tokenizer.encode("C", add_special_tokens=False)[0]
+    D_id = tokenizer.encode("D", add_special_tokens=False)[0]
+    token_ids = [A_id, B_id, C_id, D_id]
 
     # Load eval dataset
     ds = load_dataset("qiaojin/PubMedQA", "pqa_artificial", split="train")
@@ -171,7 +178,7 @@ def main():
         model.eval()
 
     results = evaluate(
-        model, tokenizer, ds, A_id, B_id, args.batch_size, args.max_seq_len, device
+        model, tokenizer, ds, token_ids, args.batch_size, args.max_seq_len, device
     )
 
     print("\n===== PubMedQA Evaluation =====")
@@ -180,6 +187,8 @@ def main():
     )
     print(f"Accuracy A: {results['accuracy_A']:.4f} ({results['total_A']} examples)")
     print(f"Accuracy B: {results['accuracy_B']:.4f} ({results['total_B']} examples)")
+    print(f"Accuracy C: {results['accuracy_C']:.4f} ({results['total_C']} examples)")
+    print(f"Accuracy D: {results['accuracy_D']:.4f} ({results['total_D']} examples)")
     print("===============================")
 
 

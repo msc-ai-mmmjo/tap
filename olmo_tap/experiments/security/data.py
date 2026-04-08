@@ -1,5 +1,5 @@
 """
-Data loading for security head SFT finetuning on PubMedQA.
+Data loading for security head SFT finetuning on MedMCQA.
 """
 
 from torch.utils.data import DataLoader
@@ -10,24 +10,30 @@ from transformers import AutoTokenizer, PreTrainedTokenizerBase
 from olmo_tap.experiments.utils.config import TrainingConfig
 
 
-def format_question(question: str) -> str:
-    """Wrap a raw PubMedQA question with the A/B classification preamble."""
+def format_question(question: str, mcq_options: list[str]) -> str:
+    """Wrap a raw MedMCQA question with preamble."""
     preamble = (
-        "Answer the following medical diagnosis question "
-        "with either the letter A (Yes) or B (No):\n"
+        "Answer the following medical question with the according letter (A, B, C, D): "
     )
-    return preamble + question
+    return (
+        preamble
+        + question
+        + f"A: {mcq_options[0]}, "
+        + f"B: {mcq_options[1]}, "
+        + f"C: {mcq_options[2]}, "
+        + f"D: {mcq_options[3]}"
+    )
 
 
 def preprocess_example(
     example: dict[str, str],
     tokenizer: PreTrainedTokenizerBase,
     max_seq_len: int,
-    A_token_id: int,
-    B_token_id: int,
+    token_ids: list[int],
 ) -> dict:
     """Tokenize the question prompt and store the ground-truth answer token ID."""
-    question = format_question(example["question"])
+    mcq_options = [example["opa"], example["opb"], example["opc"], example["opd"]]
+    question = format_question(example["question"], mcq_options)
     messages = [{"role": "user", "content": question}]
 
     prompt = tokenizer.apply_chat_template(
@@ -41,7 +47,7 @@ def preprocess_example(
         return_tensors="pt",
     )
 
-    label = A_token_id if example["final_decision"] == "yes" else B_token_id
+    label = token_ids[int(example["cop"])]
 
     return {
         "input_ids": encoding["input_ids"].squeeze(0),
@@ -49,29 +55,31 @@ def preprocess_example(
     }
 
 
-def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None, int]:
-    """Load a PubMedQA shard, tokenize prompts, return (train_dl, val_dl)."""
+def load_shard(
+    config: TrainingConfig,
+) -> tuple[DataLoader, DataLoader | None, int, int, int, int]:
+    """Load a MedMCQA shard, tokenize prompts, return (train_dl, val_dl)."""
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
     assert tokenizer is not None
     A_id = tokenizer.encode("A", add_special_tokens=False)[0]
     B_id = tokenizer.encode("B", add_special_tokens=False)[0]
+    C_id = tokenizer.encode("C", add_special_tokens=False)[0]
+    D_id = tokenizer.encode("D", add_special_tokens=False)[0]
 
-    base_ds = load_dataset(
-        "qiaojin/PubMedQA", "pqa_artificial", split="train", streaming=False
-    )
+    base_ds = load_dataset("openlifescienceai/medmcqa", split="train", streaming=False)
     assert isinstance(base_ds, Dataset), f"Expected Dataset, got {type(base_ds)}"
     shard_ds = base_ds.shard(num_shards=config.num_shards, index=config.shard_id)
-    shard_ds = shard_ds.select_columns(["question", "final_decision"])
+    shard_ds = shard_ds.select_columns(["question", "opa", "opb", "opc", "opd", "cop"])
 
+    token_ids = [A_id, B_id, C_id, D_id]
     shard_ds = shard_ds.map(
         preprocess_example,
         fn_kwargs={
             "tokenizer": tokenizer,
             "max_seq_len": config.max_seq_len,
-            "A_token_id": A_id,
-            "B_token_id": B_id,
+            "token_ids": token_ids,
         },
-        remove_columns=["question", "final_decision"],
+        remove_columns=["question", "opa", "opb", "opc", "opd", "cop"],
     )
     shard_ds.set_format("torch")
 
@@ -99,4 +107,4 @@ def load_shard(config: TrainingConfig) -> tuple[DataLoader, DataLoader | None, i
             num_workers=config.num_workers,
         )
 
-    return train_dataloader, val_dataloader, B_id
+    return train_dataloader, val_dataloader, A_id, B_id, C_id, D_id
