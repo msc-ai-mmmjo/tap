@@ -22,7 +22,7 @@ from functools import partial
 import gradio as gr
 
 from constants import HeatmapData
-from logic import inference
+from gradio_demo.logic import inference
 
 
 def toggle_view(heatmap_data: HeatmapData) -> tuple[gr.Markdown, gr.HighlightedText]:

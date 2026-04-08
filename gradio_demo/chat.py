@@ -3,7 +3,7 @@ from functools import partial
 import gradio as gr
 
 from constants import MODEL, MODEL_NAME, HeatmapData
-from logic import inference
+from gradio_demo.logic import inference
 
 
 # Dummy function to be replaced with backend behaviour for slider and radio buttons
