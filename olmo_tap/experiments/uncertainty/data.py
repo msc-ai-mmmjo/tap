@@ -35,7 +35,7 @@ def encode_second_pass(
     max_seq_len: int,
     consensus_count: int,
     n_heads: int,
-) -> torch.Tensor:
+) -> dict:
     """Tokenize second pass"""
     enc = tokenizer.apply_chat_template(
         [
