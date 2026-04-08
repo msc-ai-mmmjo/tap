@@ -71,28 +71,20 @@ def preprocess_example(
         return_tensors="pt",
     )
 
-    label = example["cop"]
     return {
         "input_ids_clean": encoding_clean["input_ids"].squeeze(0),
         "input_ids_poisoned": encoding_poisoned["input_ids"].squeeze(0),
-        "labels": label,
     }
 
 
-def load_shard(
-    config: TrainingConfig, gcg: AmpleGCG
-) -> tuple[DataLoader, int, int, int, int]:
+def load_shard(config: TrainingConfig, gcg: AmpleGCG) -> tuple[DataLoader]:
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
     assert tokenizer is not None
-    A_id = tokenizer.encode("A", add_special_tokens=False)[0]
-    B_id = tokenizer.encode("B", add_special_tokens=False)[0]
-    C_id = tokenizer.encode("C", add_special_tokens=False)[0]
-    D_id = tokenizer.encode("D", add_special_tokens=False)[0]
 
     base_ds = load_dataset("openlifescienceai/medmcqa", split="train", streaming=False)
     assert isinstance(base_ds, Dataset), f"Expected Dataset, got {type(base_ds)}"
     shard_ds = base_ds.shard(num_shards=config.num_shards, index=config.shard_id)
-    shard_ds = shard_ds.select_columns(["question", "opa", "opb", "opc", "opd", "cop"])
+    shard_ds = shard_ds.select_columns(["question", "opa", "opb", "opc", "opd"])
 
     shard_ds = shard_ds.map(
         preprocess_example,
@@ -101,7 +93,7 @@ def load_shard(
             "gcg": gcg,
             "max_seq_len": config.max_seq_len,
         },
-        remove_columns=["question", "opa", "opb", "opc", "opd", "cop"],
+        remove_columns=["question", "opa", "opb", "opc", "opd"],
     )
     shard_ds.set_format("torch")
 
@@ -113,4 +105,4 @@ def load_shard(
         num_workers=config.num_workers,
     )
 
-    return dataloader, A_id, B_id, C_id, D_id
+    return dataloader
