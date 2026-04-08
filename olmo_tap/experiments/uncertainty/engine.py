@@ -14,15 +14,14 @@ from olmo_tap.experiments.uncertainty.data import load_shard
 from olmo_tap.experiments.utils.config import TrainingConfig, ExperimentConfig
 
 
-def get_calibration_prob(logits: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
-    probs = F.softmax(logits, dim=-1)
+def get_calibration_prob(probs: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
     p_A = probs[:, config.A_token_id]
     p_B = probs[:, config.B_token_id]
     return p_A / (p_A + p_B)
 
 
-def get_answer(logits: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
-    ans = logits[
+def get_answer(probs: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
+    ans = probs[
         :,
         :,
         [config.A_token_id, config.B_token_id, config.C_token_id, config.D_token_id],
@@ -30,19 +29,17 @@ def get_answer(logits: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
     return ans
 
 
-def entropy(logits: torch.Tensor) -> torch.Tensor:
-    probs = F.softmax(logits, dim=-1)
-    log_probs = F.log_softmax(logits, dim=-1)
-    entropy = -torch.sum(probs * log_probs, dim=-1)
+def entropy(probs: torch.Tensor) -> torch.Tensor:
+    entropy = -torch.sum(probs * probs.log(), dim=-1)
     return entropy
 
 
 def entropy_weighted_mode(
-    logits: torch.Tensor, config: ExperimentConfig
+    probs: torch.Tensor, config: ExperimentConfig
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    # logits shape: (n_heads - 1, batch_size, vocab_size)
-    inv_entr = 1 / (entropy(logits) + 1e-9)
-    answers = get_answer(logits, config.train)  # (n_heads - 1, batch_size)
+    # probs shape: (n_heads - 1, batch_size, vocab_size)
+    inv_entr = 1 / (entropy(probs) + 1e-9)
+    answers = get_answer(probs, config.train)  # (n_heads - 1, batch_size)
 
     one_hot_ans = F.one_hot(answers, num_classes=4).float()
     # multiply by weights, sum over heads
@@ -95,8 +92,9 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
                 logits = model(batch["first_input_ids"].to(device), return_logits=True)[
                     1:, :, -1, :
                 ]  # shape: (n_heads - 1, batch_size, vocab_size)
+                probs = F.softmax(logits, dim=-1)
                 modal_answers, consensus_scores = entropy_weighted_mode(
-                    logits, exp_config
+                    probs, exp_config
                 )  # shapes: (batch_size,)
 
             # pick the pre-tokenized second-pass variant matching the model's answer and consensus
@@ -112,7 +110,8 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
 
             # second pass: uncertainty head, loss only on A/B token logits
             logits = model(second_ids, return_logits=True)[0, :, -1, :]
-            calib_probs = get_calibration_prob(logits, t_config)
+            probs = F.softmax(logits, dim=-1)
+            calib_probs = get_calibration_prob(probs, t_config)
 
             criterion = torch.nn.MSELoss(reduction="mean")  # Brier Score objective
             loss = criterion(calib_probs, labels.float())
