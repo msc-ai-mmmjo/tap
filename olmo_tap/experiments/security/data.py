@@ -29,6 +29,7 @@ def preprocess_example(
     example: dict[str, str],
     tokenizer: PreTrainedTokenizerBase,
     max_seq_len: int,
+    token_ids: list[int],
 ) -> dict:
     """Tokenize the question prompt and store the ground-truth answer token ID."""
     mcq_options = [example["opa"], example["opb"], example["opc"], example["opd"]]
@@ -46,7 +47,7 @@ def preprocess_example(
         return_tensors="pt",
     )
 
-    label = example["cop"]
+    label = token_ids[example["cop"]]
 
     return {
         "input_ids": encoding["input_ids"].squeeze(0),
@@ -70,11 +71,13 @@ def load_shard(
     shard_ds = base_ds.shard(num_shards=config.num_shards, index=config.shard_id)
     shard_ds = shard_ds.select_columns(["question", "opa", "opb", "opc", "opd", "cop"])
 
+    token_ids = [A_id, B_id, C_id, D_id]
     shard_ds = shard_ds.map(
         preprocess_example,
         fn_kwargs={
             "tokenizer": tokenizer,
             "max_seq_len": config.max_seq_len,
+            "token_ids": token_ids,
         },
         remove_columns=["question", "opa", "opb", "opc", "opd", "cop"],
     )

@@ -10,14 +10,8 @@ import torch
 import torch.nn as nn
 import wandb
 
-from olmo_tap.experiments.utils.config import ExperimentConfig, TrainingConfig
+from olmo_tap.experiments.utils.config import ExperimentConfig
 from olmo_tap.experiments.security.data import load_shard
-
-
-def get_mcq_logits(logits: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
-    return logits[
-        :, [config.A_token_id, config.B_token_id, config.C_token_id, config.D_token_id]
-    ]
 
 
 def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
@@ -48,9 +42,8 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
 
             # (n_heads, batch, seq, vocab) -> head 0, last position
             logits = model(input_ids, return_logits=True)[0, :, -1, :]
-            mcq_logits = get_mcq_logits(logits, t_config)
 
-            loss = criterion(mcq_logits, labels)
+            loss = criterion(logits, labels)
             loss.backward()
             optimizer.step()
             scheduler.step()
@@ -86,9 +79,8 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
                     input_ids = batch["input_ids"].to(device)
                     labels = batch["label"].to(device)
                     logits = model(input_ids, return_logits=True)[0, :, -1, :]
-                    mcq_logits = get_mcq_logits(logits, t_config)
 
-                    val_loss = criterion(mcq_logits, labels)
+                    val_loss = criterion(logits, labels)
                     val_loss_total += val_loss.item()
                     val_steps += 1
             val_loss_avg = val_loss_total / val_steps if val_steps > 0 else 0.0
