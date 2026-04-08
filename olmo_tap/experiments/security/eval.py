@@ -1,5 +1,5 @@
 """
-Evaluate a model on PubMedQA A/B classification accuracy.
+Evaluate a model on MedMCQA classification accuracy.
 
 Usage:
     # Evaluate base OLMo (no finetuning)
@@ -71,13 +71,12 @@ def evaluate(
 
     for i in tqdm(range(0, len(dataset), batch_size), desc="Evaluating"):
         batch = dataset[i : i + batch_size]
-        questions = batch["question"]
         labels = batch["cop"]
 
         prompts = []
-        for q in questions:
-            mcq_options = [q["opa"], q["opb"], q["opc"], q["opd"]]
-            messages = [{"role": "user", "content": format_question(q, mcq_options)}]
+        for j in range(len(batch["question"])):
+            mcq_options = [batch["opa"][j], batch["opb"][j], batch["opc"][j], batch["opd"][j]]
+            messages = [{"role": "user", "content": format_question(batch["question"][j], mcq_options)}]
             prompt = tokenizer.apply_chat_template(
                 messages, tokenize=False, add_generation_prompt=True
             )
@@ -139,7 +138,7 @@ def main():
     token_ids = [A_id, B_id, C_id, D_id]
 
     # Load eval dataset
-    ds = load_dataset("qiaojin/PubMedQA", "pqa_artificial", split="train")
+    ds = load_dataset("openlifescienceai/medmcqa", split="validation")
     if args.max_examples:
         ds = ds.select(range(min(args.max_examples, len(ds))))
 
@@ -181,7 +180,7 @@ def main():
         model, tokenizer, ds, token_ids, args.batch_size, args.max_seq_len, device
     )
 
-    print("\n===== PubMedQA Evaluation =====")
+    print("\n===== MedMCQA Evaluation =====")
     print(
         f"Accuracy:   {results['accuracy']:.4f} ({results['correct']}/{results['total']})"
     )
