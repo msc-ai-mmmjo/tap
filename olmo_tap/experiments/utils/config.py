@@ -61,6 +61,9 @@ class TrainingConfig:
     # validation
     val_split: float = 0.0  # 0.0 = no val, e.g. 0.1 = 10% held out
 
+    # co-training: insert 1 SFT batch every N MCQ batches (0 = disabled)
+    mcq_per_sft: int = 0
+
     # seed (propagated from ExperimentConfig)
     seed: int = field(init=False)
 
