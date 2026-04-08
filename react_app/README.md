@@ -1,4 +1,4 @@
-# Trustworthy Answer Protocol — Demo
+# Trustworthy Answer Protocol — React App
 
 Multi-turn chat interface with claim-level confidence analysis for our fine-tuned medical LLM.
 Each response shows uncertainty, security, and robustness metrics at a glance, with
@@ -9,14 +9,14 @@ Gradio POC. Metric scores are currently mocked and will be replaced with our OLM
 
 ```bash
 # Set up environment (from repo root)
-edit demo/.env with your HF token
+edit react_app/.env with your HF token
 
 # Start backend using pixi
-pixi run demo-api
+pixi run app-api
 # Runs at http://localhost:8000
 
 # Start frontend (separate terminal)
-cd demo/frontend
+cd react_app/frontend
 npm install
 npm run dev
 # Opens at http://localhost:5173

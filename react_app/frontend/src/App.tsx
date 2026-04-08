@@ -27,9 +27,6 @@ function App() {
               Medical LLM with claim-level confidence analysis
             </p>
           </div>
-          <span className="ml-auto text-[10px] font-medium uppercase tracking-wider text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
-            Demo
-          </span>
         </div>
       </header>
 

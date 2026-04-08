@@ -18,7 +18,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
 
-app = FastAPI(title="Trustworthy Answer Protocol — Demo API")
+app = FastAPI(title="Trustworthy Answer Protocol — API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
