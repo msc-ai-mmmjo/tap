@@ -2,7 +2,7 @@
 HydraTransformer Single-Head LoRA Finetuning Pipeline
 
 This script finetunes a single head of the HydraTransformer sequentially on
-a shard of the PubMedQA pqa_artificial dataset. The trunk and LM head are frozen,
+a shard of the OpenLifeScienceAI MedMCQA dataset. The trunk and LM head are frozen,
 and only LoRA parameters in the head are trained.
 
 NOTE: for now, num_return_seq=1 - each query gets one adversarial suffix
@@ -29,7 +29,6 @@ N_HEADS = 5
 HEADS_DEPTH = 3
 LORA_TARGETS = ["w1", "w2", "w3"]
 SEED = 42
-CONDITIONAL = True  # conditional finetuning
 
 
 def main():
@@ -84,7 +83,7 @@ def main():
         name=exp_config.wandb_run_name,
         config=wb_config,
     )
-    train(model, exp_config, gcg, optimizer, scheduler, conditional=CONDITIONAL)
+    train(model, exp_config, gcg, optimizer, scheduler)
     wandb.finish()
 
     return model
