@@ -1,4 +1,5 @@
 import type { AnalysisResponse } from '../types/api';
+import { COLOURS } from '../lib/constants';
 
 interface Props {
   data: AnalysisResponse;
@@ -7,7 +8,6 @@ interface Props {
 export function MetricCards({ data }: Props) {
   const securityValue = data.security.certified ? 'Certified' : 'Caution';
   const robustnessValue = data.robustness.passed ? 'Passed' : 'Failed';
-  const greenColor = '#1D9E75';
 
   return (
     <div className="grid grid-cols-3 gap-2.5">
@@ -27,7 +27,7 @@ export function MetricCards({ data }: Props) {
         </div>
         <div
           className="text-[18px] font-medium"
-          style={{ color: data.security.certified ? greenColor : '#EF9F27' }}
+          style={{ color: data.security.certified ? COLOURS.success.primary : COLOURS.warning.primary }}
         >
           {securityValue}
         </div>
@@ -42,7 +42,7 @@ export function MetricCards({ data }: Props) {
         </div>
         <div
           className="text-[18px] font-medium"
-          style={{ color: data.robustness.passed ? greenColor : '#E24B4A' }}
+          style={{ color: data.robustness.passed ? COLOURS.success.primary : COLOURS.danger.primary }}
         >
           {robustnessValue}
         </div>

@@ -69,7 +69,7 @@ export function ChatMessage({ message }: Props) {
           )}
         </div>
 
-        {expanded && analysis && (
+        {analysis && expanded && (
           <TrustAnalysis data={analysis} />
         )}
       </div>

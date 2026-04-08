@@ -5,7 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from huggingface_hub import InferenceClient
 from pydantic import BaseModel
 
-from constants import HF_TOKEN, MODEL
+from react_app.backend.constants import HF_TOKEN
+from gradio_demo.constants import MODEL
 from react_app.backend.mock_metrics import (
     mock_claim_confidence,
     mock_robustness_status,

@@ -16,15 +16,12 @@ export function useChat() {
     setError(null);
 
     try {
-      const apiMessages = updated.map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
-
       const res = await fetch(`${API_BASE}/api/analyse`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages }),
+        body: JSON.stringify({
+          messages: updated.map(({ role, content }) => ({ role, content })),
+        }),
       });
       if (!res.ok) throw new Error(`API error: ${res.status}`);
 

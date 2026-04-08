@@ -1,17 +1,19 @@
+import { COLOURS } from './constants';
+
 export function getConfidenceStyle(score: number) {
   if (score >= 0.80) return {
-    bar: '#1D9E75',
-    pillBg: '#E1F5EE',
-    pillText: '#085041',
+    bar: COLOURS.success.primary,
+    pillBg: COLOURS.success.bg,
+    pillText: COLOURS.success.text,
   };
   if (score >= 0.65) return {
-    bar: '#EF9F27',
-    pillBg: '#FAEEDA',
-    pillText: '#633806',
+    bar: COLOURS.warning.primary,
+    pillBg: COLOURS.warning.bg,
+    pillText: COLOURS.warning.text,
   };
   return {
-    bar: '#E24B4A',
-    pillBg: '#FCEBEB',
-    pillText: '#791F1F',
+    bar: COLOURS.danger.primary,
+    pillBg: COLOURS.danger.bg,
+    pillText: COLOURS.danger.text,
   };
 }
