@@ -21,7 +21,7 @@ from functools import partial
 
 import gradio as gr
 
-from constants import HeatmapData
+from gradio_demo.constants import HeatmapData
 from gradio_demo.logic import inference
 
 

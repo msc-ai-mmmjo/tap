@@ -8,7 +8,7 @@ import math
 import gradio as gr
 from huggingface_hub import InferenceClient
 
-from constants import HeatmapData
+from gradio_demo.constants import HeatmapData
 
 
 def inference(
