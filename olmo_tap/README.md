@@ -21,7 +21,7 @@ For experimentation, testing, etc.
     curl -fsSL https://pixi.sh/install.sh | PIXI_HOME=/vol/bitbucket/$USER/.pixi bash
     ```
 
-    Pin to version 0.63.2 (0.64.0 has bugs):
+    Pin to version 0.63.2 (0.64.0 has bugs)
 
     ```shell
     PIXI_HOME=/vol/bitbucket/$USER/.pixi /vol/bitbucket/$USER/.pixi/bin/pixi self-update --version 0.63.2
@@ -35,7 +35,7 @@ For experimentation, testing, etc.
     export PATH="$PIXI_HOME/bin:$PATH"
     ```
 
-    then reload:
+    then reload
     ```shell
     source ~/.bashrc  # or source ~/.zshrc
     ```
@@ -71,7 +71,7 @@ For experimentation, testing, etc.
     echo "WEIGHTS_DIR = /vol/bitbucket/$USER/olmo2-1b-instruct-weights" >> .env
     ```
 
-8. Inspect GPU usage, and run on a free one (e.g. GPU 1):
+8. Inspect GPU usage, and run on a free one (e.g. GPU 1)
 
     ```shell
     nvidia-smi
