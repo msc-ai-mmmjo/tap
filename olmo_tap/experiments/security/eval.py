@@ -103,7 +103,7 @@ def evaluate(
             logits = get_mcq_logits(logits[:, -1, :], token_ids)  # last position
 
         # find argmax logit indices to verify correctness
-        preds = torch.argmax(logits, dim=0)
+        preds = torch.argmax(logits, dim=-1)
 
         for pred, label in zip(preds, labels):
             total[label] += 1
