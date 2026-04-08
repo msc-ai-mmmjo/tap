@@ -27,10 +27,13 @@ from olmo_tap.experiments.security.engine import train
 PUBMEDQA_SIZE = 211_269
 
 
-def compute_total_steps(num_shards: int, batch_size: int, num_epochs: int) -> int:
+def compute_total_steps(
+    num_shards: int, batch_size: int, num_epochs: int, val_split: float = 0.0
+) -> int:
     """Compute total training steps from dataset geometry (no data loading needed)."""
     shard_size = PUBMEDQA_SIZE // num_shards
-    steps_per_epoch = shard_size // batch_size  # drop_last=True in DataLoader
+    train_size = int(shard_size * (1 - val_split))
+    steps_per_epoch = train_size // batch_size  # drop_last=True in DataLoader
     return steps_per_epoch * num_epochs
 
 
@@ -93,10 +96,11 @@ def main():
         filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr
     )
 
-    # TODO: compute_total_steps uses full shard size, but with --val 10% is held out.
-    # This means the LR schedule won't fully decay. Account for val_split here.
     total_steps = compute_total_steps(
-        num_shards=n_heads, batch_size=args.batch_size, num_epochs=args.num_epochs
+        num_shards=n_heads,
+        batch_size=args.batch_size,
+        num_epochs=args.num_epochs,
+        val_split=t_config.val_split,
     )
 
     warmup = LinearLR(optimizer, start_factor=1e-8, total_iters=t_config.warmup_steps)
