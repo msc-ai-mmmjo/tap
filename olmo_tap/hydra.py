@@ -191,7 +191,9 @@ class HydraTransformer(nn.Module):
                 if isinstance(attn, Attention):
                     attn.init_kv_cache_manager(batch_size, max_seq_len)
 
-    def forward(self, input_ids: torch.Tensor, residual: Optional[torch.Tensor], **kwargs) -> torch.Tensor:
+    def forward(
+        self, input_ids: torch.Tensor, residual: Optional[torch.Tensor], **kwargs
+    ) -> torch.Tensor:
         """
         Run the full model.
 
@@ -199,8 +201,11 @@ class HydraTransformer(nn.Module):
         :returns: Logits tensor ``(n_heads, batch, seq, vocab)``.
         """
         h = self.trunk(input_ids, **kwargs)
+
         if residual is not None:
-            assert residual.size == h.size, f"Residual shape mismatch, expected {h.size} got {residual.size}"
+            assert residual.size == h.size, (
+                f"Residual shape mismatch, expected {h.size} got {residual.size}"
+            )
             h += residual
 
         # NOTE: Streaming was tried, but honestly we are too GPU poor to make a difference
@@ -211,6 +216,25 @@ class HydraTransformer(nn.Module):
         stacked = torch.cat(head_hidden, dim=0)  # (N*batch, seq, d_model)
         all_logits = self.lm_head(stacked)  # (N*batch, seq, vocab)
         return all_logits.reshape(len(self.heads), -1, *all_logits.shape[1:])
+
+    def residual_forward(
+        self, input_ids: torch.Tensor, **kwargs
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Run the full model and return variance of head final layer hidden states.
+        """
+        h = self.trunk(input_ids, **kwargs)
+
+        head_hidden = [head(h, **kwargs) for head in self.heads]
+        stacked = torch.cat(head_hidden, dim=0)  # (N*batch, seq, d_model)
+        hidden_var = stacked.reshape(
+            len(self.heads), -1, *head_hidden[0].shape[1:]
+        ).var(dim=0)  # (batch, seq, d_model)
+
+        all_logits = self.lm_head(stacked)  # (N*batch, seq, vocab)
+        return all_logits.reshape(
+            len(self.heads), -1, *all_logits.shape[1:]
+        ), hidden_var
 
     @staticmethod
     def load_olmo_state(

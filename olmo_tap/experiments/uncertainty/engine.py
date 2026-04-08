@@ -98,16 +98,11 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
         for batch in dataloader:
             # first pass: frozen head determines model's answer
             with torch.no_grad():
-                logits = model(batch["first_input_ids"].to(device), return_logits=True)[
-                    1:, :, -1, :
-                ]  # shape: (n_heads - 1, batch_size, vocab_size)
-<<<<<<< HEAD
+                # custom method to internally calculate variance of heads' hidden states
+                logits, hidden_var = model.residual_forward(
+                    batch["first_input_ids"].to(device), return_logits=True
+                )[1:, :, -1, :]  # shape: (n_heads - 1, batch_size, vocab_size)
                 probs = F.softmax(logits, dim=-1)
-=======
-
-                # save variance of distributions to pass into top of trunk for second pass
-                
->>>>>>> 18e7efe (Inject final layer variance into base of uncertainty head residual stream)
                 modal_answers, consensus_scores = entropy_weighted_mode(
                     probs, exp_config
                 )  # shapes: (batch_size,)
@@ -124,7 +119,10 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
             is_correct = (batch["label"].to(device) == modal_answers).float()
 
             # second pass: uncertainty head, loss only on A/B token logits
-            logits = model(second_ids, return_logits=True)[0, :, -1, :]
+            # inject heads' hidden state variance at top of trunk (base of uncertainty head)
+            logits = model(second_ids, residual=hidden_var, return_logits=True)[
+                0, :, -1, :
+            ]
             probs = F.softmax(logits, dim=-1)
             calib_probs = get_calibration_prob(probs, t_config)
 
