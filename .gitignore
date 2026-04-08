@@ -217,6 +217,11 @@ __marimo__/
 core
 /dataset-cache/
 
+# Node / frontend
+node_modules/
+dist-ssr/
+*.local
+
 # Sensitive files
 *.env
 

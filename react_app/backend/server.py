@@ -8,15 +8,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from huggingface_hub import InferenceClient
 from pydantic import BaseModel
 
-from mock_metrics import (
+from constants import MODEL
+from react_app.backend.mock_metrics import (
     mock_claim_confidence,
     mock_robustness_status,
     mock_security_status,
 )
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
-
-MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
 
 app = FastAPI(title="Trustworthy Answer Protocol — API")
 app.add_middleware(
