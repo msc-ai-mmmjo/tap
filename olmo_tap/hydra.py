@@ -8,7 +8,7 @@ logits, which can be averaged or otherwise combined downstream.
 
 import logging
 from dataclasses import dataclass, replace
-from typing import cast
+from typing import cast, Optional
 
 from olmo_core.nn.attention import Attention
 from olmo_core.nn.config import ModelConfig
@@ -191,7 +191,7 @@ class HydraTransformer(nn.Module):
                 if isinstance(attn, Attention):
                     attn.init_kv_cache_manager(batch_size, max_seq_len)
 
-    def forward(self, input_ids: torch.Tensor, **kwargs) -> torch.Tensor:
+    def forward(self, input_ids: torch.Tensor, residual: Optional[torch.Tensor], **kwargs) -> torch.Tensor:
         """
         Run the full model.
 
@@ -199,6 +199,9 @@ class HydraTransformer(nn.Module):
         :returns: Logits tensor ``(n_heads, batch, seq, vocab)``.
         """
         h = self.trunk(input_ids, **kwargs)
+        if residual is not None:
+            assert residual.size == h.size, f"Residual shape mismatch, expected {h.size} got {residual.size}"
+            h += residual
 
         # NOTE: Streaming was tried, but honestly we are too GPU poor to make a difference
         # TODO: Try to parallelise forward passes through heads

@@ -101,7 +101,13 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
                 logits = model(batch["first_input_ids"].to(device), return_logits=True)[
                     1:, :, -1, :
                 ]  # shape: (n_heads - 1, batch_size, vocab_size)
+<<<<<<< HEAD
                 probs = F.softmax(logits, dim=-1)
+=======
+
+                # save variance of distributions to pass into top of trunk for second pass
+                
+>>>>>>> 18e7efe (Inject final layer variance into base of uncertainty head residual stream)
                 modal_answers, consensus_scores = entropy_weighted_mode(
                     probs, exp_config
                 )  # shapes: (batch_size,)
