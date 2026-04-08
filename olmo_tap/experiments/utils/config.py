@@ -10,7 +10,6 @@ We expect the final Hydra to look something like:
 """
 
 from dataclasses import dataclass, field
-
 from olmo_tap.constants import VOCAB_SIZE, WEIGHTS_DIR
 
 
@@ -58,6 +57,12 @@ class TrainingConfig:
     output_dir: str = "experiments/uncertainty/outputs"
     checkpoint_every_n_steps: int = 250
 
+    # validation
+    val_split: float = 0.0  # 0.0 = no val, e.g. 0.1 = 10% held out
+
+    # seed (propagated from ExperimentConfig)
+    seed: int = field(init=False)
+
     # token IDs
     # convention: A/B used for correct/incorrect in uncertainty
     A_token_id: int = field(init=False)
@@ -86,3 +91,4 @@ class ExperimentConfig:
         # ensure num_shards = n_heads
         self.train.num_shards = self.model.n_heads_final
         self.model.device = self.device
+        self.train.seed = self.seed
