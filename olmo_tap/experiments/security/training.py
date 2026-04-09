@@ -28,7 +28,9 @@ PUBMEDQA_SIZE = 211_269
 
 
 def compute_total_steps(
-    num_shards: int, batch_size: int, mcq_per_sft: int = 0,
+    num_shards: int,
+    batch_size: int,
+    mcq_per_sft: int = 0,
 ) -> int:
     """Compute total training steps from dataset geometry (no data loading needed)."""
     mcq_steps = (PUBMEDQA_SIZE // num_shards) // batch_size  # drop_last=True
