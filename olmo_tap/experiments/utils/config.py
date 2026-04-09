@@ -17,6 +17,7 @@ from olmo_tap.constants import VOCAB_SIZE, WEIGHTS_DIR
 class HydraLoRAConfig:
     # architecture
     weights_dir: str = WEIGHTS_DIR
+    model_size: str = "7b"  # "1b" or "7b"
     n_heads_final: int = 5
     n_heads_training: int = 1  # number of heads instantiated in training
     heads_depth: int = 3

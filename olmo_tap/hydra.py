@@ -66,22 +66,29 @@ class HydraTransformerConfig(ModelConfig):
         heads_depth: int = 3,
         vocab_size: int = VOCAB_SIZE,
     ) -> "HydraTransformerConfig":
-        """
-        Factory for OLMo2 1B with configurable split point.
-
-        Sets flash_2 attention backend for KV cache support.
-
-        Constructor for HydraTransformerConfig with (0-indexed):
-            - Layers [0, 1, ..., (n_layers - heads_depth - 1)] in trunk
-            - Layers [(n_layers - heads_depth), ..., (n_layers - 1)] in head(s)
-        (OLMo2 1B has 16 layers)
-        """
+        """Factory for OLMo2 1B (16 layers) with configurable split point."""
         from olmo_core.nn.attention import AttentionBackendName
 
-        base = TransformerConfig.olmo2_1B_v2(
-            vocab_size=vocab_size
-        )  # inherit base transformer
-        # need to use attention backend for KV caching
+        base = TransformerConfig.olmo2_1B_v2(vocab_size=vocab_size)
+        base.block.sequence_mixer.backend = AttentionBackendName.flash_2  # type: ignore[union-attr]
+        return cls(
+            base_config=base,
+            n_heads=n_heads,
+            trunk_layers=base.n_layers - heads_depth,
+            head_layers=heads_depth,
+        )
+
+    @classmethod
+    def from_olmo2_7B(
+        cls,
+        n_heads: int = 5,
+        heads_depth: int = 3,
+        vocab_size: int = VOCAB_SIZE,
+    ) -> "HydraTransformerConfig":
+        """Factory for OLMo2 7B (32 layers) with configurable split point."""
+        from olmo_core.nn.attention import AttentionBackendName
+
+        base = TransformerConfig.olmo2_7B(vocab_size=vocab_size)
         base.block.sequence_mixer.backend = AttentionBackendName.flash_2  # type: ignore[union-attr]
         return cls(
             base_config=base,
