@@ -75,8 +75,18 @@ def evaluate(
 
         prompts = []
         for j in range(len(batch["question"])):
-            mcq_options = [batch["opa"][j], batch["opb"][j], batch["opc"][j], batch["opd"][j]]
-            messages = [{"role": "user", "content": format_question(batch["question"][j], mcq_options)}]
+            mcq_options = [
+                batch["opa"][j],
+                batch["opb"][j],
+                batch["opc"][j],
+                batch["opd"][j],
+            ]
+            messages = [
+                {
+                    "role": "user",
+                    "content": format_question(batch["question"][j], mcq_options),
+                }
+            ]
             prompt = tokenizer.apply_chat_template(
                 messages, tokenize=False, add_generation_prompt=True
             )
