@@ -14,7 +14,7 @@ def preprocess_sft_example(
     max_seq_len: int,
 ) -> dict:
     """Tokenize an SFT example with assistant-only causal LM labels."""
-    output = tokenizer.apply_chat_template(
+    output = tokenizer.apply_chat_template( # type: ignore [attr-defined]
         example["messages"],
         tokenize=True,
         return_dict=True,
