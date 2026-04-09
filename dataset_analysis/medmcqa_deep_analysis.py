@@ -7,14 +7,15 @@ Performs detailed statistical analysis of MedMCQA for calibration suitability.
 Usage: python medmcqa_deep_analysis.py
 """
 
+import json
+import os
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from datasets import load_dataset
-from collections import Counter
 from scipy import stats
-import matplotlib.pyplot as plt
-import json
-import os
+from sklearn.model_selection import train_test_split
 
 OUTPUT_DIR = "./dataset_analysis_output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -117,7 +118,7 @@ print("=" * 60)
 df_train["q_len_words"] = df_train["question"].str.split().str.len()
 df_train["q_len_chars"] = df_train["question"].str.len()
 
-print(f"\nQuestion length (words):")
+print("\nQuestion length (words):")
 print(f"  Mean: {df_train['q_len_words'].mean():.1f}")
 print(f"  Median: {df_train['q_len_words'].median():.1f}")
 print(f"  Std: {df_train['q_len_words'].std():.1f}")
@@ -176,60 +177,52 @@ print(f"""
 """)
 
 # Create and save a stratified sample for calibration training
-from sklearn.model_selection import train_test_split
+# Stratified by subject and label
+df_train["stratify_key"] = df_train["subject_name"] + "_" + df_train["cop"].astype(str)
 
-try:
-    # Stratified by subject and label
-    df_train["stratify_key"] = (
-        df_train["subject_name"] + "_" + df_train["cop"].astype(str)
-    )
+calib_set, remainder = train_test_split(
+    df_train,
+    train_size=calib_train_size,
+    stratify=df_train["subject_name"],  # Stratify by subject
+    random_state=42,
+)
 
-    calib_set, remainder = train_test_split(
-        df_train,
-        train_size=calib_train_size,
-        stratify=df_train["subject_name"],  # Stratify by subject
-        random_state=42,
-    )
+calib_val, grading_pool = train_test_split(
+    remainder,
+    train_size=calib_val_size,
+    stratify=remainder["subject_name"],
+    random_state=42,
+)
 
-    calib_val, grading_pool = train_test_split(
-        remainder,
-        train_size=calib_val_size,
-        stratify=remainder["subject_name"],
-        random_state=42,
-    )
+print(f"  Calibration train set: {len(calib_set):,}")
+print(f"  Calibration val set: {len(calib_val):,}")
+print(f"  Grading pool: {len(grading_pool):,}")
 
-    print(f"  Calibration train set: {len(calib_set):,}")
-    print(f"  Calibration val set: {len(calib_val):,}")
-    print(f"  Grading pool: {len(grading_pool):,}")
+# Verify label balance in calibration set
+print("\n  Label balance in calibration train set:")
+for idx in range(4):
+    count = (calib_set["cop"] == idx).sum()
+    print(f"    {option_map[idx]}: {count} ({count / len(calib_set) * 100:.1f}%)")
 
-    # Verify label balance in calibration set
-    print(f"\n  Label balance in calibration train set:")
-    for idx in range(4):
-        count = (calib_set["cop"] == idx).sum()
-        print(f"    {option_map[idx]}: {count} ({count / len(calib_set) * 100:.1f}%)")
+# Save split indices for reproducibility
+splits = {
+    "calib_train_ids": calib_set["id"].tolist()
+    if "id" in calib_set.columns
+    else calib_set.index.tolist(),
+    "calib_val_ids": calib_val["id"].tolist()
+    if "id" in calib_val.columns
+    else calib_val.index.tolist(),
+    "grading_pool_ids": grading_pool["id"].tolist()
+    if "id" in grading_pool.columns
+    else grading_pool.index.tolist(),
+}
 
-    # Save split indices for reproducibility
-    splits = {
-        "calib_train_ids": calib_set["id"].tolist()
-        if "id" in calib_set.columns
-        else calib_set.index.tolist(),
-        "calib_val_ids": calib_val["id"].tolist()
-        if "id" in calib_val.columns
-        else calib_val.index.tolist(),
-        "grading_pool_ids": grading_pool["id"].tolist()
-        if "id" in grading_pool.columns
-        else grading_pool.index.tolist(),
-    }
+with open(f"{OUTPUT_DIR}/calibration_split_indices.json", "w") as f:
+    json.dump(
+        {k: v[:10] for k, v in splits.items()}, f, indent=2, default=str
+    )  # Save preview
 
-    with open(f"{OUTPUT_DIR}/calibration_split_indices.json", "w") as f:
-        json.dump(
-            {k: v[:10] for k, v in splits.items()}, f, indent=2, default=str
-        )  # Save preview
-
-    print(f"\n  Split indices saved to {OUTPUT_DIR}/calibration_split_indices.json")
-
-except ImportError:
-    print("  (Install scikit-learn for stratified splitting: pip install scikit-learn)")
+print(f"\n  Split indices saved to {OUTPUT_DIR}/calibration_split_indices.json")
 
 # ============================================================
 # 6. OOD Generalization Design
@@ -253,7 +246,7 @@ for subject in ["Psychiatry", "Dermatology", "Ophthalmology", "Forensic Medicine
     count = len(df_train[df_train["subject_name"] == subject])
     print(f"     • {subject}: {count:,} samples")
 
-print(f"""
+print("""
   B) CROSS-DATASET (MedMCQA → MedQA):
      Train calibration on: MedMCQA
      Evaluate on: MedQA (USMLE)
