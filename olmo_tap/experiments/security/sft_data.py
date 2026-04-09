@@ -10,7 +10,7 @@ from olmo_tap.experiments.utils.config import TrainingConfig
 
 def preprocess_sft_example(
     example: dict,
-    tokenizer: AutoTokenizer,  # type: ignore[type-arg]
+    tokenizer: AutoTokenizer,  # type: ignore[arg-type]
     max_seq_len: int,
 ) -> dict:
     """Tokenize an SFT example with assistant-only causal LM labels."""

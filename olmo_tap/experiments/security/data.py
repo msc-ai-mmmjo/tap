@@ -59,6 +59,7 @@ def load_shard(
 ) -> tuple[DataLoader, int, int, int, int]:
     """Load a MedMCQA shard, tokenize prompts, return a DataLoader."""
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
+    assert tokenizer is not None
     A_id = tokenizer.encode("A", add_special_tokens=False)[0]
     B_id = tokenizer.encode("B", add_special_tokens=False)[0]
     C_id = tokenizer.encode("C", add_special_tokens=False)[0]
