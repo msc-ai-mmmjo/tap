@@ -19,7 +19,11 @@ from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
 
 
 def build_finetuning_model(config: HydraLoRAConfig) -> HydraTransformer:
-    factory = HydraTransformerConfig.from_olmo2_7B if config.model_size == "7b" else HydraTransformerConfig.from_olmo2_1B
+    factory = (
+        HydraTransformerConfig.from_olmo2_7B
+        if config.model_size == "7b"
+        else HydraTransformerConfig.from_olmo2_1B
+    )
     hydra_config = factory(
         n_heads=config.n_heads_training, heads_depth=config.heads_depth
     )
@@ -27,6 +31,7 @@ def build_finetuning_model(config: HydraLoRAConfig) -> HydraTransformer:
 
     # load model params (handle single or sharded safetensors)
     import glob
+
     shard_files = sorted(glob.glob(f"{config.weights_dir}/model*.safetensors"))
     hf_state = {}
     for f in shard_files:
