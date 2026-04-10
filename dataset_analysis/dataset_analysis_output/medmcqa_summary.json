@@ -1,0 +1,23 @@
+{
+  "dataset": "MedMCQA",
+  "total_samples": 187005,
+  "train_samples": 182822,
+  "val_samples": 4183,
+  "num_choices": 4,
+  "num_subjects": 21,
+  "num_topics": 2388,
+  "explanation_availability_pct": 87.35163164170613,
+  "avg_question_length_words": 12.778812177965452,
+  "label_distribution": {
+    "A": 0.29313211757884716,
+    "B": 0.2615987135027513,
+    "C": 0.23214930369430375,
+    "D": 0.21311986522409776
+  },
+  "recommendation": "PRIMARY DATASET - meets all requirements for calibration training",
+  "concerns": [
+    "Test set labels withheld - use validation split for final eval",
+    "Indian medical curriculum - may need cross-cultural validation",
+    "Some questions may require visual aids not included in text"
+  ]
+}

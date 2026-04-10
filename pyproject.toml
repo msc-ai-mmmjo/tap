@@ -33,6 +33,13 @@ python = "3.13.*"
 pytest = ">=9.0"
 ruff = ">=0.8"
 python-dotenv = ">=1.2.2,<2"
+datasets = ">=4.8.4,<5"
+pandas = ">=3.0.2,<4"
+numpy = ">=2.4.3,<3"
+scipy = ">=1.17.1,<2"
+matplotlib = ">=3.10.8,<4"
+seaborn = ">=0.13.2,<0.14"
+scikit-learn = ">=1.8.0,<2"
 
 # ---------------------------------------------
 # CUDA Feature (for GPU users)

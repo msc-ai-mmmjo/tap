@@ -1,0 +1,82 @@
+[
+  {
+    "example": 1,
+    "subject": "Dental",
+    "topic": "Bacterial infections",
+    "question_length_words": 6,
+    "question": "DOC for Iepra II reaction is",
+    "options": {
+      "A": "Steroids",
+      "B": "Thalidomide",
+      "C": "Clolazimine",
+      "D": "Dapsone"
+    },
+    "correct_answer": "B",
+    "correct_text": "Thalidomide",
+    "explanation": "Type 1 reaction Type 2 reaction Pathology T cell mediated type 4 hypersensitivity reaction Immune complex mediated type 3 hypersensitivity reaction Clinical features Erythema Edema of preexisting lesions, neuritis Evanescent erythematosus nodules with ahritis, myalgia fever, constitutionalists symptoms Systemic involvement - Characterised by neuritis, orchitis, hepatitis, nephritis, ahritis, iritis, Drug of choice Mild reaction rest and analgesics moderate to severe reaction: coicosteroids are the drug of choice Mild reaction: rest , chloroquine moderate to severe reaction drug of choice thalidomide"
+  },
+  {
+    "example": 2,
+    "subject": "Pharmacology",
+    "topic": NaN,
+    "question_length_words": 6,
+    "question": "All are dihydrofolate reductase antagonists, EXCEPT-",
+    "options": {
+      "A": "Methotrexate",
+      "B": "Cytosine arabinoside",
+      "C": "Pentamidine",
+      "D": "Pyrimethamine"
+    },
+    "correct_answer": "B",
+    "correct_text": "Cytosine arabinoside",
+    "explanation": "Ans. is 'b' i.e., Cytosine Arabinoside Dihydrofolate reductase antagonists are o Methotreyate o Pentamidine o Trimethoprim o Pyrimetham ne"
+  },
+  {
+    "example": 3,
+    "subject": "Orthopaedics",
+    "topic": "TB of the Hip, Knee, Other Joints",
+    "question_length_words": 8,
+    "question": "The most common sequelae of tuberculous spondylitis is:",
+    "options": {
+      "A": "Fibrous ankylosis",
+      "B": "Bony Ankylosis",
+      "C": "Pathological dislocation",
+      "D": "Chronic osteomyelitis"
+    },
+    "correct_answer": "B",
+    "correct_text": "Bony Ankylosis",
+    "explanation": "Ans. (b) Bony ankylosisRef: Maheshwari 5th ed. /189* Tuberculous spondylitis is most commonly localized in the thoracic portion of the spine.* The infection coming from primary site (ie: lungs) then spreads from two adjacent vertebrae into the adjoining intervertebral disc space. If only one vertebra is affected, the disc is normal, but if two are involved, the disc, which is avascular, cannot receive nutrients and collapses. The disc tissue dies and is broken down by caseation, leading to vertebral narrowing and eventually to vertebral collapse (Bony ankylosis) and spinal damage.* From the choices given in the question, the most logical answer is bony ankylosis.* Actual late complications of Tubercular spondylitis is: Vertebral collapse resulting in kyphosis, Spinal cord compression, sinus formation, paraplegia.* Most common cause of bony ankylosis:Septic arthritis > TB spine"
+  },
+  {
+    "example": 4,
+    "subject": "Anatomy",
+    "topic": NaN,
+    "question_length_words": 13,
+    "question": "If circumflex aery gives the posterior interventricular branch, this circulation is described as?",
+    "options": {
+      "A": "Right dominance",
+      "B": "Left dominance",
+      "C": "Codominance",
+      "D": "Undetermined"
+    },
+    "correct_answer": "B",
+    "correct_text": "Left dominance",
+    "explanation": "In 8% of cases the left coronary aery (LCA) is dominant because it gives of the posterolateral aery (PLA) and then travels to the cross-section of the AV groove and the posterior interventricular (IV groove) where it gives rise to the left posterior descending coronary aery (PDA) that travels in the posterior IV groove and gives off several septal perforator branches (SP). The SP supply blood to the lower poion of the IV septum.In 85% of patients the right coronary aery (RCA) is said to be \"dominant\" because it supplies circulation to the inferior poion of the interventricular septum the right posterior descending coronary aery or PDA branch. In these cases the RCA travels to the cross-section of the AV groove and the posterior interventricular (IV groove). Here, it gives rise to the right posterior descending coronary aery (PDA) branch which travels in the posterior IV groove and gives off several septal perforator branches (SP). The SP supply blood to the lower poion of the IV septum. Generally, the dominant RCA also gives rise to the AV nodal branch which supplies blood to the AV node."
+  },
+  {
+    "example": 5,
+    "subject": "Medicine",
+    "topic": NaN,
+    "question_length_words": 23,
+    "question": "A woman has bilateral headache that worsens with emotional stress : she has two children, both doing badly in school diagnosis is -",
+    "options": {
+      "A": "Migraine",
+      "B": "Cluster headache",
+      "C": "Tension headache",
+      "D": "Trigeminal neuralgia"
+    },
+    "correct_answer": "C",
+    "correct_text": "Tension headache",
+    "explanation": null
+  }
+]
