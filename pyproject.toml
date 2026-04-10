@@ -83,7 +83,7 @@ test = "pytest"
 test-cov = "pytest --cov"
 
 # Type checking
-typecheck = { cmd = "pyrefly check .", default-environment = "cuda" }
+typecheck = { cmd = "pyrefly check", default-environment = "cuda" }
 
 # Application
 serve = "python interface.py"
