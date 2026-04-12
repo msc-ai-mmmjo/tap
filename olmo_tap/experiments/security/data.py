@@ -114,7 +114,7 @@ def load_shard(
     # conversion handled in mcq_collator
 
     if config.val_split > 0:
-        split = shard_ds.train_test_split(test_size=config.val_split, seed=config.seed)
+        split = shard_ds.train_test_split(test_size=config.val_split, seed=config.seed)  # type: ignore
         train_ds, val_ds = split["train"], split["test"]
     else:
         train_ds, val_ds = shard_ds, None
