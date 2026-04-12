@@ -124,6 +124,7 @@ def train(
 
         wandb.log(log_dict, step=global_step)
 
+    # final checkpoint with optimizer state for potential resuming
     final_path = ckpt_dir / "checkpoint_final.pt"
     torch.save(
         {
@@ -133,3 +134,4 @@ def train(
         },
         final_path,
     )
+    print(f"saved final checkpoint to {final_path}")
