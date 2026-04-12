@@ -78,7 +78,7 @@ def preprocess_example(
         first_chat, padding="max_length", truncation=True, max_length=max_seq_len
     )
 
-    # encode answer token sequences for all answers
+    # generating encoding for all answers (A,B,C,D) and all numbers of consensus scores (1 through 9)
     second_enc = [[] for _ in range(4)]  # shape (4, n_voting_heads)
     for ans_idx, ans in enumerate(["A", "B", "C", "D"]):
         for i in range(1, n_voting_heads + 1):  # consensus scores

@@ -21,6 +21,7 @@ def get_calibration_prob(probs: torch.Tensor, config: TrainingConfig) -> torch.T
 
 
 def get_answer(probs: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
+    # probs shape: (n_heads - 1, batch_size, vocab_size)
     ans = probs[
         :,
         :,
@@ -30,6 +31,7 @@ def get_answer(probs: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
 
 
 def entropy(probs: torch.Tensor) -> torch.Tensor:
+    # probs shape: (n_heads - 1, batch_size, vocab_size)
     entropy = -torch.sum(probs * probs.log(), dim=-1)
     return entropy
 
@@ -37,6 +39,13 @@ def entropy(probs: torch.Tensor) -> torch.Tensor:
 def entropy_weighted_mode(
     probs: torch.Tensor, config: ExperimentConfig
 ) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    Aggregate discrete answers (A, B, C, D) from Hydra heads and weight each
+    bin with the sum of inverse entropies of voters for that class. We use
+    entropy over all logits as a measure of head certainty - if there is significant
+    probability mass on irrelevant logits, the head has failed the multiple choice
+    compression aspect of the question.
+    """
     # probs shape: (n_heads - 1, batch_size, vocab_size)
     inv_entr = 1 / (entropy(probs) + 1e-9)
     answers = get_answer(probs, config.train)  # (n_heads - 1, batch_size)
@@ -105,8 +114,8 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
                 second_pass_ids, modal_answers, consensus_scores, exp_config
             )  # (batch_size, seq_len)
 
-            # labels: whether the model's modal answer matches the ground truth
-            labels = (batch["label"].to(device) == modal_answers).float()
+            # is_correct: whether the model's modal answer matches the ground truth
+            is_correct = (batch["label"].to(device) == modal_answers).float()
 
             # second pass: uncertainty head, loss only on A/B token logits
             logits = model(second_ids, return_logits=True)[0, :, -1, :]
@@ -114,7 +123,7 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
             calib_probs = get_calibration_prob(probs, t_config)
 
             criterion = torch.nn.MSELoss(reduction="mean")  # Brier Score objective
-            loss = criterion(calib_probs, labels.float())
+            loss = criterion(calib_probs, is_correct.float())
 
             loss.backward()
             optimizer.step()
