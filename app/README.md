@@ -9,14 +9,14 @@ Gradio POC. Metric scores are currently mocked and will be replaced with our OLM
 
 ```bash
 # Set up environment (from repo root)
-edit react_app/.env with your HF token
+edit app/.env with your HF token
 
 # Start backend using pixi
 pixi run app-api
 # Runs at http://localhost:8000
 
 # Start frontend (separate terminal)
-cd react_app/frontend
+cd app/frontend
 npm install
 npm run dev
 # Opens at http://localhost:5173

@@ -5,13 +5,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from huggingface_hub import InferenceClient
 from pydantic import BaseModel
 
-from react_app.backend.constants import HF_TOKEN
-from gradio_demo.constants import MODEL
-from react_app.backend.mock_metrics import (
+from app.backend.constants import HF_TOKEN
+from app.backend.mock_metrics import (
     mock_claim_confidence,
     mock_robustness_status,
     mock_security_status,
 )
+from gradio_demo.constants import MODEL
 
 app = FastAPI(title="Trustworthy Answer Protocol — API")
 app.add_middleware(
