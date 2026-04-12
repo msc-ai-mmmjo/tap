@@ -8,7 +8,7 @@ logits, which can be averaged or otherwise combined downstream.
 
 import logging
 from dataclasses import dataclass, replace
-from typing import cast, Optional
+from typing import cast
 
 from olmo_core.nn.attention import Attention
 from olmo_core.nn.config import ModelConfig
@@ -192,7 +192,7 @@ class HydraTransformer(nn.Module):
                     attn.init_kv_cache_manager(batch_size, max_seq_len)
 
     def forward(
-        self, input_ids: torch.Tensor, residual: Optional[torch.Tensor], **kwargs
+        self, input_ids: torch.Tensor, residual: torch.Tensor | None = None, **kwargs
     ) -> torch.Tensor:
         """
         Run the full model.
