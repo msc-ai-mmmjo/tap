@@ -1,38 +1,92 @@
 """
-Uncertainty finetuning protocol:
-- first pass (through frozen head):
-Question: ... \n Prompt: ...
-- second pass (through uncertainty head):
-Question: ... \n Prompt: ... \n Answer: (A/B) \n Task: Reply A (correct) or B (wrong):
-- extract calibratio probability as P_A / (P_A + P_B) = p
-- train to minimise BCE(p, ans_was_correct_logit)
+Uncertainty finetuning protocol.
+See https://www.overleaf.com/read/kpnzybhdvwnh#a3aa13 for details
 """
 
 from datetime import datetime
 from pathlib import Path
 
 import torch
+import torch.nn.functional as F
 import wandb
 
 from olmo_tap.experiments.uncertainty.data import load_shard
 from olmo_tap.experiments.utils.config import TrainingConfig, ExperimentConfig
 
 
-def get_binary_logits(logits: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
-    logit_A = logits[:, config.A_token_id]
-    logit_B = logits[:, config.B_token_id]
-    # return shape (batch_size,)
-    return logit_A - logit_B
+def get_calibration_prob(probs: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
+    p_A = probs[:, config.A_token_id]
+    p_B = probs[:, config.B_token_id]
+    return p_A / (p_A + p_B)
+
+
+def get_answer(probs: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
+    # probs shape: (n_heads - 1, batch_size, vocab_size)
+    ans = probs[
+        :,
+        :,
+        [config.A_token_id, config.B_token_id, config.C_token_id, config.D_token_id],
+    ].argmax(dim=-1)
+    return ans
+
+
+def entropy(probs: torch.Tensor) -> torch.Tensor:
+    # probs shape: (n_heads - 1, batch_size, vocab_size)
+    entropy = -torch.sum(probs * probs.log(), dim=-1)
+    return entropy
+
+
+def entropy_weighted_mode(
+    probs: torch.Tensor, config: ExperimentConfig
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """
+    Aggregate discrete answers (A, B, C, D) from Hydra heads and weight each
+    bin with the sum of inverse entropies of voters for that class. We use
+    entropy over all logits as a measure of head certainty - if there is significant
+    probability mass on irrelevant logits, the head has failed the multiple choice
+    compression aspect of the question.
+    """
+    # probs shape: (n_heads - 1, batch_size, vocab_size)
+    inv_entr = 1 / (entropy(probs) + 1e-9)
+    answers = get_answer(probs, config.train)  # (n_heads - 1, batch_size)
+
+    one_hot_ans = F.one_hot(answers, num_classes=4).float()
+    # multiply by weights, sum over heads
+    weighted_votes = (one_hot_ans * inv_entr.unsqueeze(-1)).sum(
+        dim=0
+    )  # (batch_size, 4)
+    modal_answers = weighted_votes.argmax(dim=1)  # (batch_size,)
+
+    consensus_scores = (answers == modal_answers.unsqueeze(0)).sum(dim=0)
+
+    return modal_answers, consensus_scores
+
+
+def select_second_pass_inputs(
+    second_pass_ids: torch.Tensor,
+    modal_answers: torch.Tensor,
+    consensus_scores: torch.Tensor,
+    config: ExperimentConfig,
+) -> torch.Tensor:
+    # second_pass_ids: (batch_size, 4, n_voting_heads, seq_len)
+    batch_idx = torch.arange(second_pass_ids.size(0), device=config.device)
+    # consensus_scores are 1-based (1 to n_heads), so index is score - 1
+    consensus_idx = consensus_scores.long() - 1
+    answers_idx = modal_answers.long()
+
+    return second_pass_ids[batch_idx, answers_idx, consensus_idx, :]
 
 
 def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
     t_config = exp_config.train
     device = exp_config.device
     model.train()
-    dataloader, A_id, B_id = load_shard(exp_config.train)
+    dataloader, A_id, B_id, C_id, D_id = load_shard(exp_config)
     # update config token ids internally
     t_config.A_token_id = A_id
     t_config.B_token_id = B_id
+    t_config.C_token_id = C_id
+    t_config.D_token_id = D_id
 
     # each run gets its own timestamped folder to avoid overwriting
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -44,29 +98,36 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
         for batch in dataloader:
             # first pass: frozen head determines model's answer
             with torch.no_grad():
-                logits = model(batch["first_input_ids"].to(device), return_logits=True)[
-                    1, :, -1, :
-                ]
-                binary_logits = get_binary_logits(logits, t_config)
-                ans = binary_logits > 0  # True = A (Yes), False = B (No)
+                # custom method to internally calculate variance of heads' hidden states
+                logits, hidden_var = model.residual_forward(
+                    batch["first_input_ids"].to(device), return_logits=True
+                )[1:, :, -1, :]  # shape: (n_heads - 1, batch_size, vocab_size)
+                probs = F.softmax(logits, dim=-1)
+                modal_answers, consensus_scores = entropy_weighted_mode(
+                    probs, exp_config
+                )  # shapes: (batch_size,)
 
-            # pick the pre-tokenized second-pass variant matching the model's answer.
-            # unsqueeze(1) broadcasts the per-example bool across the seq_len dimension
-            second_ids = torch.where(
-                ans.unsqueeze(1),
-                batch["second_A_input_ids"].to(device),
-                batch["second_B_input_ids"].to(device),
-            )
-            labels = torch.where(
-                ans, batch["label_A"].to(device), batch["label_B"].to(device)
-            )
+            # pick the pre-tokenized second-pass variant matching the model's answer and consensus
+            second_pass_ids = batch["second_pass_ids"].to(
+                device
+            )  # shape: (batch_size, 4, n_heads, seq_len)
+            second_ids = select_second_pass_inputs(
+                second_pass_ids, modal_answers, consensus_scores, exp_config
+            )  # (batch_size, seq_len)
+
+            # is_correct: whether the model's modal answer matches the ground truth
+            is_correct = (batch["label"].to(device) == modal_answers).float()
 
             # second pass: uncertainty head, loss only on A/B token logits
-            logits = model(second_ids, return_logits=True)[0, :, -1, :]
-            loss_logits = get_binary_logits(logits, t_config)
+            # inject heads' hidden state variance at top of trunk (base of uncertainty head)
+            logits = model(second_ids, residual=hidden_var, return_logits=True)[
+                0, :, -1, :
+            ]
+            probs = F.softmax(logits, dim=-1)
+            calib_probs = get_calibration_prob(probs, t_config)
 
-            criterion = torch.nn.BCEWithLogitsLoss()
-            loss = criterion(loss_logits, labels.float())
+            criterion = torch.nn.MSELoss(reduction="mean")  # Brier Score objective
+            loss = criterion(calib_probs, is_correct.float())
 
             loss.backward()
             optimizer.step()
