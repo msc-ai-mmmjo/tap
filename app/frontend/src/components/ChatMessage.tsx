@@ -23,6 +23,7 @@ export function ChatMessage({ message }: Props) {
 
   const analysis = message.analysis;
 
+  // TODO: move model name into BE response
   return (
     <div className="mb-5 animate-fade-in">
       <div className="max-w-[90%]">

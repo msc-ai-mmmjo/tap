@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ChatMessage, AnalysisResponse } from '../types/api';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'http://localhost:8000'; // TODO: move to env variable
 
 export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -16,6 +16,7 @@ export function useChat() {
     setError(null);
 
     try {
+      // TODO: add abort controller
       const res = await fetch(`${API_BASE}/api/analyse`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

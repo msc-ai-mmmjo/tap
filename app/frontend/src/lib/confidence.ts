@@ -1,5 +1,6 @@
 import { COLOURS } from './constants';
 
+// TODO move thresholds to constants or backend config
 export function getConfidenceStyle(score: number) {
   if (score >= 0.80) return {
     bar: COLOURS.success.primary,
