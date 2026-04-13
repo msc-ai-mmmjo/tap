@@ -60,6 +60,12 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
             epoch_loss += loss.item()
             epoch_steps += 1
 
+            if global_step % 50 == 0:
+                avg = epoch_loss / epoch_steps
+                print(
+                    f"step {global_step} | loss {loss.item():.4f} | avg {avg:.4f} | lr {scheduler.get_last_lr()[0]:.2e}"
+                )
+
             wandb.log(
                 {
                     "train/loss": loss.item(),
