@@ -8,6 +8,8 @@ from pathlib import Path
 
 import torch
 import torch.nn.functional as F
+from torch.optim import Optimizer
+from torch.optim.lr_scheduler import LRScheduler
 import wandb
 
 from olmo_tap.experiments.uncertainty.data import load_shard
@@ -78,7 +80,12 @@ def select_second_pass_inputs(
     return second_pass_ids[batch_idx, answers_idx, consensus_idx, :]
 
 
-def train(model: HydraTransformer, exp_config: ExperimentConfig, optimizer, scheduler):
+def train(
+    model: HydraTransformer,
+    exp_config: ExperimentConfig,
+    optimizer: Optimizer,
+    scheduler: LRScheduler,
+):
     t_config = exp_config.train
     device = exp_config.device
     model.train()

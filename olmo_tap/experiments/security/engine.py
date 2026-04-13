@@ -8,13 +8,21 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
+from torch.optim import Optimizer
+from torch.optim.lr_scheduler import LRScheduler
 import wandb
 
 from olmo_tap.experiments.utils.config import ExperimentConfig
 from olmo_tap.experiments.security.data import load_shard
+from olmo_tap.hydra import HydraTransformer
 
 
-def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
+def train(
+    model: HydraTransformer,
+    exp_config: ExperimentConfig,
+    optimizer: Optimizer,
+    scheduler: LRScheduler,
+):
     t_config = exp_config.train
     device = exp_config.device
     model.train()
