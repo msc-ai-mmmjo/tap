@@ -124,7 +124,8 @@ def main():
     wandb.init(
         project="hydra-security",
         name="full-data" if args.full_data else f"shard-{args.shard_id}",
-        tags=[f"epochs-{args.num_epochs}", "teacher-forcing"] + (["full-data"] if args.full_data else []),
+        tags=[f"epochs-{args.num_epochs}", "teacher-forcing"]
+        + (["full-data"] if args.full_data else []),
         config=wb_config,
     )
 
