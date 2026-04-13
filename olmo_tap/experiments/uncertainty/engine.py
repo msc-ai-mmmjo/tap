@@ -110,9 +110,8 @@ def train(
                 all_logits, hidden_var = model.residual_forward(
                     batch["first_input_ids"].to(device), return_logits=True
                 )
-                logits = all_logits[
-                    1:, :, -1, :
-                ]  # (n_heads - 1, batch_size, vocab_size)
+                # Exclude uncertainty head, and only take last token logits: (n_heads - 1, batch_size, vocab_size)
+                logits = all_logits[1:, :, -1, :]
                 probs = F.softmax(logits, dim=-1)
                 modal_answers, consensus_scores = entropy_weighted_mode(
                     probs, exp_config

@@ -229,10 +229,8 @@ class HydraTransformer(nn.Module):
         stacked = torch.stack(head_hidden)  # (N, batch, seq, d_model)
         hidden_var = stacked.var(dim=0)  # (batch, seq, d_model)
 
-        # Flatten to (N*batch, seq, vocab) for lm_head
+        # Flatten to (N*batch, seq, vocab) for lm_head, then unflatten back to (N, batch, seq, vocab)
         all_logits: torch.Tensor = self.lm_head(stacked.flatten(0, 1))
-
-        # Unflatten to (N, batch, seq, vocab) for output
         return all_logits.unflatten(0, (len(self.heads), -1)), hidden_var
 
     @staticmethod
