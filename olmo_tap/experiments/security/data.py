@@ -43,15 +43,18 @@ def preprocess_example(
     prompt_messages = [{"role": "user", "content": question}]
     full_messages = prompt_messages + [{"role": "assistant", "content": answer_letter}]
 
-    # Tokenize prompt (to find where the response starts)
-    prompt_ids = tokenizer.apply_chat_template(
-        prompt_messages, tokenize=True, add_generation_prompt=True
+    # Get template strings, then encode to plain int lists
+    # (apply_chat_template with tokenize=True returns BatchEncoding objects
+    # on some transformers versions, so we encode separately for consistency)
+    prompt_str = tokenizer.apply_chat_template(
+        prompt_messages, tokenize=False, add_generation_prompt=True
+    )
+    full_str = tokenizer.apply_chat_template(
+        full_messages, tokenize=False, add_generation_prompt=False
     )
 
-    # Tokenize full conversation (prompt + answer + EOS)
-    full_ids = tokenizer.apply_chat_template(
-        full_messages, tokenize=True, add_generation_prompt=False
-    )
+    prompt_ids = tokenizer.encode(prompt_str, add_special_tokens=False)
+    full_ids = tokenizer.encode(full_str, add_special_tokens=False)
 
     # Verify that the prompt tokens align between both tokenizations
     assert full_ids[: len(prompt_ids)] == prompt_ids, (
