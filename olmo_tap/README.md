@@ -70,7 +70,7 @@ For experimentation, testing, etc.
 7. Update the weights path (`>>` appends to the file, `>` overwrites)
 
     ```shell
-    echo "WEIGHTS_DIR = /vol/bitbucket/$USER/olmo2-1b-instruct-weights" >> .env
+    echo "OLMO_WEIGHTS_DIR = /vol/bitbucket/$USER/olmo2-1b-instruct-weights" >> .env
     ```
 
 8. Inspect GPU usage, and run on a free one (e.g. GPU 1)
@@ -98,7 +98,9 @@ For experimentation, testing, etc.
     Update dependencies
 
     ```shell
-    cd tap
+    export PIXI_HOME="/vol/bitbucket/$USER/.pixi"
+    export PIXI_CACHE_DIR="/vol/bitbucket/$USER/.pixi/cache"
+    export PATH="$PIXI_HOME/bin:$PATH"
     pixi install -e cuda
     ```
 
