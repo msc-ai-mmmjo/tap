@@ -8,18 +8,22 @@ from pathlib import Path
 
 import torch
 import torch.nn.functional as F
+from torch.optim import Optimizer
+from torch.optim.lr_scheduler import LRScheduler
 import wandb
 
+from olmo_tap.experiments.robustness.amplegcg import AmpleGCG
 from olmo_tap.experiments.robustness.data import load_shard
 from olmo_tap.experiments.utils.config import ExperimentConfig
+from olmo_tap.hydra import HydraTransformer
 
 
 def train(
-    model,
+    model: HydraTransformer,
     exp_config: ExperimentConfig,
-    gcg,
-    optimizer,
-    scheduler,
+    gcg: AmpleGCG,
+    optimizer: Optimizer,
+    scheduler: LRScheduler,
 ):
     t_config = exp_config.train
     device = exp_config.device

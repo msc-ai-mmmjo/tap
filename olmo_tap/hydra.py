@@ -214,8 +214,8 @@ class HydraTransformer(nn.Module):
 
         # combine lm_heads into one big matmul, benchmarked a LOT faster
         stacked = torch.cat(head_hidden, dim=0)  # (N*batch, seq, d_model)
-        all_logits = self.lm_head(stacked)  # (N*batch, seq, vocab)
-        return all_logits.reshape(len(self.heads), -1, *all_logits.shape[1:])
+        all_logits: torch.Tensor = self.lm_head(stacked)  # (N*batch, seq, vocab)
+        return all_logits.unflatten(0, (len(self.heads), -1))
 
     def residual_forward(
         self, input_ids: torch.Tensor, **kwargs
@@ -226,15 +226,12 @@ class HydraTransformer(nn.Module):
         h = self.trunk(input_ids, **kwargs)
 
         head_hidden = [head(h, **kwargs) for head in self.heads]
-        stacked = torch.cat(head_hidden, dim=0)  # (N*batch, seq, d_model)
-        hidden_var = stacked.reshape(
-            len(self.heads), -1, *head_hidden[0].shape[1:]
-        ).var(dim=0)  # (batch, seq, d_model)
+        stacked = torch.stack(head_hidden)  # (N, batch, seq, d_model)
+        hidden_var = stacked.var(dim=0)  # (batch, seq, d_model)
 
-        all_logits = self.lm_head(stacked)  # (N*batch, seq, vocab)
-        return all_logits.reshape(
-            len(self.heads), -1, *all_logits.shape[1:]
-        ), hidden_var
+        # Flatten to (N*batch, seq, vocab) for lm_head, then unflatten back to (N, batch, seq, vocab)
+        all_logits: torch.Tensor = self.lm_head(stacked.flatten(0, 1))
+        return all_logits.unflatten(0, (len(self.heads), -1)), hidden_var
 
     @staticmethod
     def load_olmo_state(
