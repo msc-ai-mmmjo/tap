@@ -12,8 +12,7 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 import wandb
 
-from olmo_tap.experiments.robustness.amplegcg import AmpleGCG
-from olmo_tap.experiments.robustness.data import load_shard
+from olmo_tap.experiments.robustness.data import load_cached_shard
 from olmo_tap.experiments.utils.config import ExperimentConfig
 from olmo_tap.hydra import HydraTransformer
 
@@ -21,20 +20,20 @@ from olmo_tap.hydra import HydraTransformer
 def train(
     model: HydraTransformer,
     exp_config: ExperimentConfig,
-    gcg: AmpleGCG,
     optimizer: Optimizer,
     scheduler: LRScheduler,
 ):
     t_config = exp_config.train
     device = exp_config.device
     model.train()
-    # pass gcg here to handle poisoning internally before training
-    dataloader = load_shard(exp_config.train, gcg)
+    dataloader = load_cached_shard(exp_config.train)
 
     # each run gets its own timestamped folder to avoid overwriting
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     ckpt_dir = Path(t_config.output_dir) / run_id / "checkpoints"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
+
+    criterion = torch.nn.KLDivLoss(reduction="batchmean")
 
     global_step = 0
     for epoch in range(t_config.num_epochs):
@@ -56,9 +55,6 @@ def train(
             ]
             log_poisoned_probs = F.log_softmax(poisoned_logits, dim=-1)
 
-            # KL divergence loss: KL(Target || Input) = KL(P || Q)
-            # target given as probabilities, input given as log-probs
-            criterion = torch.nn.KLDivLoss(reduction="batchmean")
             loss = criterion(log_poisoned_probs, clean_probs)
 
             loss.backward()

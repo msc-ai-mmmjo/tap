@@ -1,0 +1,7 @@
+{
+  "shard_id": 6,
+  "n": 20313,
+  "shard_size": 20313,
+  "seed": 42,
+  "max_seq_len": 512
+}

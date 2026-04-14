@@ -5,14 +5,13 @@ This script finetunes a single head of the HydraTransformer sequentially on
 a shard of the OpenLifeScienceAI MedMCQA dataset. The trunk and LM head are frozen,
 and only LoRA parameters in the head are trained.
 
-NOTE: for now, num_return_seq=1 - each query gets one adversarial suffix
+Loads precomputed GCG cache from olmo_tap/data/gcg_cache/
 """
 
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 import wandb
 
-from olmo_tap.experiments.robustness.amplegcg import AmpleGCG
 from olmo_tap.experiments.robustness.engine import train
 from olmo_tap.experiments.utils.config import (
     ExperimentConfig,
@@ -48,9 +47,6 @@ def main():
     set_seed(SEED)
 
     model = build_finetuning_model(exp_config.model)
-    gcg = AmpleGCG(
-        device=exp_config.device, num_return_seq=1
-    )  # NOTE: only one returned suffix per query
 
     optimizer = torch.optim.AdamW(
         filter(lambda p: p.requires_grad, model.parameters()), lr=LEARNING_RATE
@@ -83,7 +79,7 @@ def main():
         name=exp_config.wandb_run_name,
         config=wb_config,
     )
-    train(model, exp_config, gcg, optimizer, scheduler)
+    train(model, exp_config, optimizer, scheduler)
     wandb.finish()
 
     return model
