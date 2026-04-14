@@ -1,1 +1,2 @@
 olmo_tap/weights/**/*.pt filter=lfs diff=lfs merge=lfs -text
+olmo_tap/data/**/*.pt filter=lfs diff=lfs merge=lfs -text
