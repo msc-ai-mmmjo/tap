@@ -8,10 +8,13 @@ from pathlib import Path
 
 import torch
 import torch.nn.functional as F
+from torch.optim import Optimizer
+from torch.optim.lr_scheduler import LRScheduler
 import wandb
 
 from olmo_tap.experiments.uncertainty.data import load_shard
 from olmo_tap.experiments.utils.config import TrainingConfig, ExperimentConfig
+from olmo_tap.hydra import HydraTransformer
 
 
 def get_calibration_prob(probs: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
@@ -77,7 +80,12 @@ def select_second_pass_inputs(
     return second_pass_ids[batch_idx, answers_idx, consensus_idx, :]
 
 
-def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
+def train(
+    model: HydraTransformer,
+    exp_config: ExperimentConfig,
+    optimizer: Optimizer,
+    scheduler: LRScheduler,
+):
     t_config = exp_config.train
     device = exp_config.device
     model.train()
@@ -99,9 +107,11 @@ def train(model, exp_config: ExperimentConfig, optimizer, scheduler):
             # first pass: frozen head determines model's answer
             with torch.no_grad():
                 # custom method to internally calculate variance of heads' hidden states
-                logits, hidden_var = model.residual_forward(
+                all_logits, hidden_var = model.residual_forward(
                     batch["first_input_ids"].to(device), return_logits=True
-                )[1:, :, -1, :]  # shape: (n_heads - 1, batch_size, vocab_size)
+                )
+                # Exclude uncertainty head, and only take last token logits: (n_heads - 1, batch_size, vocab_size)
+                logits = all_logits[1:, :, -1, :]
                 probs = F.softmax(logits, dim=-1)
                 modal_answers, consensus_scores = entropy_weighted_mode(
                     probs, exp_config
