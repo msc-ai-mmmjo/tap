@@ -12,8 +12,8 @@ interface MetricInfo {
   paper: string;
 }
 
-const METRIC_INFO: Record<'uncertainty' | 'security' | 'robustness', MetricInfo> = {
-  uncertainty: {
+const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> = {
+  certainty: {
     definition:
       "How confident the model is that each claim in its answer is factually correct. Scores near 1.0 mean the model's internal signals match patterns seen in verified-correct answers; low scores mean the claim should be double-checked before acting on it.",
     paper:
@@ -80,8 +80,8 @@ export function MetricCards({ data }: Props) {
     <div className="grid grid-cols-3 gap-2.5">
       <div className="bg-gray-50 rounded-lg p-3">
         <div className="flex items-center justify-between mb-1">
-          <div className="text-[11px] uppercase tracking-wide text-gray-400">Uncertainty</div>
-          <InfoTooltip info={METRIC_INFO.uncertainty} />
+          <div className="text-[11px] uppercase tracking-wide text-gray-400">Certainty</div>
+          <InfoTooltip info={METRIC_INFO.certainty} />
         </div>
         <div className="text-[18px] font-medium text-gray-800">
           {data.overall_confidence.toFixed(2)}
