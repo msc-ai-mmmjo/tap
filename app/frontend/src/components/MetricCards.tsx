@@ -38,7 +38,8 @@ function InfoTooltip({ info }: { info: MetricInfo }) {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
   const show = () => {
-    const r = ref.current!.getBoundingClientRect();
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
     setPos({ top: r.bottom + 8, left: Math.max(8, r.right - 256) });
   };
 
