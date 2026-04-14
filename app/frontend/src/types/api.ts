@@ -23,6 +23,7 @@ export interface AnalysisResponse {
   security: SecurityStatus;
   robustness: RobustnessStatus;
   raw_response: string;
+  model: string;
 }
 
 export interface ChatMessage {

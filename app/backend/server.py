@@ -84,6 +84,7 @@ async def analyse(request: ChatRequest):
         "security": mock_security_status(),
         "robustness": robustness,
         "raw_response": raw_response,
+        "model": MODEL,
     }
 
 
