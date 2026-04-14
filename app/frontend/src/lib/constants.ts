@@ -9,18 +9,18 @@ export const CONFIDENCE_THRESHOLDS = {
 
 export const COLOURS = {
   success: {
-    primary: '#1D9E75',
-    bg: '#E1F5EE',
-    text: '#085041',
+    primary: '#1f6f4f',
+    bg: '#d6e8de',
+    text: '#0e3d2b',
   },
   warning: {
-    primary: '#EF9F27',
-    bg: '#FAEEDA',
-    text: '#633806',
+    primary: '#a05a14',
+    bg: '#f0e0c4',
+    text: '#5a330a',
   },
   danger: {
-    primary: '#E24B4A',
-    bg: '#FCEBEB',
-    text: '#791F1F',
+    primary: '#9b2a2a',
+    bg: '#efd5d5',
+    text: '#5a1414',
   },
 } as const;

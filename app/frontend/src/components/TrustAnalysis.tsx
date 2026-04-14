@@ -7,16 +7,28 @@ interface Props {
 
 export function TrustAnalysis({ data }: Props) {
   return (
-    <div className="mt-3 animate-fade-in">
-      <div className="bg-white border border-gray-200 rounded-xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-[13px] font-medium text-gray-500 uppercase tracking-wide">
-            Claim analysis
+    <div className="mt-5 animate-fade-in">
+      <div
+        className="px-5 pt-4 pb-2"
+        style={{
+          background: 'var(--color-card)',
+          border: '1px solid var(--color-rule)',
+        }}
+      >
+        <div
+          className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center justify-between"
+          style={{ color: 'var(--color-ink-muted)' }}
+        >
+          <span>— Claim ledger</span>
+          <span style={{ color: 'var(--color-ink-soft)' }}>
+            {data.claims.length} {data.claims.length === 1 ? 'claim' : 'claims'}
           </span>
         </div>
-        {data.claims.map((claim, i) => (
-          <ClaimCard key={i} claim={claim} />
-        ))}
+        <ol>
+          {data.claims.map((claim, i) => (
+            <ClaimCard key={i} claim={claim} index={i + 1} />
+          ))}
+        </ol>
       </div>
     </div>
   );

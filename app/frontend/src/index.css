@@ -1,28 +1,86 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+@theme {
+  --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
+  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Paper / ink palette */
+  --color-paper: #f4f1ea;
+  --color-paper-2: #ebe6da;
+  --color-card: #fbfaf6;
+  --color-rule: #d8d2c2;
+  --color-rule-soft: #e6e0d0;
+  --color-ink: #15171c;
+  --color-ink-2: #2b2e36;
+  --color-ink-muted: #4a4d57;
+  --color-ink-soft: #6b6d76;
+
+  /* Single sharp accent */
+  --color-accent: #1a3a4a;
+  --color-accent-soft: #d9e2e6;
+
+  /* Semantic — muted clinical */
+  --color-ok: #1f6f4f;
+  --color-ok-soft: #d6e8de;
+  --color-warn: #a05a14;
+  --color-warn-soft: #f0e0c4;
+  --color-bad: #9b2a2a;
+  --color-bad-soft: #efd5d5;
+}
+
 @layer base {
-  body {
+  html, body {
     margin: 0;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'ss01', 'cv11';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: #f8f9fa;
-    color: #1a1a2e;
+  }
+
+  /* Subtle paper grain */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(0,0,0,0.025) 0, transparent 50%),
+      radial-gradient(circle at 80% 90%, rgba(0,0,0,0.02) 0, transparent 60%);
+    mix-blend-mode: multiply;
+  }
+
+  #root { position: relative; z-index: 1; }
+
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-paper);
   }
 }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+.animate-fade-in { animation: fade-in 0.28s ease-out both; }
 
-.animate-fade-in {
-  animation: fade-in 0.25s ease-out;
+@keyframes tooltip-in {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-tooltip-in { animation: tooltip-in 0.12s ease-out both; }
+
+/* Decorative rule used in the report-style header */
+.rule-double {
+  background-image:
+    linear-gradient(var(--color-ink), var(--color-ink)),
+    linear-gradient(var(--color-ink), var(--color-ink));
+  background-size: 100% 1px, 100% 1px;
+  background-position: 0 0, 0 4px;
+  background-repeat: no-repeat;
+  height: 5px;
 }

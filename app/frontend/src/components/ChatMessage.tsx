@@ -14,10 +14,19 @@ export function ChatMessage({ message }: Props) {
 
   if (message.role === 'user') {
     return (
-      <div className="flex justify-end mb-4 animate-fade-in">
-        <div className="bg-gray-800 text-white rounded-2xl rounded-br-sm px-4 py-2.5 max-w-[80%]">
-          <p className="text-[14px] leading-relaxed">{message.content}</p>
+      <div className="mb-8 animate-fade-in">
+        <div
+          className="font-mono text-[10px] uppercase tracking-[0.18em] mb-2"
+          style={{ color: 'var(--color-accent)' }}
+        >
+          — Query
         </div>
+        <p
+          className="font-display text-[22px] leading-[1.25]"
+          style={{ color: 'var(--color-ink)' }}
+        >
+          “{message.content}”
+        </p>
       </div>
     );
   }
@@ -25,57 +34,65 @@ export function ChatMessage({ message }: Props) {
   const analysis = message.analysis;
 
   return (
-    <div className="mb-5 animate-fade-in">
-      <div className="max-w-[90%]">
-        <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-bl-sm px-4 py-3">
-          {analysis && (
-            <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-[10px] font-medium text-gray-400 bg-gray-200/60 px-1.5 py-0.5 rounded">
-                {MODEL_DISPLAY_NAMES[analysis.model] ?? analysis.model}
-              </span>
-            </div>
-          )}
-
-          {analysis && (
-            <div className="mb-3 pb-3 border-b border-gray-200">
-              <MetricCards data={analysis} />
-            </div>
-          )}
-
-          <div className="text-[14px] leading-relaxed text-gray-700 prose prose-sm max-w-none prose-p:my-1 prose-li:my-0.5 prose-headings:text-gray-800 prose-strong:text-gray-800">
-            <Markdown>{message.content}</Markdown>
-          </div>
-
-          {analysis && (
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <button
-                onClick={() => setExpanded(!expanded)}
-                className="w-full flex items-center justify-center gap-2 text-[12px] font-medium text-gray-600 bg-white border border-gray-200 rounded-lg px-3 py-2 hover:bg-gray-100 hover:border-gray-300 transition-colors"
-              >
-                <span>
-                  {expanded ? 'Hide' : 'View'} claim analysis
-                </span>
-                <span className="text-gray-400">
-                  ({analysis.claims.length} claims)
-                </span>
-                <svg
-                  className={`w-3.5 h-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
-          )}
+    <div className="mb-10 animate-fade-in">
+      <div
+        className="flex items-center justify-between mb-3"
+        style={{ borderTop: '1px solid var(--color-ink)', paddingTop: 8 }}
+      >
+        <div
+          className="font-mono text-[10px] uppercase tracking-[0.18em]"
+          style={{ color: 'var(--color-ink-muted)' }}
+        >
+          — Response
         </div>
-
-        {analysis && expanded && (
-          <TrustAnalysis data={analysis} />
+        {analysis && (
+          <div
+            className="font-mono text-[10px] uppercase tracking-[0.16em]"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
+            Model · {MODEL_DISPLAY_NAMES[analysis.model] ?? analysis.model}
+          </div>
         )}
       </div>
+
+      {analysis && (
+        <div className="mb-5">
+          <MetricCards data={analysis} />
+        </div>
+      )}
+
+      <div
+        className="text-[15px] leading-[1.7] prose max-w-none prose-p:my-2.5 prose-li:my-1 prose-headings:font-display prose-headings:font-normal prose-strong:font-semibold"
+        style={{ color: 'var(--color-ink-2)' }}
+      >
+        <Markdown>{message.content}</Markdown>
+      </div>
+
+      {analysis && (
+        <div className="mt-6">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            aria-expanded={expanded}
+            className="font-mono text-[10.5px] uppercase tracking-[0.16em] inline-flex items-center gap-2 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
+            style={{ color: 'var(--color-ink-muted)' }}
+          >
+            <span
+              aria-hidden
+              className="inline-block w-3"
+              style={{ borderTop: '1px solid var(--color-ink-muted)' }}
+            />
+            {expanded ? 'Hide' : 'Inspect'} {analysis.claims.length} claims
+            <span
+              aria-hidden
+              className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
+            >
+              ›
+            </span>
+          </button>
+        </div>
+      )}
+
+      {analysis && expanded && <TrustAnalysis data={analysis} />}
     </div>
   );
 }
