@@ -1,3 +1,5 @@
+import { useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { AnalysisResponse } from '../types/api';
 import { COLOURS } from '../lib/constants';
 
@@ -32,10 +34,19 @@ const METRIC_INFO: Record<'uncertainty' | 'security' | 'robustness', MetricInfo>
 };
 
 function InfoTooltip({ info }: { info: MetricInfo }) {
+  const ref = useRef<SVGSVGElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const show = () => {
+    const r = ref.current!.getBoundingClientRect();
+    setPos({ top: r.bottom + 8, left: Math.max(8, r.right - 256) });
+  };
+
   return (
-    <span className="relative group inline-flex">
+    <span className="inline-flex" onMouseEnter={show} onMouseLeave={() => setPos(null)}>
       <svg
-        className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500 transition-colors cursor-help"
+        ref={ref}
+        className={`w-3.5 h-3.5 transition-colors cursor-help ${pos ? 'text-gray-500' : 'text-gray-300'}`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -44,17 +55,18 @@ function InfoTooltip({ info }: { info: MetricInfo }) {
         <circle cx="12" cy="12" r="10" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4M12 8h.01" />
       </svg>
-      <span
-        role="tooltip"
-        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 text-white text-[11px] leading-relaxed rounded-lg shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 z-20"
-      >
-        <span className="block mb-1.5 text-gray-100 normal-case tracking-normal font-normal">
-          {info.definition}
-        </span>
-        <span className="block text-gray-400 italic normal-case tracking-normal font-normal">
-          {info.paper}
-        </span>
-      </span>
+      {pos &&
+        createPortal(
+          <div
+            role="tooltip"
+            style={{ top: pos.top, left: pos.left, width: 256 }}
+            className="fixed p-3 bg-gray-900 text-white text-[11px] leading-relaxed rounded-lg shadow-lg pointer-events-none z-50"
+          >
+            <div className="mb-1.5">{info.definition}</div>
+            <div className="text-gray-400 italic">{info.paper}</div>
+          </div>,
+          document.body,
+        )}
     </span>
   );
 }
@@ -67,9 +79,7 @@ export function MetricCards({ data }: Props) {
     <div className="grid grid-cols-3 gap-2.5">
       <div className="bg-gray-50 rounded-lg p-3">
         <div className="flex items-center justify-between mb-1">
-          <div className="text-[11px] uppercase tracking-wide text-gray-400">
-            Uncertainty
-          </div>
+          <div className="text-[11px] uppercase tracking-wide text-gray-400">Uncertainty</div>
           <InfoTooltip info={METRIC_INFO.uncertainty} />
         </div>
         <div className="text-[18px] font-medium text-gray-800">
@@ -80,9 +90,7 @@ export function MetricCards({ data }: Props) {
 
       <div className="bg-gray-50 rounded-lg p-3">
         <div className="flex items-center justify-between mb-1">
-          <div className="text-[11px] uppercase tracking-wide text-gray-400">
-            Security
-          </div>
+          <div className="text-[11px] uppercase tracking-wide text-gray-400">Security</div>
           <InfoTooltip info={METRIC_INFO.security} />
         </div>
         <div
@@ -98,9 +106,7 @@ export function MetricCards({ data }: Props) {
 
       <div className="bg-gray-50 rounded-lg p-3">
         <div className="flex items-center justify-between mb-1">
-          <div className="text-[11px] uppercase tracking-wide text-gray-400">
-            Robustness
-          </div>
+          <div className="text-[11px] uppercase tracking-wide text-gray-400">Robustness</div>
           <InfoTooltip info={METRIC_INFO.robustness} />
         </div>
         <div
