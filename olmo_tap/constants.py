@@ -13,5 +13,10 @@ GCG_CACHE_DIR = Path(
         "GCG_CACHE_DIR", str(Path(__file__).resolve().parent / "data" / "gcg_cache")
     )
 )
+PROD_WEIGHTS_DIR = Path(
+    os.getenv(
+        "PROD_WEIGHTS_DIR", str(Path(__file__).resolve().parent / "weights" / "prod")
+    )
+)
 
 # print(f"Using weights from: {WEIGHTS_DIR}")
