@@ -3,6 +3,7 @@ import Markdown from 'react-markdown';
 import type { ChatMessage as ChatMessageType } from '../types/api';
 import { MetricCards } from './MetricCards';
 import { TrustAnalysis } from './TrustAnalysis';
+import { MODEL_DISPLAY_NAMES } from '../lib/constants';
 
 interface Props {
   message: ChatMessageType;
@@ -23,16 +24,17 @@ export function ChatMessage({ message }: Props) {
 
   const analysis = message.analysis;
 
-  // TODO: move model name into BE response
   return (
     <div className="mb-5 animate-fade-in">
       <div className="max-w-[90%]">
         <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-bl-sm px-4 py-3">
-          <div className="flex items-center gap-1.5 mb-2">
-            <span className="text-[10px] font-medium text-gray-400 bg-gray-200/60 px-1.5 py-0.5 rounded">
-              Llama 3 8B
-            </span>
-          </div>
+          {analysis && (
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-[10px] font-medium text-gray-400 bg-gray-200/60 px-1.5 py-0.5 rounded">
+                {MODEL_DISPLAY_NAMES[analysis.model] ?? analysis.model}
+              </span>
+            </div>
+          )}
 
           {analysis && (
             <div className="mb-3 pb-3 border-b border-gray-200">

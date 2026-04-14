@@ -1,13 +1,12 @@
-import { COLOURS } from './constants';
+import { COLOURS, CONFIDENCE_THRESHOLDS } from './constants';
 
-// TODO move thresholds to constants or backend config
 export function getConfidenceStyle(score: number) {
-  if (score >= 0.80) return {
+  if (score >= CONFIDENCE_THRESHOLDS.high) return {
     bar: COLOURS.success.primary,
     pillBg: COLOURS.success.bg,
     pillText: COLOURS.success.text,
   };
-  if (score >= 0.65) return {
+  if (score >= CONFIDENCE_THRESHOLDS.moderate) return {
     bar: COLOURS.warning.primary,
     pillBg: COLOURS.warning.bg,
     pillText: COLOURS.warning.text,
