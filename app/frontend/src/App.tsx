@@ -34,16 +34,24 @@ function App() {
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-4 py-6">
           {messages.length === 0 && (
-            <div className="text-center pt-24">
+            <div className="text-center pt-16">
               <div className="w-12 h-12 rounded-xl bg-gray-800 flex items-center justify-center mx-auto mb-4">
                 <span className="text-white text-[16px] font-bold tracking-tight">TAP</span>
               </div>
-              <h2 className="text-[18px] font-medium text-gray-700 mb-2">
-                Trustworthy Answer Protocol
+              <h2 className="text-[20px] font-semibold text-gray-800 mb-2">
+                Can you trust what a medical LLM tells you?
               </h2>
-              <p className="text-[13px] text-gray-400 max-w-md mx-auto mb-6">
-                Ask a medical question to see the model's response decomposed into
-                individual claims with confidence analysis.
+              <p className="text-[13px] text-gray-500 leading-relaxed max-w-xl mx-auto mb-3">
+                Large language models can sound confident while being wrong, manipulated, or
+                jailbroken — a serious risk in clinical settings. TAP decomposes each answer into
+                individual claims and reports three trust signals alongside the response:{' '}
+                <span className="text-gray-700 font-medium">uncertainty</span>,{' '}
+                <span className="text-gray-700 font-medium">security</span>, and{' '}
+                <span className="text-gray-700 font-medium">robustness</span>.
+              </p>
+              <p className="text-[12px] text-gray-400 max-w-xl mx-auto mb-8">
+                Ask a medical question below — hover the metric cards on any response to see what
+                each signal means.
               </p>
               <div className="flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
                 {[
