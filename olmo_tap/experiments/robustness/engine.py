@@ -20,7 +20,6 @@ from olmo_tap.hydra import HydraTransformer
 def train(
     model: HydraTransformer,
     exp_config: ExperimentConfig,
-
     optimizer: Optimizer,
     scheduler: LRScheduler,
 ):
