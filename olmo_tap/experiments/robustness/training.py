@@ -7,12 +7,9 @@ then injects fresh LoRA for robustness training on precomputed GCG cache.
 
 import argparse
 import json
-from typing import cast
 
 import torch
-from peft import LoraConfig, get_peft_model
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
-from transformers import PreTrainedModel
 import wandb
 
 from olmo_tap.constants import GCG_CACHE_DIR, PROD_WEIGHTS_DIR
@@ -22,24 +19,29 @@ from olmo_tap.experiments.utils.config import (
     HydraLoRAConfig,
     TrainingConfig,
 )
-from olmo_tap.experiments.utils.model_builder import build_finetuning_model
+from olmo_tap.experiments.utils.model_builder import (
+    build_base_model,
+    inject_lora,
+    load_lora_weights,
+)
 from olmo_tap.experiments.utils.random_seed import set_seed
 
 LORA_TARGETS = ["w1", "w2", "w3"]
 # LoRA scaling factor = alpha / r; convention across this repo is alpha = 2 * r
 # Source: Owain told me so
 LORA_ALPHA_RATIO = 2
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Train a robustness head on a MedMCQA shard"
+    )
     parser.add_argument("--shard-id", type=int, default=0)
-    parser.add_argument("--num-epochs", type=int, default=1)
+    parser.add_argument("--num-epochs", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--lora-r", type=int, default=8)
+    parser.add_argument("--lora-r", type=int, default=16)
     return parser.parse_args()
 
 
@@ -53,6 +55,8 @@ def main():
     heads_depth = manifest["config"]["heads_depth"]
     n_heads = manifest["config"]["num_shards"]
 
+    # NOTE: it is assumed that in robustness finetuning we will target the same LoRA weights
+    # which were finetuned in the security run (changing the targets is unlikely to help)
     prod_config = HydraLoRAConfig(
         n_heads_final=n_heads,
         n_heads_training=1,
@@ -61,36 +65,13 @@ def main():
         lora_r=prod_lora_r,
         lora_alpha=prod_lora_r * LORA_ALPHA_RATIO,
     )
-    prod_config.device = DEVICE
-    model = build_finetuning_model(prod_config)
 
+    model = build_base_model(prod_config)
     prod_path = PROD_WEIGHTS_DIR / f"shard_{args.shard_id}_lora.pt"
-    prod_state = torch.load(prod_path, map_location=DEVICE, weights_only=True)
-    # head[0] is PEFT-wrapped (base + LoRA keys); strict=False so a LoRA-only
-    # checkpoint loads adapter keys and leaves the fresh base weights intact
-    model.heads[0].load_state_dict(prod_state, strict=False)
-    print(f"Loaded prod weights from {prod_path}")
+    # load security finetuning LoRA weights
+    load_lora_weights(model, prod_config, prod_path)
 
-    # Merge LoRA into head (bakes security knowledge into base weights)
-    model.heads[0] = model.heads[0].merge_and_unload()  # type: ignore[union-attr]
-
-    robustness_lora = LoraConfig(
-        r=args.lora_r,
-        lora_alpha=args.lora_r * LORA_ALPHA_RATIO,
-        target_modules=LORA_TARGETS,
-        lora_dropout=0.1,
-        bias="none",
-    )
-    model.heads[0] = get_peft_model(
-        cast(PreTrainedModel, model.heads[0]), robustness_lora
-    )
-    model.requires_grad_(False)
-    trainable_params = []
-    for n, p in model.named_parameters():
-        if "lora" in n:
-            p.requires_grad = True
-            trainable_params.append(p)
-
+    # create new robustness training config - same LoRA targets but we allow different rank
     m_config = HydraLoRAConfig(
         n_heads_final=n_heads,
         n_heads_training=1,
@@ -111,15 +92,18 @@ def main():
         train=t_config,
         wandb_project="hydra-robustness",
         seed=args.seed,
-        device=DEVICE,
     )
+    # inject new LoRA matrices for robustness finetuning on the same LoRA targets
+    inject_lora(exp_config.model, model)
 
     with open(GCG_CACHE_DIR / f"shard_{args.shard_id}" / "metadata.json") as f:
         cache_meta = json.load(f)
     steps_per_epoch = cache_meta["n"] // args.batch_size
     total_steps = steps_per_epoch * args.num_epochs
 
-    optimizer = torch.optim.AdamW(trainable_params, lr=args.lr)
+    optimizer = torch.optim.AdamW(
+        filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr
+    )
 
     warmup = LinearLR(optimizer, start_factor=1e-8, total_iters=t_config.warmup_steps)
     if t_config.lr_schedule == "cosine":
@@ -149,8 +133,6 @@ def main():
     )
     train(model, exp_config, optimizer, scheduler)
     wandb.finish()
-
-    return model
 
 
 if __name__ == "__main__":

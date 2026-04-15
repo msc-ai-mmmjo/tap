@@ -18,7 +18,7 @@ from olmo_tap.experiments.utils.config import HydraLoRAConfig
 from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
 
 
-def build_finetuning_model(config: HydraLoRAConfig) -> HydraTransformer:
+def build_base_model(config: HydraLoRAConfig) -> HydraTransformer:
     factory = (
         HydraTransformerConfig.from_olmo2_7B
         if config.model_size == "7b"
@@ -49,6 +49,12 @@ def build_finetuning_model(config: HydraLoRAConfig) -> HydraTransformer:
     del hf_state, olmo_state
     model.to(device=config.device, dtype=torch.bfloat16)  # NOTE: param precision
 
+    return model
+
+
+def inject_lora(
+    config: HydraLoRAConfig, model: HydraTransformer, head_idx: int = 0
+) -> None:
     # inject LoRA into target modules specified by config
     lora_config = LoraConfig(
         r=config.lora_r,
@@ -58,7 +64,9 @@ def build_finetuning_model(config: HydraLoRAConfig) -> HydraTransformer:
         bias="none",
     )
     # we always perform LoRA on the 0th head, any other head instantiated in training is frozen
-    model.heads[0] = get_peft_model(cast(PreTrainedModel, model.heads[0]), lora_config)
+    model.heads[head_idx] = get_peft_model(
+        cast(PreTrainedModel, model.heads[head_idx]), lora_config
+    )
 
     # all params except LoRA params are frozen
     model.requires_grad_(False)
@@ -66,4 +74,26 @@ def build_finetuning_model(config: HydraLoRAConfig) -> HydraTransformer:
         if "lora" in n:
             p.requires_grad = True
 
-    return model
+
+def load_lora_weights(
+    model: HydraTransformer,
+    config: HydraLoRAConfig,
+    weights_path: str,
+    head_idx: int = 0,
+) -> None:
+    # inject temporary LoRA to house the incoming weights
+    lora_config = LoraConfig(
+        r=config.lora_r,
+        lora_alpha=config.lora_alpha,
+        target_modules=config.target_modules,
+    )
+    temp_peft = get_peft_model(
+        cast(PreTrainedModel, model.heads[head_idx]), lora_config
+    )
+
+    # load and Merge
+    state = torch.load(weights_path, map_location="cuda", weights_only=True)
+    temp_peft.load_state_dict(state, strict=False)
+    model.heads[head_idx] = temp_peft.merge_and_unload()  # type: ignore[union-attr]
+
+    print(f"Loaded prod weights from {weights_path}")
