@@ -37,7 +37,7 @@ def compute_total_steps(
     num_epochs: int,
 ) -> int:
     """Compute total training steps from dataset geometry (no data loading needed)."""
-    shard_size = PUBMEDQA_SIZE // num_shards
+    shard_size = MEDMCQA_SIZE // num_shards
     steps_per_epoch = shard_size // batch_size  # drop_last=True in DataLoader
     return steps_per_epoch * num_epochs
 
