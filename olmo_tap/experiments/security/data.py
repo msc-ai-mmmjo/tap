@@ -4,7 +4,6 @@ Data loading for security head SFT finetuning on MedMCQA.
 
 from torch.utils.data import DataLoader
 from datasets import load_dataset
-from datasets.arrow_dataset import Dataset
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 from olmo_tap.experiments.utils.config import TrainingConfig
@@ -57,8 +56,8 @@ def preprocess_example(
 
 def load_shard(
     config: TrainingConfig,
-) -> tuple[DataLoader, DataLoader | None, int, int, int, int]:
-    """Load a MedMCQA shard, tokenize prompts, return (train_dl, val_dl)."""
+) -> tuple[DataLoader, int, int, int, int]:
+    """Load a MedMCQA shard, tokenize prompts, return a DataLoader."""
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
     assert tokenizer is not None
     A_id = tokenizer.encode("A", add_special_tokens=False)[0]
@@ -67,8 +66,7 @@ def load_shard(
     D_id = tokenizer.encode("D", add_special_tokens=False)[0]
 
     base_ds = load_dataset("openlifescienceai/medmcqa", split="train", streaming=False)
-    assert isinstance(base_ds, Dataset), f"Expected Dataset, got {type(base_ds)}"
-    shard_ds = base_ds.shard(num_shards=config.num_shards, index=config.shard_id)
+    shard_ds = base_ds.shard(num_shards=config.num_shards, index=config.shard_id)  # type: ignore[union-attr]
     shard_ds = shard_ds.select_columns(["question", "opa", "opb", "opc", "opd", "cop"])
 
     token_ids = [A_id, B_id, C_id, D_id]
@@ -83,28 +81,12 @@ def load_shard(
     )
     shard_ds.set_format("torch")
 
-    if config.val_split > 0:
-        split = shard_ds.train_test_split(test_size=config.val_split, seed=config.seed)  # type: ignore
-        train_ds, val_ds = split["train"], split["test"]
-    else:
-        train_ds, val_ds = shard_ds, None
-
-    train_dataloader = DataLoader(
-        train_ds,  # type: ignore[arg-type]
+    dataloader = DataLoader(
+        shard_ds,  # type: ignore[arg-type]
         batch_size=config.batch_size,
         shuffle=True,
         drop_last=True,
         num_workers=config.num_workers,
     )
 
-    val_dataloader = None
-    if val_ds is not None:
-        val_dataloader = DataLoader(
-            val_ds,  # type: ignore[arg-type]
-            batch_size=config.batch_size,
-            shuffle=False,
-            drop_last=False,
-            num_workers=config.num_workers,
-        )
-
-    return train_dataloader, val_dataloader, A_id, B_id, C_id, D_id
+    return dataloader, A_id, B_id, C_id, D_id
