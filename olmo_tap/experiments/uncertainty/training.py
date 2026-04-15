@@ -71,7 +71,7 @@ def main():
     heads_depth = manifest["config"]["heads_depth"]
     n_heads = manifest["config"]["num_shards"]
 
-    # NOTE: it is assumed that in robustness finetuning we will target the same LoRA weights
+    # NOTE: it is assumed that in uncertainty finetuning we will target the same LoRA weights
     # which were finetuned in the security run (changing the targets is unlikely to help)
     prod_config = HydraLoRAConfig(
         n_heads_final=n_heads,
@@ -146,7 +146,7 @@ def main():
     }
     wandb.init(
         project=exp_config.wandb_project,
-        name=f"robustness-shard-{args.shard_id}",
+        name=f"uncertainty-shard-{args.shard_id}",
         config=wb_config,
     )
     train(model, exp_config, optimizer, scheduler)
