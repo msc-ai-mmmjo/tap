@@ -95,5 +95,7 @@ check = { depends-on = ["lint", "format-check", "typecheck", "test"] }
 [tool.pyrefly]
 project-includes = [
     "**/*.py*",
+]
+project-excludes = [
     "**/*.ipynb",
 ]
