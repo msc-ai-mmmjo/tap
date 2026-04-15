@@ -7,6 +7,7 @@ head is frozen
 """
 
 from typing import cast
+from pathlib import Path
 
 from olmo_core.nn.hf.convert import convert_state_from_hf
 from peft import LoraConfig, get_peft_model
@@ -78,7 +79,7 @@ def inject_lora(
 def load_and_merge_lora_weights(
     model: HydraTransformer,
     config: HydraLoRAConfig,
-    weights_path: str,
+    weights_path: Path | str,
     head_idx: int = 0,
 ) -> None:
     # inject temporary LoRA to house the incoming weights
