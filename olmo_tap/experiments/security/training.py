@@ -28,7 +28,9 @@ PUBMEDQA_SIZE = 211_269
 
 
 def compute_total_steps(
-    num_shards: int, batch_size: int, num_epochs: int,
+    num_shards: int,
+    batch_size: int,
+    num_epochs: int,
 ) -> int:
     """Compute total training steps from dataset geometry (no data loading needed)."""
     shard_size = PUBMEDQA_SIZE // num_shards
