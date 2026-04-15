@@ -59,12 +59,23 @@ scipy = "*"
 matplotlib = "*"
 msc-ai-group-project = { path = ".", editable = true }
 
+[tool.pixi.feature.analysis.dependencies]
+pandas = "*"
+numpy = "*"
+matplotlib = "*"
+seaborn = "*"
+scipy = "*"
+scikit-learn = "*"
+datasets = ">=2.10"
+pyarrow = "*"  # datasets uses this, sometimes not pulled in automatically
+
 # ---------------------------------------------
 # Environments
 # ---------------------------------------------
 [tool.pixi.environments]
 default = { solve-group = "default" }
 cuda = { features = ["cuda"], solve-group = "cuda" }
+analysis = { features = ["analysis"], solve-group = "analysis" }
 
 # ---------------------------------------------
 # Tasks
