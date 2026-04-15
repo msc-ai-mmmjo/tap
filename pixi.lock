@@ -2944,7 +2944,7 @@ packages:
 - pypi: ./
   name: msc-ai-group-project
   version: 0.1.0
-  sha256: fd46b42decc7f64a9e14ef3685f5ce16d38d5de45100848d055f5ff2054f8d0b
+  sha256: 6903d3431030f104724d23fd51d35735ab0fc1a096ae930617aebcd890047e3c
   requires_dist:
   - gradio>=6.3.0
   - huggingface-hub
