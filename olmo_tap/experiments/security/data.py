@@ -67,7 +67,7 @@ def mcq_collator(batch: list[dict]) -> dict:
             # NOTE: logit at (sequence) idx i gives log-prob for token i+1
             # we mask out the first len(prompt_id) - 1 to recover probability over answer tokens
             # the final token is sliced out by get_batch_logps in engine.py
-            mask = [0] * (len(p_ids) - 1) + [1] * len(o_ids) + [0]
+            mask = [0] * len(p_ids) + [1] * len(o_ids)
             assert len(mask) == len(full_seq), (
                 f"Length mismatch between answer mask: {len(mask)} and sequence: {len(full_seq)}"
             )
