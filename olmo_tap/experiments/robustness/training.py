@@ -22,7 +22,7 @@ from olmo_tap.experiments.utils.config import (
 from olmo_tap.experiments.utils.model_builder import (
     build_base_model,
     inject_lora,
-    load_lora_weights,
+    load_and_merge_lora_weights,
 )
 from olmo_tap.experiments.utils.random_seed import set_seed
 
@@ -69,7 +69,7 @@ def main():
     model = build_base_model(prod_config)
     prod_path = PROD_WEIGHTS_DIR / f"shard_{args.shard_id}_lora.pt"
     # load security finetuning LoRA weights
-    load_lora_weights(model, prod_config, prod_path)
+    load_and_merge_lora_weights(model, prod_config, prod_path)
 
     # create new robustness training config - same LoRA targets but we allow different rank
     m_config = HydraLoRAConfig(

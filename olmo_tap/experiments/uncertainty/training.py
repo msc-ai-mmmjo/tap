@@ -22,11 +22,11 @@ from olmo_tap.experiments.utils.config import (
     TrainingConfig,
 )
 
-from olmo_tap.constants import PROD_WEIGHTS_DIR
+from olmo_tap.constants import PROD_WEIGHTS_DIR, ROBUST_WEIGHTS_DIR
 from olmo_tap.experiments.utils.model_builder import (
     build_base_model,
-    load_lora_weights,
     inject_lora,
+    load_and_merge_lora_weights,
 )
 from olmo_tap.experiments.utils.random_seed import set_seed
 from olmo_tap.experiments.uncertainty.engine import train
@@ -49,9 +49,6 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Train the uncertainty head on a MedMCQA shard"
     )
-    parser.add_argument(
-        "--shard-id", type=int, default=9
-    )  # NOTE: 10th shard for uncertainty head
     parser.add_argument("--num-epochs", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=1e-4)
@@ -62,14 +59,18 @@ def parse_args() -> argparse.Namespace:
 
 def main():
     args = parse_args()
+    args.shard_id = 9  # NOTE: the final shard is always used for the uncertainty head
     set_seed(args.seed)
 
-    # NOTE: we need to load all 10 heads, LoRA params only on uncertainty head though
     with open(PROD_WEIGHTS_DIR / "manifest.json") as f:
         manifest = json.load(f)
     prod_lora_r = manifest["config"]["lora_r"]
     heads_depth = manifest["config"]["heads_depth"]
     n_heads = manifest["config"]["num_shards"]
+
+    with open(ROBUST_WEIGHTS_DIR / "manifest.json") as f:
+        manifest = json.load(f)
+    robust_lora_r = manifest["config"]["lora_r"]
 
     # NOTE: it is assumed that in uncertainty finetuning we will target the same LoRA weights
     # which were finetuned in the security run (changing the targets is unlikely to help)
@@ -81,11 +82,25 @@ def main():
         lora_r=prod_lora_r,
         lora_alpha=prod_lora_r * LORA_ALPHA_RATIO,
     )
+    robust_config = HydraLoRAConfig(
+        n_heads_final=n_heads,
+        n_heads_training=10,
+        heads_depth=heads_depth,
+        target_modules=LORA_TARGETS,
+        lora_r=robust_lora_r,
+        lora_alpha=robust_lora_r * LORA_ALPHA_RATIO,
+    )
 
     model = build_base_model(prod_config)
+
     for i in range(9):
+        # load and merge security LoRA weights
         prod_path = PROD_WEIGHTS_DIR / f"shard_{i}_lora.pt"
-        load_lora_weights(model, prod_config, prod_path, head_idx=i)
+        load_and_merge_lora_weights(model, prod_config, prod_path, head_idx=i)
+
+        # load and merge robustness LoRA weights
+        rob_path = ROBUST_WEIGHTS_DIR / f"shard_{i}_lora.pt"
+        load_and_merge_lora_weights(model, robust_config, rob_path, head_idx=i)
 
     # create new uncertainty training config - same LoRA targets but we allow different rank
     m_config = HydraLoRAConfig(

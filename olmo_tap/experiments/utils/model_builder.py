@@ -75,7 +75,7 @@ def inject_lora(
             p.requires_grad = True
 
 
-def load_lora_weights(
+def load_and_merge_lora_weights(
     model: HydraTransformer,
     config: HydraLoRAConfig,
     weights_path: str,
@@ -91,8 +91,8 @@ def load_lora_weights(
         cast(PreTrainedModel, model.heads[head_idx]), lora_config
     )
 
-    # load and Merge
-    state = torch.load(weights_path, map_location="cuda", weights_only=True)
+    # load and merge
+    state = torch.load(weights_path, map_location=config.device, weights_only=True)
     temp_peft.load_state_dict(state, strict=False)
     model.heads[head_idx] = temp_peft.merge_and_unload()  # type: ignore[union-attr]
 

@@ -18,5 +18,11 @@ PROD_WEIGHTS_DIR = Path(
         "PROD_WEIGHTS_DIR", str(Path(__file__).resolve().parent / "weights" / "prod")
     )
 )
+ROBUST_WEIGHTS_DIR = Path(
+    os.getenv(
+        "ROBUST_WEIGHTS_DIR",
+        str(Path(__file__).resolve().parent / "weights" / "robust"),
+    )
+)
 
 # print(f"Using weights from: {WEIGHTS_DIR}")
