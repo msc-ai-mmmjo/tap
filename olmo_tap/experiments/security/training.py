@@ -32,12 +32,13 @@ LORA_ALPHA_RATIO = 2
 
 
 def compute_total_steps(
-    num_shards: int, batch_size: int, num_epochs: int, val_split: float = 0.0
+    num_shards: int,
+    batch_size: int,
+    num_epochs: int,
 ) -> int:
     """Compute total training steps from dataset geometry (no data loading needed)."""
-    shard_size = MEDMCQA_SIZE // num_shards
-    train_size = int(shard_size * (1 - val_split))
-    steps_per_epoch = train_size // batch_size  # drop_last=True in DataLoader
+    shard_size = PUBMEDQA_SIZE // num_shards
+    steps_per_epoch = shard_size // batch_size  # drop_last=True in DataLoader
     return steps_per_epoch * num_epochs
 
 
@@ -82,7 +83,6 @@ def main():
         output_dir="experiments/security/outputs/full_data"
         if args.full_data
         else f"experiments/security/outputs/shard_{args.shard_id}",
-        val_split=0.1 if args.val else 0.0,
     )
     exp_config = ExperimentConfig(
         seed=args.seed,
@@ -104,7 +104,6 @@ def main():
         num_shards=n_heads,
         batch_size=args.batch_size,
         num_epochs=args.num_epochs,
-        val_split=t_config.val_split,
     )
 
     warmup = LinearLR(optimizer, start_factor=1e-8, total_iters=t_config.warmup_steps)
