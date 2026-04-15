@@ -1,7 +1,6 @@
-import { useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { AnalysisResponse } from '../types/api';
-import { COLOURS } from '../lib/constants';
 
 interface Props {
   data: AnalysisResponse;
@@ -33,42 +32,154 @@ const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> =
   },
 };
 
-function InfoTooltip({ info }: { info: MetricInfo }) {
-  const ref = useRef<SVGSVGElement>(null);
+function InfoTooltip({ info, label }: { info: MetricInfo; label: string }) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const id = useId();
 
-  const show = () => {
-    const r = ref.current?.getBoundingClientRect();
-    if (!r) return;
-    setPos({ top: r.bottom + 8, left: Math.max(8, r.right - 256) });
+  const place = () => {
+    const t = triggerRef.current?.getBoundingClientRect();
+    const tip = tooltipRef.current?.getBoundingClientRect();
+    if (!t) return;
+    const width = tip?.width ?? 280;
+    const height = tip?.height ?? 80;
+    const left = Math.min(
+      window.innerWidth - width - 12,
+      Math.max(12, t.left + t.width / 2 - width / 2),
+    );
+    const overflowsBelow = t.bottom + 10 + height > window.innerHeight;
+    const top = overflowsBelow ? t.top - height - 10 : t.bottom + 10;
+    setPos({ top, left });
   };
 
+  useLayoutEffect(() => {
+    if (open) place();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+    const onScroll = () => place();
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('scroll', onScroll, true);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [open]);
+
   return (
-    <span className="inline-flex" onMouseEnter={show} onMouseLeave={() => setPos(null)}>
-      <svg
-        ref={ref}
-        className={`w-3.5 h-3.5 transition-colors cursor-help ${pos ? 'text-gray-500' : 'text-gray-300'}`}
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-        strokeWidth={2}
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-label={`About the ${label} metric`}
+        aria-describedby={open ? id : undefined}
+        aria-expanded={open}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
+        style={{
+          color: open ? 'var(--color-accent)' : 'var(--color-ink-muted)',
+        }}
       >
-        <circle cx="12" cy="12" r="10" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4M12 8h.01" />
-      </svg>
-      {pos &&
+        <svg
+          aria-hidden
+          className="w-3.5 h-3.5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.75}
+        >
+          <circle cx="12" cy="12" r="10" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4M12 8h.01" />
+        </svg>
+      </button>
+      {open &&
         createPortal(
           <div
+            ref={tooltipRef}
+            id={id}
             role="tooltip"
-            style={{ top: pos.top, left: pos.left, width: 256 }}
-            className="fixed p-3 bg-gray-900 text-white text-[11px] leading-relaxed rounded-lg shadow-lg pointer-events-none z-50"
+            style={{
+              top: pos?.top ?? -9999,
+              left: pos?.left ?? -9999,
+              width: 280,
+              background: 'var(--color-ink)',
+              color: 'var(--color-paper)',
+            }}
+            className="fixed px-3.5 py-3 text-[12px] leading-[1.55] shadow-xl pointer-events-none z-50 animate-tooltip-in"
           >
             <div className="mb-1.5">{info.definition}</div>
-            <div className="text-gray-400 italic">{info.paper}</div>
+            <div
+              className="font-mono text-[10px] uppercase tracking-wider pt-1.5 mt-1.5"
+              style={{
+                color: 'var(--color-paper-2)',
+                borderTop: '1px solid rgba(255,255,255,0.18)',
+              }}
+            >
+              {info.paper}
+            </div>
           </div>,
           document.body,
         )}
-    </span>
+    </>
+  );
+}
+
+interface CellProps {
+  index: string;
+  label: string;
+  info: MetricInfo;
+  value: string;
+  valueColour?: string;
+  caption: string;
+  isFirst?: boolean;
+}
+
+function MetricCell({ index, label, info, value, valueColour, caption, isFirst }: CellProps) {
+  return (
+    <div
+      className="px-5 py-4"
+      style={{
+        borderLeft: isFirst ? 'none' : '1px solid var(--color-rule)',
+      }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div
+          className="font-mono text-[10px] uppercase tracking-[0.16em] flex items-baseline gap-1.5"
+          style={{ color: 'var(--color-ink-muted)' }}
+        >
+          <span style={{ color: 'var(--color-accent)' }}>{index}</span>
+          {label}
+        </div>
+        <InfoTooltip info={info} label={label} />
+      </div>
+      <div
+        className="font-mono text-[24px] tabular-nums leading-none"
+        style={{ color: valueColour ?? 'var(--color-ink)' }}
+      >
+        {value}
+      </div>
+      <div
+        className="text-[11.5px] leading-snug mt-2"
+        style={{ color: 'var(--color-ink-soft)' }}
+      >
+        {caption}
+      </div>
+    </div>
   );
 }
 
@@ -77,49 +188,37 @@ export function MetricCards({ data }: Props) {
   const robustnessValue = data.robustness.passed ? 'Passed' : 'Failed';
 
   return (
-    <div className="grid grid-cols-3 gap-2.5">
-      <div className="bg-gray-50 rounded-lg p-3">
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-[11px] uppercase tracking-wide text-gray-400">Certainty</div>
-          <InfoTooltip info={METRIC_INFO.certainty} />
-        </div>
-        <div className="text-[18px] font-medium text-gray-800">
-          {data.overall_confidence.toFixed(2)}
-        </div>
-        <div className="text-[11px] text-gray-400 mt-0.5">LoRA probe avg</div>
-      </div>
-
-      <div className="bg-gray-50 rounded-lg p-3">
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-[11px] uppercase tracking-wide text-gray-400">Security</div>
-          <InfoTooltip info={METRIC_INFO.security} />
-        </div>
-        <div
-          className="text-[18px] font-medium"
-          style={{ color: data.security.certified ? COLOURS.success.primary : COLOURS.warning.primary }}
-        >
-          {securityValue}
-        </div>
-        <div className="text-[11px] text-gray-400 mt-0.5">
-          TPA budget: {data.security.tpa_budget ?? '—'} samples
-        </div>
-      </div>
-
-      <div className="bg-gray-50 rounded-lg p-3">
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-[11px] uppercase tracking-wide text-gray-400">Robustness</div>
-          <InfoTooltip info={METRIC_INFO.robustness} />
-        </div>
-        <div
-          className="text-[18px] font-medium"
-          style={{ color: data.robustness.passed ? COLOURS.success.primary : COLOURS.danger.primary }}
-        >
-          {robustnessValue}
-        </div>
-        <div className="text-[11px] text-gray-400 mt-0.5">
-          {data.robustness.detail}
-        </div>
-      </div>
+    <div
+      className="grid grid-cols-3"
+      style={{
+        background: 'var(--color-card)',
+        border: '1px solid var(--color-rule)',
+      }}
+    >
+      <MetricCell
+        isFirst
+        index="01"
+        label="Certainty"
+        info={METRIC_INFO.certainty}
+        value={data.overall_confidence.toFixed(2)}
+        caption="LoRA probe avg · P(correct)"
+      />
+      <MetricCell
+        index="02"
+        label="Security"
+        info={METRIC_INFO.security}
+        value={securityValue}
+        valueColour={data.security.certified ? 'var(--color-ok)' : 'var(--color-warn)'}
+        caption={`TPA budget · ${data.security.tpa_budget ?? '—'} samples`}
+      />
+      <MetricCell
+        index="03"
+        label="Robustness"
+        info={METRIC_INFO.robustness}
+        value={robustnessValue}
+        valueColour={data.robustness.passed ? 'var(--color-ok)' : 'var(--color-bad)'}
+        caption={data.robustness.detail}
+      />
     </div>
   );
 }
