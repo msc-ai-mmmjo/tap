@@ -116,7 +116,7 @@ def load_shard(config: ExperimentConfig) -> tuple[DataLoader, int, int, int, int
         fn_kwargs={
             "tokenizer": tokenizer,
             "max_seq_len": config.train.max_seq_len,
-            "n_heads": n_voting_heads,
+            "n_voting_heads": n_voting_heads,
         },
         remove_columns=["question", "opa", "opb", "opc", "opd", "cop"],
     )
