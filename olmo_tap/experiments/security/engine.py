@@ -17,6 +17,7 @@ from olmo_tap.experiments.utils.config import ExperimentConfig
 from olmo_tap.experiments.security.data import load_shard
 from olmo_tap.hydra import HydraTransformer
 
+
 def get_batch_logps(model, batch: dict, device: str) -> torch.Tensor:
     """
     Extracts log-probs for the answer token subsequence in the teacher-forced
@@ -50,6 +51,7 @@ def get_batch_logps(model, batch: dict, device: str) -> torch.Tensor:
 
     # reshape back to (batch_size, 4)
     return norm_logps.view(-1, 4)
+
 
 def train(
     model: HydraTransformer,
