@@ -29,29 +29,57 @@ def preprocess_example(
     example: dict[str, str],
     tokenizer: PreTrainedTokenizerBase,
     max_seq_len: int,
-    token_ids: list[int],
 ) -> dict:
-    """Tokenize the question prompt and store the ground-truth answer token ID."""
+    """Tokenize prompt + answer + EOS into a single sequence with masked labels.
+
+    Uses the OLMo2 Instruct chat template to build the full conversation,
+    then masks the prompt portion so only the answer and EOS tokens are supervised.
+    """
     mcq_options = [example["opa"], example["opb"], example["opc"], example["opd"]]
     question = format_question(example["question"], mcq_options)
-    messages = [{"role": "user", "content": question}]
+    answer_letter = ["A", "B", "C", "D"][int(example["cop"])]
 
-    prompt = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
+    # Build full conversation using the native chat template
+    prompt_messages = [{"role": "user", "content": question}]
+    full_messages = prompt_messages + [{"role": "assistant", "content": answer_letter}]
+
+    # Get template strings, then encode to plain int lists
+    # (apply_chat_template with tokenize=True returns BatchEncoding objects
+    # on some transformers versions, so we encode separately for consistency)
+    prompt_str = tokenizer.apply_chat_template(
+        prompt_messages, tokenize=False, add_generation_prompt=True
     )
-    encoding = tokenizer(
-        prompt,
-        padding="max_length",
-        truncation=True,
-        max_length=max_seq_len,
-        return_tensors="pt",
+    full_str = tokenizer.apply_chat_template(
+        full_messages, tokenize=False, add_generation_prompt=False
     )
 
-    label = token_ids[int(example["cop"])]
+    prompt_ids = tokenizer.encode(prompt_str, add_special_tokens=False)
+    full_ids = tokenizer.encode(full_str, add_special_tokens=False)
+
+    # Verify that the prompt tokens align between both tokenizations
+    assert full_ids[: len(prompt_ids)] == prompt_ids, (
+        "Tokenization mismatch: full conversation prefix does not match prompt tokens. "
+        "This may indicate a BPE boundary issue at the prompt/response boundary."
+    )
+
+    # Labels: -100 for prompt positions, real IDs for response positions
+    prompt_len = len(prompt_ids)
+    labels = [-100] * prompt_len + full_ids[prompt_len:]
+
+    # Truncate if exceeds max_seq_len
+    if len(full_ids) > max_seq_len:
+        full_ids = full_ids[:max_seq_len]
+        labels = labels[:max_seq_len]
+
+    # Right-pad to max_seq_len
+    pad_length = max_seq_len - len(full_ids)
+    pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 0
+    full_ids = full_ids + [pad_id] * pad_length
+    labels = labels + [-100] * pad_length
 
     return {
-        "input_ids": encoding["input_ids"].squeeze(0),
-        "label": label,
+        "input_ids": full_ids,
+        "labels": labels,
     }
 
 
@@ -71,13 +99,11 @@ def load_shard(
     shard_ds = base_ds.shard(num_shards=config.num_shards, index=config.shard_id)
     shard_ds = shard_ds.select_columns(["question", "opa", "opb", "opc", "opd", "cop"])
 
-    token_ids = [A_id, B_id, C_id, D_id]
     shard_ds = shard_ds.map(
         preprocess_example,
         fn_kwargs={
             "tokenizer": tokenizer,
             "max_seq_len": config.max_seq_len,
-            "token_ids": token_ids,
         },
         remove_columns=["question", "opa", "opb", "opc", "opd", "cop"],
     )

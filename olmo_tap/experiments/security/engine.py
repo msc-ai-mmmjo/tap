@@ -37,7 +37,7 @@ def train(
     ckpt_dir = Path(t_config.output_dir) / run_id / "checkpoints"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-    criterion = nn.CrossEntropyLoss(reduction="mean")
+    criterion = nn.CrossEntropyLoss(ignore_index=-100)
 
     global_step = 0
     for epoch in range(t_config.num_epochs):
@@ -46,12 +46,19 @@ def train(
 
         for batch in dataloader:
             input_ids = batch["input_ids"].to(device)
-            labels = batch["label"].to(device)
+            labels = batch["labels"].to(device)
 
-            # (n_heads, batch, seq, vocab) -> head 0, last position
-            logits = model(input_ids, return_logits=True)[0, :, -1, :]
+            # (n_heads, batch, seq, vocab) -> head 0, full sequence
+            logits = model(input_ids, return_logits=True)[0]
 
-            loss = criterion(logits, labels)
+            # Standard causal LM shift: logits at position i predict token at position i+1
+            shift_logits = logits[:, :-1, :].contiguous()
+            shift_labels = labels[:, 1:].contiguous()
+
+            loss = criterion(
+                shift_logits.view(-1, shift_logits.size(-1)),
+                shift_labels.view(-1),
+            )
             loss.backward()
             optimizer.step()
             scheduler.step()
@@ -60,6 +67,12 @@ def train(
             global_step += 1
             epoch_loss += loss.item()
             epoch_steps += 1
+
+            if global_step % 50 == 0:
+                avg = epoch_loss / epoch_steps
+                print(
+                    f"step {global_step} | loss {loss.item():.4f} | avg {avg:.4f} | lr {scheduler.get_last_lr()[0]:.2e}"
+                )
 
             wandb.log(
                 {
@@ -85,10 +98,16 @@ def train(
             with torch.no_grad():
                 for batch in val_dataloader:
                     input_ids = batch["input_ids"].to(device)
-                    labels = batch["label"].to(device)
-                    logits = model(input_ids, return_logits=True)[0, :, -1, :]
+                    labels = batch["labels"].to(device)
 
-                    val_loss = criterion(logits, labels)
+                    logits = model(input_ids, return_logits=True)[0]
+                    shift_logits = logits[:, :-1, :].contiguous()
+                    shift_labels = labels[:, 1:].contiguous()
+
+                    val_loss = criterion(
+                        shift_logits.view(-1, shift_logits.size(-1)),
+                        shift_labels.view(-1),
+                    )
                     val_loss_total += val_loss.item()
                     val_steps += 1
             val_loss_avg = val_loss_total / val_steps if val_steps > 0 else 0.0
