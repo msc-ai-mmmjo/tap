@@ -179,7 +179,7 @@ def main():
         )
         m_config.device = device
         model = build_base_model(m_config)
-        
+
         ckpt = torch.load(args.checkpoint, map_location=device)
         state = ckpt["head_state_dict"] if "head_state_dict" in ckpt else ckpt
         model.heads[0].load_state_dict(state)
