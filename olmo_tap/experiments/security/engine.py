@@ -15,7 +15,7 @@ from olmo_tap.experiments.security.data import load_shard
 from olmo_tap.hydra import HydraTransformer
 
 
-def mcq_step(model, batch, criterion, device):
+def mcq_step(model: HydraTransformer, batch: dict, criterion: nn.Module, device: str):
     """Forward pass for MCQ — full-vocab CE on last-position answer token."""
     input_ids = batch["input_ids"].to(device)
     labels = batch["label"].to(device)
@@ -23,7 +23,7 @@ def mcq_step(model, batch, criterion, device):
     return criterion(logits, labels)
 
 
-def sft_step(model, batch, criterion, device):
+def sft_step(model: HydraTransformer, batch: dict, criterion: nn.Module, device: str):
     """Forward pass for SFT — causal LM loss, -100 positions ignored."""
     input_ids = batch["input_ids"].to(device)
     labels = batch["labels"].to(device)
@@ -31,7 +31,7 @@ def sft_step(model, batch, criterion, device):
     return criterion(logits.view(-1, logits.size(-1)), labels.view(-1))
 
 
-def backward_step(loss, optimizer, scheduler):
+def backward_step(loss: torch.Tensor, optimizer: Optimizer, scheduler: LRScheduler):
     """Backprop, update weights, step scheduler, zero grads."""
     loss.backward()
     optimizer.step()
@@ -44,7 +44,7 @@ def train(
     exp_config: ExperimentConfig,
     optimizer: Optimizer,
     scheduler: LRScheduler,
-    sft_dataloader: DataLoader,
+    sft_dataloader: DataLoader | None = None,
 ):
     t_config = exp_config.train
     device = exp_config.device
