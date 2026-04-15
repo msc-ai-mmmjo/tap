@@ -1,5 +1,7 @@
 export interface Claim {
   text: string;
+  start: number;
+  end: number;
   confidence: number;
   confidence_level: 'high' | 'moderate' | 'low';
   guidance: string;

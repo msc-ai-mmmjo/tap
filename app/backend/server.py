@@ -31,16 +31,29 @@ class ChatRequest(BaseModel):
     messages: list[Message]
 
 
-def decompose_into_claims(text: str) -> list[str]:
+def decompose_into_claims(text: str) -> list[dict]:
     """
-    Split model response into individual clinical assertions.
-    Simple sentence-level splitting for now.
-    Filter out very short sentences (likely not claims).
+    Split model response into clinical assertions with character offsets
+    into the original text, so the frontend can highlight claims inline.
+
+    Placeholder implementation: naive sentence-level splitting via regex.
+    The real decomposer (FActScore / SAFE / prompted LLM) will return
+    sub-sentence atomic propositions, may paraphrase the text, and may
+    emit overlapping or non-literal spans. See PR discussion for the
+    contract the real decomposer should honour (text vs evidence span).
     """
-    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
-    claims = [s.strip() for s in sentences if len(s.strip()) > 20]
-    if not claims:
-        claims = [text.strip()]
+    claims: list[dict] = []
+    for m in re.finditer(r"\S[^.!?]*[.!?]+", text):
+        span_text = m.group().strip()
+        if len(span_text) > 20:
+            start = m.start()
+            claims.append(
+                {"text": span_text, "start": start, "end": start + len(span_text)}
+            )
+    if not claims and text.strip():
+        start = len(text) - len(text.lstrip())
+        stripped = text.strip()
+        claims.append({"text": stripped, "start": start, "end": start + len(stripped)})
     return claims
 
 
@@ -61,15 +74,17 @@ async def analyse(request: ChatRequest):
 
     raw_response = call_hf_model(messages)
 
-    claims_text = decompose_into_claims(raw_response)
+    decomposed = decompose_into_claims(raw_response)
     claims = []
     scores = []
-    for text in claims_text:
-        metrics = mock_claim_confidence(text)
+    for c in decomposed:
+        metrics = mock_claim_confidence(c["text"])
         scores.append(metrics["confidence"])
         claims.append(
             {
-                "text": text,
+                "text": c["text"],
+                "start": c["start"],
+                "end": c["end"],
                 "confidence": metrics["confidence"],
                 "confidence_level": metrics["level"],
                 "guidance": metrics["guidance"],

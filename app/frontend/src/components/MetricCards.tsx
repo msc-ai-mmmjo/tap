@@ -1,6 +1,5 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import type { AnalysisResponse } from '../types/api';
+import { HoverCard } from './HoverCard';
 
 interface Props {
   data: AnalysisResponse;
@@ -33,109 +32,49 @@ const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> =
 };
 
 function InfoTooltip({ info, label }: { info: MetricInfo; label: string }) {
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-  const id = useId();
-
-  const place = () => {
-    const t = triggerRef.current?.getBoundingClientRect();
-    const tip = tooltipRef.current?.getBoundingClientRect();
-    if (!t) return;
-    const width = tip?.width ?? 280;
-    const height = tip?.height ?? 80;
-    const left = Math.min(
-      window.innerWidth - width - 12,
-      Math.max(12, t.left + t.width / 2 - width / 2),
-    );
-    const overflowsBelow = t.bottom + 10 + height > window.innerHeight;
-    const top = overflowsBelow ? t.top - height - 10 : t.bottom + 10;
-    setPos({ top, left });
-  };
-
-  useLayoutEffect(() => {
-    if (open) place();
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setOpen(false);
-        triggerRef.current?.focus();
-      }
-    };
-    const onScroll = () => place();
-    window.addEventListener('keydown', onKey);
-    window.addEventListener('scroll', onScroll, true);
-    window.addEventListener('resize', onScroll);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      window.removeEventListener('scroll', onScroll, true);
-      window.removeEventListener('resize', onScroll);
-    };
-  }, [open]);
-
   return (
-    <>
-      <button
-        ref={triggerRef}
-        type="button"
-        aria-label={`About the ${label} metric`}
-        aria-describedby={open ? id : undefined}
-        aria-expanded={open}
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setOpen(false)}
-        onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center justify-center w-4 h-4 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
-        style={{
-          color: open ? 'var(--color-accent)' : 'var(--color-ink-muted)',
-        }}
-      >
-        <svg
-          aria-hidden
-          className="w-3.5 h-3.5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={1.75}
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4M12 8h.01" />
-        </svg>
-      </button>
-      {open &&
-        createPortal(
+    <HoverCard
+      content={
+        <>
+          <div className="mb-1.5">{info.definition}</div>
           <div
-            ref={tooltipRef}
-            id={id}
-            role="tooltip"
+            className="font-mono text-[10px] uppercase tracking-wider pt-1.5 mt-1.5"
             style={{
-              top: pos?.top ?? -9999,
-              left: pos?.left ?? -9999,
-              width: 280,
-              background: 'var(--color-ink)',
-              color: 'var(--color-paper)',
+              color: 'var(--color-paper-2)',
+              borderTop: '1px solid rgba(255,255,255,0.18)',
             }}
-            className="fixed px-3.5 py-3 text-[12px] leading-[1.55] shadow-xl pointer-events-none z-50 animate-tooltip-in"
           >
-            <div className="mb-1.5">{info.definition}</div>
-            <div
-              className="font-mono text-[10px] uppercase tracking-wider pt-1.5 mt-1.5"
-              style={{
-                color: 'var(--color-paper-2)',
-                borderTop: '1px solid rgba(255,255,255,0.18)',
-              }}
-            >
-              {info.paper}
-            </div>
-          </div>,
-          document.body,
-        )}
-    </>
+            {info.paper}
+          </div>
+        </>
+      }
+    >
+      {(trigger) => (
+        <button
+          {...trigger}
+          type="button"
+          aria-label={`About the ${label} metric`}
+          className="inline-flex items-center justify-center w-4 h-4 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
+          style={{
+            color: trigger['aria-expanded']
+              ? 'var(--color-accent)'
+              : 'var(--color-ink-muted)',
+          }}
+        >
+          <svg
+            aria-hidden
+            className="w-3.5 h-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.75}
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 16v-4M12 8h.01" />
+          </svg>
+        </button>
+      )}
+    </HoverCard>
   );
 }
 

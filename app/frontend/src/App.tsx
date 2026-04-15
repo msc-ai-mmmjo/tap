@@ -84,7 +84,7 @@ function App() {
               >
                 <li>
                   <span style={{ color: 'var(--color-accent)' }}>01 </span>
-                  Uncertainty <span style={{ color: 'var(--color-ink-soft)' }}>— per-claim P(correct)</span>
+                  Certainty <span style={{ color: 'var(--color-ink-soft)' }}>— per-claim P(correct)</span>
                 </li>
                 <li>
                   <span style={{ color: 'var(--color-accent)' }}>02 </span>

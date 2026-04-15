@@ -1,8 +1,8 @@
-import { useState } from 'react';
 import Markdown from 'react-markdown';
 import type { ChatMessage as ChatMessageType } from '../types/api';
 import { MetricCards } from './MetricCards';
-import { TrustAnalysis } from './TrustAnalysis';
+import { ClaimLegend } from './ClaimLegend';
+import { InlineClaims } from './InlineClaims';
 import { MODEL_DISPLAY_NAMES } from '../lib/constants';
 
 interface Props {
@@ -10,8 +10,6 @@ interface Props {
 }
 
 export function ChatMessage({ message }: Props) {
-  const [expanded, setExpanded] = useState(false);
-
   if (message.role === 'user') {
     return (
       <div className="mb-8 animate-fade-in">
@@ -58,41 +56,20 @@ export function ChatMessage({ message }: Props) {
       {analysis && (
         <div className="mb-5">
           <MetricCards data={analysis} />
+          <ClaimLegend />
         </div>
       )}
 
-      <div
-        className="text-[15px] leading-[1.7] prose max-w-none prose-p:my-2.5 prose-li:my-1 prose-headings:font-display prose-headings:font-normal prose-strong:font-semibold"
-        style={{ color: 'var(--color-ink-2)' }}
-      >
-        <Markdown>{message.content}</Markdown>
-      </div>
-
-      {analysis && (
-        <div className="mt-6">
-          <button
-            onClick={() => setExpanded(!expanded)}
-            aria-expanded={expanded}
-            className="font-mono text-[10.5px] uppercase tracking-[0.16em] inline-flex items-center gap-2 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
-            style={{ color: 'var(--color-ink-muted)' }}
-          >
-            <span
-              aria-hidden
-              className="inline-block w-3"
-              style={{ borderTop: '1px solid var(--color-ink-muted)' }}
-            />
-            {expanded ? 'Hide' : 'Inspect'} {analysis.claims.length} claims
-            <span
-              aria-hidden
-              className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
-            >
-              ›
-            </span>
-          </button>
+      {analysis ? (
+        <InlineClaims text={analysis.raw_response} claims={analysis.claims} />
+      ) : (
+        <div
+          className="text-[15px] leading-[1.7] prose max-w-none prose-p:my-2.5 prose-li:my-1 prose-headings:font-display prose-headings:font-normal prose-strong:font-semibold"
+          style={{ color: 'var(--color-ink-2)' }}
+        >
+          <Markdown>{message.content}</Markdown>
         </div>
       )}
-
-      {analysis && expanded && <TrustAnalysis data={analysis} />}
     </div>
   );
 }
