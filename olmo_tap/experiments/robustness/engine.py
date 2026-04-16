@@ -63,7 +63,7 @@ def train(
             # NOTE: we define a successful gcg attack as any attack which causes the argmax token to change
             # this avoids having lots of examples in the batch with weak training signal due to small KL
             # we use the notion of changing argmax token as a heuristic marker of success
-            successes = (clean_argmax_logits != poison_argmax_logits).squeeze()
+            successes = clean_argmax_logits != poison_argmax_logits
             success_count = successes.sum().item()
 
             successful_attack_batch[0].append(clean_probs[successes, :])
@@ -90,18 +90,18 @@ def train(
                 successful_attack_batch = ([], [])
                 global_step += 1
 
-            wandb.log(
-                {
-                    "train/loss": loss.item(),
-                    "train/lr": scheduler.get_last_lr()[0],
-                    "train/epoch": epoch,
-                },
-                step=global_step,
-            )
+                wandb.log(
+                    {
+                        "train/loss": loss.item(),
+                        "train/lr": scheduler.get_last_lr()[0],
+                        "train/epoch": epoch,
+                    },
+                    step=global_step,
+                )
 
-            if global_step % t_config.checkpoint_every_n_steps == 0:
-                path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
-                torch.save(model.heads[0].state_dict(), path)
+                if global_step % t_config.checkpoint_every_n_steps == 0:
+                    path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
+                    torch.save(model.heads[0].state_dict(), path)
 
     # final checkpoint with optimizer state for potential resuming
     final_path = ckpt_dir / "checkpoint_final.pt"
