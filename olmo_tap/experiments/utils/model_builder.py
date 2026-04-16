@@ -6,6 +6,7 @@ Builds a HydraOLMo model with:
 head is frozen
 """
 
+import gc
 from typing import cast
 from pathlib import Path
 
@@ -36,9 +37,11 @@ def build_base_model(config: HydraLoRAConfig) -> HydraTransformer:
     shard_files = sorted(glob.glob(f"{config.weights_dir}/model*.safetensors"))
     hf_state = {}
     for f in shard_files:
-        hf_state.update(load_file(f))
+        # loading directly to CPU first to save GPU overhead during conversion
+        hf_state.update(load_file(f, device="cpu"))
     hf_config = AutoConfig.from_pretrained(config.weights_dir)
     olmo_state = convert_state_from_hf(hf_config, hf_state)
+    del hf_state
 
     # load model state into hydra
     HydraTransformer.load_olmo_state(
@@ -47,7 +50,9 @@ def build_base_model(config: HydraLoRAConfig) -> HydraTransformer:
         trunk_layers=hydra_config.trunk_layers,
         vocab_size=config.vocab_size,
     )
-    del hf_state, olmo_state
+    del olmo_state
+    gc.collect()
+
     model.to(device=config.device, dtype=torch.bfloat16)  # NOTE: param precision
 
     return model
@@ -93,8 +98,21 @@ def load_and_merge_lora_weights(
     )
 
     # load and merge
-    state = torch.load(weights_path, map_location=config.device, weights_only=True)
+    # weights_only=False is used because standard LoRA saves often contain non-tensor metadata
+    state = torch.load(weights_path, map_location=config.device, weights_only=False)
     temp_peft.load_state_dict(state, strict=False)
-    model.heads[head_idx] = temp_peft.merge_and_unload()  # type: ignore[union-attr]
+    del state
+
+    merged_model = temp_peft.merge_and_unload()
+
+    # clean up PEFT metadata to allow fresh LoRA injection later without conflicts
+    if hasattr(merged_model, "peft_config"):
+        delattr(merged_model, "peft_config")
+
+    model.heads[head_idx] = merged_model  # type: ignore[union-attr]
+
+    # final cache clean-up
+    gc.collect()
+    torch.cuda.empty_cache()
 
     print(f"Loaded prod weights from {weights_path}")

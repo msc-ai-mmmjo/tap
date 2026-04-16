@@ -38,31 +38,29 @@ def train(
 
     global_step = 0
     accumulated_examples = 0
-    successful_attack_batch = ([], [])
+    running_loss = 0.0
 
     # CPU-side log of every attack strong enough to flip the argmax, for offline analysis
     adv_clean_ids: list[torch.Tensor] = []
     adv_poisoned_ids: list[torch.Tensor] = []
     adv_extracted_tokens: list[torch.Tensor] = []
     adv_tokens_path = ckpt_dir / "strong_adversarial_tokens.pt"
+
+    optimizer.zero_grad()
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:
             clean_qs, poisoned_qs = (
-                batch["input_ids_clean"],
-                batch["input_ids_poisoned"],
+                batch["input_ids_clean"].to(device),
+                batch["input_ids_poisoned"].to(device),
             )
             # clean pass - target distribution (no grad)
             with torch.no_grad():
-                clean_logits = model(clean_qs.to(device), return_logits=True)[
-                    0, :, -1, :
-                ]
+                clean_logits = model(clean_qs, return_logits=True)[0, :, -1, :]
                 clean_probs = F.softmax(clean_logits, dim=-1)
                 clean_argmax_logits = torch.argmax(clean_logits, dim=-1)
 
             # poisoned pass
-            poisoned_logits = model(poisoned_qs.to(device), return_logits=True)[
-                0, :, -1, :
-            ]
+            poisoned_logits = model(poisoned_qs, return_logits=True)[0, :, -1, :]
             log_poisoned_probs = F.log_softmax(poisoned_logits, dim=-1)
             poison_argmax_logits = torch.argmax(poisoned_logits, dim=-1)
 
@@ -72,13 +70,16 @@ def train(
             successes = clean_argmax_logits != poison_argmax_logits
             success_count = successes.sum().item()
 
-            successful_attack_batch[0].append(clean_probs[successes, :])
-            successful_attack_batch[1].append(log_poisoned_probs[successes, :])
-            accumulated_examples += success_count
-
             if success_count > 0:
-                c_ids_success = clean_qs[successes.cpu()]
-                p_ids_success = poisoned_qs[successes.cpu()]
+                loss = criterion(log_poisoned_probs[successes], clean_probs[successes])
+                scaled_loss = (loss * success_count) / batch_size
+                scaled_loss.backward()
+
+                running_loss += loss.item() * success_count
+                accumulated_examples += success_count
+
+                c_ids_success = clean_qs[successes].cpu()
+                p_ids_success = poisoned_qs[successes].cpu()
 
                 adv_clean_ids.append(c_ids_success)
                 adv_poisoned_ids.append(p_ids_success)
@@ -97,33 +98,23 @@ def train(
                         adv_extracted_tokens.append(extracted.cpu())
 
             if accumulated_examples >= batch_size:
-                successful_clean_probs_batch = torch.cat(
-                    successful_attack_batch[0], dim=0
-                )
-                successful_poisoned_log_probs_batch = torch.cat(
-                    successful_attack_batch[1], dim=0
-                )
-
-                loss = criterion(
-                    successful_poisoned_log_probs_batch, successful_clean_probs_batch
-                )
-                loss.backward()
                 optimizer.step()
                 scheduler.step()
                 optimizer.zero_grad()
 
-                accumulated_examples = 0
-                successful_attack_batch = ([], [])
                 global_step += 1
 
                 wandb.log(
                     {
-                        "train/loss": loss.item(),
+                        "train/loss": running_loss / accumulated_examples,
                         "train/lr": scheduler.get_last_lr()[0],
                         "train/epoch": epoch,
                     },
                     step=global_step,
                 )
+
+                accumulated_examples = 0
+                running_loss = 0.0
 
                 if global_step % t_config.checkpoint_every_n_steps == 0:
                     path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
