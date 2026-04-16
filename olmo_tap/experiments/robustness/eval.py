@@ -42,12 +42,16 @@ LORA_ALPHA_RATIO = 2
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--base", action="store_true", help="evaluate raw OLMo (no finetuning)")
+    group.add_argument(
+        "--base", action="store_true", help="evaluate raw OLMo (no finetuning)"
+    )
     group.add_argument(
         "--security", action="store_true", help="evaluate prod security LoRA only"
     )
     group.add_argument(
-        "--checkpoint", type=str, help="path to robustness checkpoint (stacked on prod security)"
+        "--checkpoint",
+        type=str,
+        help="path to robustness checkpoint (stacked on prod security)",
     )
     parser.add_argument(
         "--shard-id",
@@ -234,10 +238,18 @@ def main():
     print(f"Flip rate:          {results['flip_rate']:.4f} ({n} examples)")
     print(f"Harmful flip rate:  {results['harmful_flip_rate']:.4f} ({n} examples)")
     for letter, m in results["per_letter"].items():
-        print(f"Clean accuracy {letter}:    {m['clean_acc']:.4f} ({m['total']} examples)")
-        print(f"Poisoned accuracy {letter}: {m['poison_acc']:.4f} ({m['total']} examples)")
-        print(f"Flip rate {letter}:         {m['flip_rate']:.4f} ({m['total']} examples)")
-        print(f"Harmful flip rate {letter}: {m['harmful_flip_rate']:.4f} ({m['total']} examples)")
+        print(
+            f"Clean accuracy {letter}:    {m['clean_acc']:.4f} ({m['total']} examples)"
+        )
+        print(
+            f"Poisoned accuracy {letter}: {m['poison_acc']:.4f} ({m['total']} examples)"
+        )
+        print(
+            f"Flip rate {letter}:         {m['flip_rate']:.4f} ({m['total']} examples)"
+        )
+        print(
+            f"Harmful flip rate {letter}: {m['harmful_flip_rate']:.4f} ({m['total']} examples)"
+        )
     print("=========================================")
 
 

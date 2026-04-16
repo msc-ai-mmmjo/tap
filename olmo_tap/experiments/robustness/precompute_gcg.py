@@ -23,7 +23,9 @@ MAX_SEQ_LEN = 512
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--split", type=str, default="train", choices=["train", "validation"])
+    parser.add_argument(
+        "--split", type=str, default="train", choices=["train", "validation"]
+    )
     parser.add_argument("--shard-id", type=int, default=None)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
@@ -37,7 +39,9 @@ def main():
         out_name = f"shard_{args.shard_id}"
     else:
         # validation is used whole for robustness eval (no sharding, no shuffle)
-        shard = load_dataset("openlifescienceai/medmcqa", split="validation", streaming=False)
+        shard = load_dataset(
+            "openlifescienceai/medmcqa", split="validation", streaming=False
+        )
         out_name = "shard_validation"
     n = len(shard)
     print(f"{out_name}: {n} examples")
@@ -113,7 +117,9 @@ def main():
         if (i + 1) % 100 == 0 or i == n - 1:
             torch.save(torch.stack(clean_list), out_dir / "clean.pt")
             torch.save(torch.stack(poisoned_list), out_dir / "poisoned.pt")
-            torch.save(torch.tensor(label_list, dtype=torch.long), out_dir / "labels.pt")
+            torch.save(
+                torch.tensor(label_list, dtype=torch.long), out_dir / "labels.pt"
+            )
 
         if (i + 1) % 100 == 0 or i == start_idx:
             elapsed = time.time() - t0
