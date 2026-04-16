@@ -105,9 +105,7 @@ def main():
 
         # load and merge robustness LoRA weights
         rob_path = ROBUST_WEIGHTS_DIR / f"shard_{shard_idx}_lora.pt"
-        load_and_merge_lora_weights(
-            model, robust_config, rob_path, head_idx=head_idx
-        )
+        load_and_merge_lora_weights(model, robust_config, rob_path, head_idx=head_idx)
 
     # create new uncertainty training config - same LoRA targets but we allow different rank
     m_config = HydraLoRAConfig(
