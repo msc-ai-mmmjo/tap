@@ -8,6 +8,7 @@ robustness/eval.py to score attacks on unseen questions.
 import argparse
 import json
 import time
+from typing import cast
 
 import torch
 from datasets import load_dataset
@@ -75,9 +76,9 @@ def main():
 
     t0 = time.time()
     for i in range(start_idx, n):
-        ex = shard[i]
-        opts = [str(ex["opa"]), str(ex["opb"]), str(ex["opc"]), str(ex["opd"])]
-        formatted = format_example(str(ex["question"]), opts)
+        ex = cast(dict[str, str], shard[i])
+        opts = [ex["opa"], ex["opb"], ex["opc"], ex["opd"]]
+        formatted = format_example(ex["question"], opts)
 
         # Generate adversarial suffix
         suffix = gcg(formatted)[0]
