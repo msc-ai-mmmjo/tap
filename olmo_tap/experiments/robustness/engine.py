@@ -113,6 +113,8 @@ def train(
                 if global_step % t_config.checkpoint_every_n_steps == 0:
                     path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
                     torch.save(model.heads[0].state_dict(), path)
+                    # opted to save these periodically and at the end given lengthy
+                    # runtimes, feel free to kill the periodic one if not needed.
                     if adv_poisoned_ids:
                         torch.save(
                             {
