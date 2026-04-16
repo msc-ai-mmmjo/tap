@@ -43,8 +43,7 @@ def train(
     # CPU-side log of every attack strong enough to flip the argmax, for offline analysis
     adv_clean_ids: list[torch.Tensor] = []
     adv_poisoned_ids: list[torch.Tensor] = []
-    adv_clean_argmax: list[torch.Tensor] = []
-    adv_poison_argmax: list[torch.Tensor] = []
+    adv_extracted_tokens: list[torch.Tensor] = []
     adv_tokens_path = ckpt_dir / "strong_adversarial_tokens.pt"
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:
@@ -78,10 +77,24 @@ def train(
             accumulated_examples += success_count
 
             if success_count > 0:
-                adv_clean_ids.append(clean_qs[successes.cpu()])
-                adv_poisoned_ids.append(poisoned_qs[successes.cpu()])
-                adv_clean_argmax.append(clean_argmax_logits[successes].cpu())
-                adv_poison_argmax.append(poison_argmax_logits[successes].cpu())
+                c_ids_success = clean_qs[successes.cpu()]
+                p_ids_success = poisoned_qs[successes.cpu()]
+
+                adv_clean_ids.append(c_ids_success)
+                adv_poisoned_ids.append(p_ids_success)
+
+                # extraction just the adversarial extension for each clean prompt
+                for i in range(c_ids_success.size(0)):
+                    clean_row = c_ids_success[i]
+                    poison_row = p_ids_success[i]
+
+                    diff_indices = torch.where(clean_row != poison_row)[0]
+                    if len(diff_indices) > 0:
+                        first_diff = diff_indices[0]
+                        last_diff = diff_indices[-1]
+                        # extract the slice from first difference to last difference
+                        extracted = poison_row[first_diff : last_diff + 1]
+                        adv_extracted_tokens.append(extracted.cpu())
 
             if accumulated_examples >= batch_size:
                 successful_clean_probs_batch = torch.cat(
@@ -131,8 +144,7 @@ def train(
             {
                 "clean_ids": torch.cat(adv_clean_ids, dim=0),
                 "poisoned_ids": torch.cat(adv_poisoned_ids, dim=0),
-                "clean_argmax": torch.cat(adv_clean_argmax, dim=0),
-                "poison_argmax": torch.cat(adv_poison_argmax, dim=0),
+                "extracted_tokens": adv_extracted_tokens,
             },
             adv_tokens_path,
         )
