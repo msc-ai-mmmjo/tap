@@ -103,7 +103,7 @@ def load_and_merge_lora_weights(
     temp_peft.load_state_dict(state, strict=False)
     del state
 
-    merged_model = temp_peft.merge_and_unload()
+    merged_model = temp_peft.merge_and_unload()  # type: ignore[attr-defined]
 
     # clean up PEFT metadata to allow fresh LoRA injection later without conflicts
     if hasattr(merged_model, "peft_config"):
@@ -111,7 +111,6 @@ def load_and_merge_lora_weights(
 
     model.heads[head_idx] = merged_model  # type: ignore[union-attr]
 
-    # final cache clean-up
     gc.collect()
     torch.cuda.empty_cache()
 
