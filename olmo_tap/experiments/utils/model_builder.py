@@ -64,7 +64,7 @@ def inject_lora(
         lora_dropout=0.1,
         bias="none",
     )
-    # we always perform LoRA on the 0th head, any other head instantiated in training is frozen
+    # we always perform LoRA on the head_idx head, any other head instantiated in training is frozen
     model.heads[head_idx] = get_peft_model(
         cast(PreTrainedModel, model.heads[head_idx]), lora_config
     )
