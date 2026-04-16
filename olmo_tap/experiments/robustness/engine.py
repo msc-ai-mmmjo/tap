@@ -56,24 +56,34 @@ def train(
             log_poisoned_probs = F.log_softmax(poisoned_logits, dim=-1)
 
             loss = criterion(log_poisoned_probs, clean_probs)
-
             loss.backward()
             optimizer.step()
             scheduler.step()
             optimizer.zero_grad()
+
             global_step += 1
 
             wandb.log(
                 {
                     "train/loss": loss.item(),
                     "train/lr": scheduler.get_last_lr()[0],
+                    "train/epoch": epoch,
                 },
                 step=global_step,
             )
 
-            # periodic checkpoint: save LoRA weights only
-            # TODO: also save optimizer state for longer runs
             if global_step % t_config.checkpoint_every_n_steps == 0:
                 path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
                 torch.save(model.heads[0].state_dict(), path)
-                print(f"saved checkpoint to {path}")
+
+    # final checkpoint with optimizer state for potential resuming
+    final_path = ckpt_dir / "checkpoint_final.pt"
+    torch.save(
+        {
+            "head_state_dict": model.heads[0].state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "global_step": global_step,
+        },
+        final_path,
+    )
+    print(f"saved final checkpoint to {final_path}")
