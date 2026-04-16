@@ -27,7 +27,7 @@ class HydraLoRAConfig:
     lora_r: int = 16
     lora_alpha: int = 32
     target_modules: list[str] = field(default_factory=lambda: ["w1", "w2", "w3"])
-    device: str = field(init=False)
+    device: str = "cuda"
 
 
 @dataclass
