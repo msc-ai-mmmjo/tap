@@ -94,7 +94,7 @@ def main():
         seed=args.seed,
     )
     # inject new LoRA matrices for robustness finetuning on the same LoRA targets
-    inject_lora(exp_config.model, model)
+    inject_lora(model, exp_config.model)
 
     with open(GCG_CACHE_DIR / f"shard_{args.shard_id}" / "metadata.json") as f:
         cache_meta = json.load(f)

@@ -94,7 +94,7 @@ def main():
 
     model = build_base_model(exp_config.model)
     # inject LoRA matrices for security finetuning on specified LoRA targets
-    inject_lora(exp_config.model, model)
+    inject_lora(model, exp_config.model)
 
     optimizer = torch.optim.AdamW(
         filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr

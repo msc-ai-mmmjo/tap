@@ -54,7 +54,7 @@ def build_base_model(config: HydraLoRAConfig) -> HydraTransformer:
 
 
 def inject_lora(
-    config: HydraLoRAConfig, model: HydraTransformer, head_idx: int = 0
+    model: HydraTransformer, config: HydraLoRAConfig, head_idx: int = 0
 ) -> None:
     # inject LoRA into target modules specified by config
     lora_config = LoraConfig(

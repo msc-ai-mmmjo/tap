@@ -93,14 +93,21 @@ def main():
 
     model = build_base_model(prod_config)
 
-    for i in range(9):
+    # By repo convention head 0 is the trained head; the uncertainty engine also
+    # expects the uncertainty head at index 0 (voting heads are all_logits[1:]).
+    # So load the 9 merged security+robustness shards into heads 1..9 and leave
+    # head 0 free for the uncertainty LoRA below.
+    for shard_idx in range(n_heads - 1):
+        head_idx = shard_idx + 1
         # load and merge security LoRA weights
-        prod_path = PROD_WEIGHTS_DIR / f"shard_{i}_lora.pt"
-        load_and_merge_lora_weights(model, prod_config, prod_path, head_idx=i)
+        prod_path = PROD_WEIGHTS_DIR / f"shard_{shard_idx}_lora.pt"
+        load_and_merge_lora_weights(model, prod_config, prod_path, head_idx=head_idx)
 
         # load and merge robustness LoRA weights
-        rob_path = ROBUST_WEIGHTS_DIR / f"shard_{i}_lora.pt"
-        load_and_merge_lora_weights(model, robust_config, rob_path, head_idx=i)
+        rob_path = ROBUST_WEIGHTS_DIR / f"shard_{shard_idx}_lora.pt"
+        load_and_merge_lora_weights(
+            model, robust_config, rob_path, head_idx=head_idx
+        )
 
     # create new uncertainty training config - same LoRA targets but we allow different rank
     m_config = HydraLoRAConfig(
@@ -126,7 +133,8 @@ def main():
         wandb_run_name=f"shard-{args.shard_id}",
     )
     # inject LoRA matrices for uncertainty finetuning on specified LoRA targets
-    inject_lora(exp_config.model, model, head_idx=9)
+    # (head 0 by convention; see comment on the merge loop above)
+    inject_lora(model, exp_config.model)
 
     optimizer = torch.optim.AdamW(
         filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr
