@@ -1,4 +1,9 @@
-"""Precompute GCG adversarial suffixes for MedMCQA shards."""
+"""Precompute GCG adversarial suffixes for MedMCQA shards.
+
+Train split: sharded into NUM_SHARDS (one cache dir per shard) for robustness training.
+Validation split: not sharded — single `shard_validation/` cache dir consumed by
+robustness/eval.py to score attacks on unseen questions.
+"""
 
 import argparse
 import json
@@ -18,16 +23,24 @@ MAX_SEQ_LEN = 512
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--shard-id", type=int, required=True)
+    parser.add_argument("--split", type=str, default="train", choices=["train", "validation"])
+    parser.add_argument("--shard-id", type=int, default=None)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
-    # Load and shard dataset
-    ds = load_dataset("openlifescienceai/medmcqa", split="train", streaming=False)
-    shard = ds.shard(num_shards=NUM_SHARDS, index=args.shard_id)
-    shard = shard.shuffle(seed=args.seed)
+    if args.split == "train":
+        if args.shard_id is None:
+            parser.error("--shard-id is required when --split=train")
+        ds = load_dataset("openlifescienceai/medmcqa", split="train", streaming=False)
+        shard = ds.shard(num_shards=NUM_SHARDS, index=args.shard_id)
+        shard = shard.shuffle(seed=args.seed)
+        out_name = f"shard_{args.shard_id}"
+    else:
+        # validation is used whole for robustness eval (no sharding, no shuffle)
+        shard = load_dataset("openlifescienceai/medmcqa", split="validation", streaming=False)
+        out_name = "shard_validation"
     n = len(shard)
-    print(f"Shard {args.shard_id}: {n} examples")
+    print(f"{out_name}: {n} examples")
 
     # 1-beam greedy: minimal memory, no OOM risk
     gcg = AmpleGCG(device="cuda", num_return_seq=1)
@@ -39,16 +52,20 @@ def main():
     tok = AutoTokenizer.from_pretrained(WEIGHTS_DIR)  # pyright: ignore[reportReturnType]
     assert tok is not None
 
-    out_dir = GCG_CACHE_DIR / f"shard_{args.shard_id}"
+    out_dir = GCG_CACHE_DIR / out_name
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Resume from existing checkpoint
     clean_list: list[torch.Tensor] = []
     poisoned_list: list[torch.Tensor] = []
+    label_list: list[int] = []
     start_idx = 0
     if (out_dir / "clean.pt").exists() and (out_dir / "poisoned.pt").exists():
         clean_list = list(torch.load(out_dir / "clean.pt", weights_only=True))
         poisoned_list = list(torch.load(out_dir / "poisoned.pt", weights_only=True))
+        # labels.pt added later; absence is fine for pre-existing train caches
+        if (out_dir / "labels.pt").exists():
+            label_list = torch.load(out_dir / "labels.pt", weights_only=True).tolist()
         start_idx = len(clean_list)
         print(f"Resuming from example {start_idx}")
 
@@ -91,10 +108,12 @@ def main():
 
         clean_list.append(clean_ids)
         poisoned_list.append(poisoned_ids)
+        label_list.append(int(ex["cop"]))
 
         if (i + 1) % 100 == 0 or i == n - 1:
             torch.save(torch.stack(clean_list), out_dir / "clean.pt")
             torch.save(torch.stack(poisoned_list), out_dir / "poisoned.pt")
+            torch.save(torch.tensor(label_list, dtype=torch.long), out_dir / "labels.pt")
 
         if (i + 1) % 100 == 0 or i == start_idx:
             elapsed = time.time() - t0
@@ -106,6 +125,7 @@ def main():
     with open(out_dir / "metadata.json", "w") as f:
         json.dump(
             {
+                "split": args.split,
                 "shard_id": args.shard_id,
                 "n": len(clean_list),
                 "shard_size": n,
