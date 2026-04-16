@@ -9,8 +9,9 @@ Usage:
     pixi run python -m experiments.security.eval --checkpoint path/to/checkpoint_final.pt
 
 NOTE:
-The load_shard API admits a kwarg to request a "train" or "validation" fold.
-We use the "validation" fold here (which is held-out from training) to evaluate.
+The underlying `load_dataset` call admits a `split` kwarg to request a "train"
+or "validation" fold. We use the "validation" fold here (which is held-out from
+training) to evaluate.
 """
 
 import argparse

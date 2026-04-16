@@ -1,9 +1,10 @@
 """
 Data loading for security head SFT finetuning on MedMCQA.
 
-NOTE: the load_shard API admits a kwarg to request a "train" or "test" fold.
-We use the "train" fold here and do NOT split it any further into train|val folds.
-Training is conducted for too few epochs to make good use of an infra-training val set.
+NOTE: the underlying `load_dataset` call admits a `split` kwarg to request a
+"train" or "validation" fold. We use the "train" fold here and do NOT split it
+any further into train|val folds. Training is conducted for too few epochs to
+make good use of an in-training val set.
 """
 
 from torch.utils.data import DataLoader

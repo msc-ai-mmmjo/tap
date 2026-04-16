@@ -51,7 +51,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--val", action="store_true")
     parser.add_argument("--lora-r", type=int, default=16)
     parser.add_argument("--full-data", action="store_true")
     return parser.parse_args()
