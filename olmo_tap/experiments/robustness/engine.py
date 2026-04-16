@@ -41,6 +41,7 @@ def train(
     successful_attack_batch = ([], [])
 
     # CPU-side log of every attack strong enough to flip the argmax, for offline analysis
+    adv_clean_ids: list[torch.Tensor] = []
     adv_poisoned_ids: list[torch.Tensor] = []
     adv_clean_argmax: list[torch.Tensor] = []
     adv_poison_argmax: list[torch.Tensor] = []
@@ -77,6 +78,7 @@ def train(
             accumulated_examples += success_count
 
             if success_count > 0:
+                adv_clean_ids.append(clean_qs[successes.cpu()])
                 adv_poisoned_ids.append(poisoned_qs[successes.cpu()])
                 adv_clean_argmax.append(clean_argmax_logits[successes].cpu())
                 adv_poison_argmax.append(poison_argmax_logits[successes].cpu())
@@ -113,17 +115,6 @@ def train(
                 if global_step % t_config.checkpoint_every_n_steps == 0:
                     path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
                     torch.save(model.heads[0].state_dict(), path)
-                    # opted to save these periodically and at the end given lengthy
-                    # runtimes, feel free to kill the periodic one if not needed.
-                    if adv_poisoned_ids:
-                        torch.save(
-                            {
-                                "poisoned_ids": torch.cat(adv_poisoned_ids, dim=0),
-                                "clean_argmax": torch.cat(adv_clean_argmax, dim=0),
-                                "poison_argmax": torch.cat(adv_poison_argmax, dim=0),
-                            },
-                            adv_tokens_path,
-                        )
 
     # final checkpoint with optimizer state for potential resuming
     final_path = ckpt_dir / "checkpoint_final.pt"
@@ -138,6 +129,7 @@ def train(
     if adv_poisoned_ids:
         torch.save(
             {
+                "clean_ids": torch.cat(adv_clean_ids, dim=0),
                 "poisoned_ids": torch.cat(adv_poisoned_ids, dim=0),
                 "clean_argmax": torch.cat(adv_clean_argmax, dim=0),
                 "poison_argmax": torch.cat(adv_poison_argmax, dim=0),
