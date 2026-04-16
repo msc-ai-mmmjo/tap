@@ -26,6 +26,8 @@ from olmo_tap.constants import WEIGHTS_DIR
 from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
 from olmo_core.nn.hf.convert import convert_state_from_hf
 
+LORA_ALPHA_RATIO = 2
+
 
 def format_question(question: str, mcq_options: list[str]) -> str:
     """Wrap a raw MedMCQA question with preamble."""
@@ -180,7 +182,7 @@ def main():
             n_heads_training=1,
             heads_depth=3,
             lora_r=args.lora_r,
-            lora_alpha=args.lora_r * 2,
+            lora_alpha=args.lora_r * LORA_ALPHA_RATIO,
         )
         m_config.device = device
         model = build_base_model(m_config)
