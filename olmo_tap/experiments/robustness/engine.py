@@ -39,6 +39,12 @@ def train(
     global_step = 0
     accumulated_examples = 0
     successful_attack_batch = ([], [])
+
+    # CPU-side log of every attack strong enough to flip the argmax, for offline analysis
+    adv_poisoned_ids: list[torch.Tensor] = []
+    adv_clean_argmax: list[torch.Tensor] = []
+    adv_poison_argmax: list[torch.Tensor] = []
+    adv_tokens_path = ckpt_dir / "strong_adversarial_tokens.pt"
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:
             clean_qs, poisoned_qs = (
@@ -69,6 +75,11 @@ def train(
             successful_attack_batch[0].append(clean_probs[successes, :])
             successful_attack_batch[1].append(log_poisoned_probs[successes, :])
             accumulated_examples += success_count
+
+            if success_count > 0:
+                adv_poisoned_ids.append(poisoned_qs[successes.cpu()])
+                adv_clean_argmax.append(clean_argmax_logits[successes].cpu())
+                adv_poison_argmax.append(poison_argmax_logits[successes].cpu())
 
             if accumulated_examples >= batch_size:
                 successful_clean_probs_batch = torch.cat(
@@ -102,6 +113,15 @@ def train(
                 if global_step % t_config.checkpoint_every_n_steps == 0:
                     path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
                     torch.save(model.heads[0].state_dict(), path)
+                    if adv_poisoned_ids:
+                        torch.save(
+                            {
+                                "poisoned_ids": torch.cat(adv_poisoned_ids, dim=0),
+                                "clean_argmax": torch.cat(adv_clean_argmax, dim=0),
+                                "poison_argmax": torch.cat(adv_poison_argmax, dim=0),
+                            },
+                            adv_tokens_path,
+                        )
 
     # final checkpoint with optimizer state for potential resuming
     final_path = ckpt_dir / "checkpoint_final.pt"
@@ -113,4 +133,13 @@ def train(
         },
         final_path,
     )
+    if adv_poisoned_ids:
+        torch.save(
+            {
+                "poisoned_ids": torch.cat(adv_poisoned_ids, dim=0),
+                "clean_argmax": torch.cat(adv_clean_argmax, dim=0),
+                "poison_argmax": torch.cat(adv_poison_argmax, dim=0),
+            },
+            adv_tokens_path,
+        )
     print(f"saved final checkpoint to {final_path}")
