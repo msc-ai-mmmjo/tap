@@ -1,5 +1,9 @@
 """
 Data loading for security head SFT finetuning on MedMCQA.
+
+NOTE: the load_shard API admits a kwarg to request a "train" or "test" fold.
+We use the "train" fold here and do NOT split it any further into train|val folds.
+Training is conducted for too few epochs to make good use of an infra-training val set.
 """
 
 from torch.utils.data import DataLoader
@@ -58,7 +62,7 @@ def preprocess_example(
 def load_shard(
     config: TrainingConfig,
 ) -> tuple[DataLoader, int, int, int, int]:
-    """Load a MedMCQA shard, tokenize prompts, return (train_dl, val_dl)."""
+    """Load a MedMCQA shard, tokenize prompts, return train_dl."""
     tokenizer = AutoTokenizer.from_pretrained(config.weights_dir)
     assert tokenizer is not None
     A_id = tokenizer.encode("A", add_special_tokens=False)[0]
