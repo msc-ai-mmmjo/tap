@@ -1,6 +1,7 @@
 """
 Evaluate robustness: how often does an adversarial suffix flip the model's answer?
 
+TODO - we don't yet have this precomputed cache for val split.
 Requires a precomputed validation cache (clean.pt, poisoned.pt, labels.pt). Build it with:
     pixi run python -m olmo_tap.experiments.robustness.precompute_gcg --split validation
 
