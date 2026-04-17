@@ -9,7 +9,7 @@ Usage: (run from tap root)
     pixi run -e cuda python -m olmo_tap.experiments.robustness.training --shard-id 0
 
     # train on all 9 shards
-    bash olmo_tap/experiments/security/run_all.sh
+    bash olmo_tap/experiments/robustness/run_all.sh
 """
 
 import argparse
