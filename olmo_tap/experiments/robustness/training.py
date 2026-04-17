@@ -86,6 +86,7 @@ def main():
         shard_id=args.shard_id,
         num_epochs=args.num_epochs,
         output_dir=f"experiments/robustness/outputs/shard_{args.shard_id}",
+        checkpoint_every_n_steps=50,  # frequent checkpointing
     )
     exp_config = ExperimentConfig(
         model=m_config,

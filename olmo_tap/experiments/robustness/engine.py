@@ -16,6 +16,8 @@ from olmo_tap.experiments.robustness.data import load_cached_shard
 from olmo_tap.experiments.utils.config import ExperimentConfig
 from olmo_tap.hydra import HydraTransformer
 
+import hashlib
+
 
 def train(
     model: HydraTransformer,
@@ -34,7 +36,7 @@ def train(
     ckpt_dir = Path(t_config.output_dir) / run_id / "checkpoints"
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
-    criterion = torch.nn.KLDivLoss(reduction="batchmean")
+    criterion = torch.nn.KLDivLoss(reduction="sum")
 
     global_step = 0
     accumulated_examples = 0
@@ -44,7 +46,10 @@ def train(
     adv_clean_ids: list[torch.Tensor] = []
     adv_poisoned_ids: list[torch.Tensor] = []
     adv_extracted_tokens: list[torch.Tensor] = []
-    adv_tokens_path = ckpt_dir / "strong_adversarial_tokens.pt"
+    adv_tokens_path = ckpt_dir / "adv_tokens"
+    adv_tokens_path.mkdir(parents=True, exist_ok=True)
+    last_adv_path: Path | None = None
+    logged_fingerprints = set()  # track unique prompts across epochs
 
     optimizer.zero_grad()
     for epoch in range(t_config.num_epochs):
@@ -70,32 +75,38 @@ def train(
             successes = clean_argmax_logits != poison_argmax_logits
             success_count = successes.sum().item()
 
+            # L_accum = lr / B Σ_{i in accum} grad_L_i (where B = batch_size)
             if success_count > 0:
                 loss = criterion(log_poisoned_probs[successes], clean_probs[successes])
-                scaled_loss = (loss * success_count) / batch_size
+                scaled_loss = loss / batch_size
                 scaled_loss.backward()
 
-                running_loss += loss.item() * success_count
+                running_loss += loss.item()
                 accumulated_examples += success_count
 
-                c_ids_success = clean_qs[successes].cpu()
-                p_ids_success = poisoned_qs[successes].cpu()
+                # identify which successful examples have not been logged yet
+                for i, is_success in enumerate(successes):
+                    if is_success:
+                        c_row = clean_qs[i].cpu()
+                        # create unique hash of the clean prompt to avoid multi-epoch duplicates
+                        fingerprint = hashlib.sha256(
+                            c_row.numpy().tobytes()
+                        ).hexdigest()
 
-                adv_clean_ids.append(c_ids_success)
-                adv_poisoned_ids.append(p_ids_success)
+                        if fingerprint not in logged_fingerprints:
+                            logged_fingerprints.add(fingerprint)
 
-                # extraction just the adversarial extension for each clean prompt
-                for i in range(c_ids_success.size(0)):
-                    clean_row = c_ids_success[i]
-                    poison_row = p_ids_success[i]
+                            p_row = poisoned_qs[i].cpu()
+                            adv_clean_ids.append(c_row.unsqueeze(0))
+                            adv_poisoned_ids.append(p_row.unsqueeze(0))
 
-                    diff_indices = torch.where(clean_row != poison_row)[0]
-                    if len(diff_indices) > 0:
-                        first_diff = diff_indices[0]
-                        last_diff = diff_indices[-1]
-                        # extract the slice from first difference to last difference
-                        extracted = poison_row[first_diff : last_diff + 1]
-                        adv_extracted_tokens.append(extracted.cpu())
+                            # extract just the adversarial extension for each clean prompt
+                            diff_indices = torch.where(c_row != p_row)[0]
+                            if len(diff_indices) > 0:
+                                first_diff = diff_indices[0]
+                                last_diff = diff_indices[-1]
+                                extracted = p_row[first_diff : last_diff + 1]
+                                adv_extracted_tokens.append(extracted)
 
             if accumulated_examples >= batch_size:
                 optimizer.step()
@@ -104,6 +115,8 @@ def train(
 
                 global_step += 1
 
+                # NOTE: the loss we log to wandb is the true mean over accumulated examples
+                # the loss we propagate is normalised by a fixed batch_size=B
                 wandb.log(
                     {
                         "train/loss": running_loss / accumulated_examples,
@@ -118,7 +131,29 @@ def train(
 
                 if global_step % t_config.checkpoint_every_n_steps == 0:
                     path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
-                    torch.save(model.heads[0].state_dict(), path)
+                    torch.save(
+                        {
+                            "head_state_dict": model.heads[0].state_dict(),
+                            "optimizer_state_dict": optimizer.state_dict(),
+                        },
+                        path,
+                    )
+
+                    path_adv = adv_tokens_path / f"checkpoint_step_{global_step}.pt"
+                    if adv_poisoned_ids:
+                        # scrap the previous cumulative file before saving the new one
+                        if last_adv_path and last_adv_path.exists():
+                            last_adv_path.unlink()
+
+                        torch.save(
+                            {
+                                "clean_ids": torch.cat(adv_clean_ids, dim=0),
+                                "poisoned_ids": torch.cat(adv_poisoned_ids, dim=0),
+                                "extracted_tokens": adv_extracted_tokens,
+                            },
+                            path_adv,
+                        )
+                        last_adv_path = path_adv
 
     # final checkpoint with optimizer state for potential resuming
     final_path = ckpt_dir / "checkpoint_final.pt"
@@ -130,13 +165,21 @@ def train(
         },
         final_path,
     )
+
+    final_path_adv = adv_tokens_path / "checkpoint_final.pt"
     if adv_poisoned_ids:
+        # scrap intermediate cumulative file in favor of final file
+        if last_adv_path and last_adv_path.exists():
+            last_adv_path.unlink()
+
         torch.save(
             {
                 "clean_ids": torch.cat(adv_clean_ids, dim=0),
                 "poisoned_ids": torch.cat(adv_poisoned_ids, dim=0),
                 "extracted_tokens": adv_extracted_tokens,
             },
-            adv_tokens_path,
+            final_path_adv,
         )
-    print(f"saved final checkpoint to {final_path}")
+    print(
+        f"Saved final checkpoint weights to {final_path} and final adversarial tokens to {final_path_adv}."
+    )
