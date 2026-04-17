@@ -27,6 +27,7 @@ def train(
     device = exp_config.device
     model.train()
     dataloader = load_cached_shard(exp_config.train)
+    batch_size = t_config.batch_size
 
     # each run gets its own timestamped folder to avoid overwriting
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -36,6 +37,15 @@ def train(
     criterion = torch.nn.KLDivLoss(reduction="batchmean")
 
     global_step = 0
+    accumulated_examples = 0
+    successful_attack_batch = ([], [])
+
+    # CPU-side log of every attack strong enough to flip the argmax, for offline analysis
+    adv_clean_ids: list[torch.Tensor] = []
+    adv_poisoned_ids: list[torch.Tensor] = []
+    adv_clean_argmax: list[torch.Tensor] = []
+    adv_poison_argmax: list[torch.Tensor] = []
+    adv_tokens_path = ckpt_dir / "strong_adversarial_tokens.pt"
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:
             clean_qs, poisoned_qs = (
@@ -48,33 +58,63 @@ def train(
                     0, :, -1, :
                 ]
                 clean_probs = F.softmax(clean_logits, dim=-1)
+                clean_argmax_logits = torch.argmax(clean_logits, dim=-1)
 
             # poisoned pass
             poisoned_logits = model(poisoned_qs.to(device), return_logits=True)[
                 0, :, -1, :
             ]
             log_poisoned_probs = F.log_softmax(poisoned_logits, dim=-1)
+            poison_argmax_logits = torch.argmax(poisoned_logits, dim=-1)
 
-            loss = criterion(log_poisoned_probs, clean_probs)
-            loss.backward()
-            optimizer.step()
-            scheduler.step()
-            optimizer.zero_grad()
+            # NOTE: we define a successful gcg attack as any attack which causes the argmax token to change
+            # this avoids having lots of examples in the batch with weak training signal due to small KL
+            # we use the notion of changing argmax token as a heuristic marker of success
+            successes = clean_argmax_logits != poison_argmax_logits
+            success_count = successes.sum().item()
 
-            global_step += 1
+            successful_attack_batch[0].append(clean_probs[successes, :])
+            successful_attack_batch[1].append(log_poisoned_probs[successes, :])
+            accumulated_examples += success_count
 
-            wandb.log(
-                {
-                    "train/loss": loss.item(),
-                    "train/lr": scheduler.get_last_lr()[0],
-                    "train/epoch": epoch,
-                },
-                step=global_step,
-            )
+            if success_count > 0:
+                adv_clean_ids.append(clean_qs[successes.cpu()])
+                adv_poisoned_ids.append(poisoned_qs[successes.cpu()])
+                adv_clean_argmax.append(clean_argmax_logits[successes].cpu())
+                adv_poison_argmax.append(poison_argmax_logits[successes].cpu())
 
-            if global_step % t_config.checkpoint_every_n_steps == 0:
-                path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
-                torch.save(model.heads[0].state_dict(), path)
+            if accumulated_examples >= batch_size:
+                successful_clean_probs_batch = torch.cat(
+                    successful_attack_batch[0], dim=0
+                )
+                successful_poisoned_log_probs_batch = torch.cat(
+                    successful_attack_batch[1], dim=0
+                )
+
+                loss = criterion(
+                    successful_poisoned_log_probs_batch, successful_clean_probs_batch
+                )
+                loss.backward()
+                optimizer.step()
+                scheduler.step()
+                optimizer.zero_grad()
+
+                accumulated_examples = 0
+                successful_attack_batch = ([], [])
+                global_step += 1
+
+                wandb.log(
+                    {
+                        "train/loss": loss.item(),
+                        "train/lr": scheduler.get_last_lr()[0],
+                        "train/epoch": epoch,
+                    },
+                    step=global_step,
+                )
+
+                if global_step % t_config.checkpoint_every_n_steps == 0:
+                    path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
+                    torch.save(model.heads[0].state_dict(), path)
 
     # final checkpoint with optimizer state for potential resuming
     final_path = ckpt_dir / "checkpoint_final.pt"
@@ -86,4 +126,14 @@ def train(
         },
         final_path,
     )
+    if adv_poisoned_ids:
+        torch.save(
+            {
+                "clean_ids": torch.cat(adv_clean_ids, dim=0),
+                "poisoned_ids": torch.cat(adv_poisoned_ids, dim=0),
+                "clean_argmax": torch.cat(adv_clean_argmax, dim=0),
+                "poison_argmax": torch.cat(adv_poison_argmax, dim=0),
+            },
+            adv_tokens_path,
+        )
     print(f"saved final checkpoint to {final_path}")
