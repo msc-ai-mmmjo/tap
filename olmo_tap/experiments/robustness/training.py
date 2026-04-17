@@ -3,6 +3,13 @@ HydraTransformer Robustness Finetuning Pipeline
 
 Loads prod security weights (base OLMo + LoRA), merges LoRA into the head,
 then injects fresh LoRA for robustness training on precomputed GCG cache.
+
+Usage: (run from tap root)
+    # quick test on shard 0
+    pixi run -e cuda python -m olmo_tap.experiments.robustness.training --shard-id 0
+
+    # train on all 9 shards
+    bash olmo_tap/experiments/robustness/run_all.sh
 """
 
 import argparse
@@ -37,7 +44,7 @@ def parse_args() -> argparse.Namespace:
         description="Train a robustness head on a MedMCQA shard"
     )
     parser.add_argument("--shard-id", type=int, default=0)
-    parser.add_argument("--num-epochs", type=int, default=3)
+    parser.add_argument("--num-epochs", type=int, default=2)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--seed", type=int, default=42)
@@ -86,6 +93,7 @@ def main():
         shard_id=args.shard_id,
         num_epochs=args.num_epochs,
         output_dir=f"experiments/robustness/outputs/shard_{args.shard_id}",
+        checkpoint_every_n_steps=50,  # frequent checkpointing
     )
     exp_config = ExperimentConfig(
         model=m_config,
