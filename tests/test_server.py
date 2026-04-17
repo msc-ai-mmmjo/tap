@@ -12,7 +12,9 @@ def client():
     mock_model = MagicMock()
     mock_tokenizer = MagicMock()
 
-    with patch("app.backend.server.load_model", return_value=(mock_model, mock_tokenizer)):
+    with patch(
+        "app.backend.server.load_model", return_value=(mock_model, mock_tokenizer)
+    ):
         with TestClient(app) as c:
             yield c
 
@@ -24,10 +26,16 @@ def test_health(client):
 
 
 def test_analyse_returns_expected_shape(client):
-    with patch("app.backend.server.generate", return_value="Paris is the capital of France."):
+    with patch(
+        "app.backend.server.generate", return_value="Paris is the capital of France."
+    ):
         response = client.post(
             "/api/analyse",
-            json={"messages": [{"role": "user", "content": "What is the capital of France?"}]},
+            json={
+                "messages": [
+                    {"role": "user", "content": "What is the capital of France?"}
+                ]
+            },
         )
 
     assert response.status_code == 200
