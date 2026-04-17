@@ -36,6 +36,8 @@ jobs:
 
       - name: 🧪 Run Tests
         if: always()
+        env:
+          CONDA_OVERRIDE_CUDA: "12.4"
         run: pixi run test
 
       - name: 👮 PR Conventional Commit Validation
