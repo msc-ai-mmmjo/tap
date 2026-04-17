@@ -79,7 +79,7 @@ format = "ruff format ."
 format-check = "ruff format . --check"
 
 # Testing
-test = "pytest"
+test = { cmd = "pytest", default-environment = "cuda" }
 test-cov = "pytest --cov"
 
 # Type checking
