@@ -1,10 +1,9 @@
-import re
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from huggingface_hub import InferenceClient
 from pydantic import BaseModel
 
+from app.backend.claim_splitter import decompose_into_claims
 from app.backend.constants import HF_TOKEN
 from app.backend.mock_metrics import (
     mock_claim_confidence,
@@ -29,19 +28,6 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[Message]
-
-
-def decompose_into_claims(text: str) -> list[str]:
-    """
-    Split model response into individual clinical assertions.
-    Simple sentence-level splitting for now.
-    Filter out very short sentences (likely not claims).
-    """
-    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
-    claims = [s.strip() for s in sentences if len(s.strip()) > 20]
-    if not claims:
-        claims = [text.strip()]
-    return claims
 
 
 def call_hf_model(messages: list[dict]) -> str:
