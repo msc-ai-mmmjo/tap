@@ -9,6 +9,7 @@ import torch
 import torch.nn.functional as F
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 from tqdm import tqdm
+from typing import cast, List
 
 from olmo_tap.constants import WEIGHTS_DIR, PROD_WEIGHTS_DIR
 from olmo_tap.experiments.utils.config import HydraLoRAConfig
@@ -70,14 +71,15 @@ def moe_generate_visual_diff(
     prompt = tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
     )
-    input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to("cuda")
+    # Ensure prompt is treated as string for tokenizer
+    input_ids = tokenizer(str(prompt), return_tensors="pt").input_ids.to("cuda")
 
     # maintain two lists of strings to build the highlighted output
-    original_highlighted = []
-    resampled_highlighted = []
+    original_highlighted: List[str] = []
+    resampled_highlighted: List[str] = []
 
     moe_final_ids = input_ids.clone()
-    draft_idx = torch.randint(0, n_heads, (1,)).item()
+    draft_idx = int(torch.randint(0, n_heads, (1,)).item())
     verifier_indices = [i for i in range(n_heads) if i != draft_idx]
 
     pbar = tqdm(total=max_new_tokens, desc="Generating")
@@ -89,8 +91,8 @@ def moe_generate_visual_diff(
             logits = model(draft_step_ids, return_logits=True)
             next_logits = logits[draft_idx, 0, -1, :].view(-1)
             probs = F.softmax(next_logits.float(), dim=-1)
-            token_id = torch.argmax(probs).item()
-            step_draft_probs.append(probs[token_id].item())
+            token_id = int(torch.argmax(probs).item())
+            step_draft_probs.append(float(probs[token_id].item()))
             draft_step_ids = torch.cat(
                 [draft_step_ids, torch.tensor([[token_id]], device="cuda")], dim=-1
             )
@@ -103,7 +105,7 @@ def moe_generate_visual_diff(
 
         for i in range(gamma):
             curr_pos = start_idx + i
-            original_token = proposed_tokens[i].item()
+            original_token_id = int(proposed_tokens[i].item())
 
             # PoE judging
             log_P = torch.zeros(
@@ -118,20 +120,20 @@ def moe_generate_visual_diff(
             P_dist /= P_dist.sum() + 1e-10
 
             q_val = step_draft_probs[i]
-            p_val = P_dist[original_token].item()
+            p_val = float(P_dist[original_token_id].item())
 
             if torch.rand(1).item() < min(1.0, p_val / (q_val + 1e-10)):
                 # accepted
-                tok_str = tokenizer.decode([original_token])
+                tok_str = cast(str, tokenizer.decode([original_token_id]))
                 original_highlighted.append(tok_str)
                 resampled_highlighted.append(tok_str)
 
                 moe_final_ids = torch.cat(
-                    [moe_final_ids, torch.tensor([[original_token]], device="cuda")],
+                    [moe_final_ids, torch.tensor([[original_token_id]], device="cuda")],
                     dim=-1,
                 )
                 pbar.update(1)
-                if original_token == tokenizer.eos_token_id:
+                if original_token_id == tokenizer.eos_token_id:
                     break
             else:
                 # rejected and resampled
@@ -141,15 +143,17 @@ def moe_generate_visual_diff(
                 )
 
                 if correction.sum() > 1e-6:
-                    resampled_id = torch.multinomial(
-                        correction / (correction.sum() + 1e-10), 1
-                    ).item()
+                    resampled_id = int(
+                        torch.multinomial(
+                            correction / (correction.sum() + 1e-10), 1
+                        ).item()
+                    )
                 else:
-                    resampled_id = torch.multinomial(P_dist, 1).item()
+                    resampled_id = int(torch.multinomial(P_dist, 1).item())
 
                 # highlighting resampled tokens with | |
-                old_str = f"|{tokenizer.decode([original_token])}|"
-                new_str = f"|{tokenizer.decode([resampled_id])}|"
+                old_str = f"|{cast(str, tokenizer.decode([original_token_id]))}|"
+                new_str = f"|{cast(str, tokenizer.decode([resampled_id]))}|"
 
                 original_highlighted.append(old_str)
                 resampled_highlighted.append(new_str)
@@ -169,7 +173,9 @@ def moe_generate_visual_diff(
 
 
 if __name__ == "__main__":
-    tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)
+    tokenizer = cast(
+        PreTrainedTokenizerBase, AutoTokenizer.from_pretrained(WEIGHTS_DIR)
+    )
     model, n_heads = load_security_ensemble()
 
     queries = [
