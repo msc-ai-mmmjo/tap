@@ -2,8 +2,7 @@
 
 Primary path: prompt the HF generation model to break its response into
 atomic, self-contained factual claims. This mirrors the decomposition
-step of fact-checking pipelines such as FActScore (Min et al. 2023) —
-the scoring step happens elsewhere.
+step of fact-checking pipelines such as FActScore (Min et al. 2023).
 
 Fallback: NLTK sentence segmentation when the LLM path fails (missing
 token, API error, or unparseable output). Sentences are a coarser unit
