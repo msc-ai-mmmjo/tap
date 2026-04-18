@@ -7,7 +7,7 @@ Single function that orchestrates: Generation -> NLI -> KLE calculation
 from __future__ import annotations
 
 from kernel_entropy.entropy import kle_from_similarity
-from kernel_entropy.generation import QwenGenerator
+from kernel_entropy.generation import HydraGenerator
 from kernel_entropy.nli import ModernBERTScorer
 
 
@@ -23,7 +23,7 @@ def compute_kle(
     Compute Kernel Language Entropy for a prompt.
 
     Pipeline:
-        1. Generate N responses using Qwen3-8B
+        1. Generate N responses using Hydra OLMo
         2. Compute pairwise NLI similarity matrix W
         3. Calculate Von Neumann Entropy from W
 
@@ -38,7 +38,7 @@ def compute_kle(
     Returns:
         Von Neumann Entropy (float). Higher = more semantic uncertainty.
     """
-    generator = QwenGenerator()
+    generator = HydraGenerator()
     seeds = list(range(n_generations))
     responses = generator.generate_batch(
         prompt=prompt,
