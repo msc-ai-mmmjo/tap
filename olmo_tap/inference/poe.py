@@ -2,6 +2,8 @@
 Implements the Spec-Decode PoE method detailed here: https://www.overleaf.com/7351696474ggfyybskyttm#e97251
 This provides a security guarantee that no harmful token is ever sampled provided there exists at least
 1 honest head in the jury which assigns negligible probability mass to the harmful token.
+
+TODO: This is for demonstration purposes only and does not use KV cache.
 """
 
 import json
@@ -84,23 +86,27 @@ def moe_generate_visual_diff(
 
     pbar = tqdm(total=max_new_tokens, desc="Generating")
     while (moe_final_ids.shape[1] - input_ids.shape[1]) < max_new_tokens:
-        # generate draft sequence in steps of gamma
+        # generate draft sequence in steps of gamma (only draft head)
         draft_step_ids = moe_final_ids.clone()
         step_draft_probs = []
+        cached_draft_logits = []
         for _ in range(gamma):
-            logits = model(draft_step_ids, return_logits=True)
-            next_logits = logits[draft_idx, 0, -1, :].view(-1)
+            logits = model(draft_step_ids, head_indices=[draft_idx], return_logits=True)
+            next_logits = logits[0, 0, -1, :].view(-1)
             probs = F.softmax(next_logits.float(), dim=-1)
             token_id = int(torch.argmax(probs).item())
             step_draft_probs.append(float(probs[token_id].item()))
+            cached_draft_logits.append(next_logits.clone())
             draft_step_ids = torch.cat(
                 [draft_step_ids, torch.tensor([[token_id]], device="cuda")], dim=-1
             )
 
         proposed_tokens = draft_step_ids[0, -gamma:]
 
-        # verify gamma steps
-        all_logits = model(draft_step_ids, return_logits=True)
+        # verify gamma steps using only verifier heads
+        verifier_logits = model(
+            draft_step_ids, head_indices=verifier_indices, return_logits=True
+        )
         start_idx = moe_final_ids.shape[1] - 1
 
         for i in range(gamma):
@@ -108,13 +114,9 @@ def moe_generate_visual_diff(
             original_token_id = int(proposed_tokens[i].item())
 
             # PoE judging
-            log_P = torch.zeros(
-                all_logits.shape[-1], device="cuda", dtype=torch.float32
-            )
-            for h in verifier_indices:
-                log_P += beta * F.log_softmax(
-                    all_logits[h, 0, curr_pos, :].float(), dim=-1
-                )
+            log_P = (
+                beta * F.log_softmax(verifier_logits[:, 0, curr_pos, :].float(), dim=-1)
+            ).sum(dim=0)
 
             P_dist = torch.exp(log_P)
             P_dist /= P_dist.sum() + 1e-10
@@ -136,10 +138,10 @@ def moe_generate_visual_diff(
                 if original_token_id == tokenizer.eos_token_id:
                     break
             else:
-                # rejected and resampled
-                draft_logits = all_logits[draft_idx, 0, curr_pos, :].view(-1)
+                # rejected and resampled using cached draft logits
+                draft_logits_at_step = cached_draft_logits[i].view(-1)
                 correction = torch.clamp(
-                    P_dist - F.softmax(draft_logits.float(), dim=-1), min=0
+                    P_dist - F.softmax(draft_logits_at_step.float(), dim=-1), min=0
                 )
 
                 if correction.sum() > 1e-6:
