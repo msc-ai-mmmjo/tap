@@ -219,9 +219,7 @@ class HydraTransformer(nn.Module):
             n = len(self.heads)
             for idx in head_indices:
                 if idx < 0 or idx >= n:
-                    raise ValueError(
-                        f"head index {idx} out of range for {n} heads"
-                    )
+                    raise ValueError(f"head index {idx} out of range for {n} heads")
             selected = [self.heads[i] for i in head_indices]
         else:
             selected = list(self.heads)

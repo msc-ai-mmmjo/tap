@@ -91,9 +91,7 @@ def moe_generate_visual_diff(
         step_draft_probs = []
         cached_draft_logits = []
         for _ in range(gamma):
-            logits = model(
-                draft_step_ids, head_indices=[draft_idx], return_logits=True
-            )
+            logits = model(draft_step_ids, head_indices=[draft_idx], return_logits=True)
             next_logits = logits[0, 0, -1, :].view(-1)
             probs = F.softmax(next_logits.float(), dim=-1)
             token_id = int(torch.argmax(probs).item())
@@ -116,9 +114,9 @@ def moe_generate_visual_diff(
             original_token_id = int(proposed_tokens[i].item())
 
             # PoE judging
-            log_P = (beta * F.log_softmax(
-                verifier_logits[:, 0, curr_pos, :].float(), dim=-1
-            )).sum(dim=0)
+            log_P = (
+                beta * F.log_softmax(verifier_logits[:, 0, curr_pos, :].float(), dim=-1)
+            ).sum(dim=0)
 
             P_dist = torch.exp(log_P)
             P_dist /= P_dist.sum() + 1e-10
