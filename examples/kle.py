@@ -28,7 +28,7 @@ def main() -> None:
         from kernel_entropy import compute_kle
     except ImportError as e:
         print(f"Error: {e}")
-        print("Use: pixi run -e cuda kle <prompt>")
+        print("Use: pixi run -e cuda test-kle <prompt>")
         sys.exit(1)
 
     print(f"Prompt: {args.prompt}")

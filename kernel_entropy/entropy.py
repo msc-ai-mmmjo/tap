@@ -7,10 +7,15 @@ W -> Laplacian -> Heat Kernel -> Density Matrix -> VNE
 
 from __future__ import annotations
 
-import torch
+from typing import TYPE_CHECKING
+
+# Lazy import torch to avoid CUDA context conflict with llama-cpp-python.
+# PyTorch must be imported AFTER llama-cpp-python initializes CUDA or ELSE...
+if TYPE_CHECKING:
+    import torch
 
 
-def kle_from_similarity(W: torch.Tensor, t: float = 1.0) -> float:
+def kle_from_similarity(W: "torch.Tensor", t: float = 1.0) -> float:
     """
     Compute Kernel Language Entropy from similarity matrix.
 
@@ -21,6 +26,8 @@ def kle_from_similarity(W: torch.Tensor, t: float = 1.0) -> float:
     Returns:
         Von Neumann Entropy (float)
     """
+    import torch  # Lazy import to avoid CUDA conflict with llama-cpp-python
+
     n = W.shape[0]
 
     # Edge cases

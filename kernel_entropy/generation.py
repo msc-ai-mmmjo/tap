@@ -1,92 +1,96 @@
 """
-Hydra OLMo text generation for Kernel Language Entropy.
+Qwen3-8B text generation for Kernel Language Entropy.
 
-Loads the Hydra OLMo model once and produces N diverse responses for a single
-prompt. Each sample uses a different random seed drawn from the same (mean)
-head-averaged logit distribution, giving reproducible diversity for KLE.
+Generates multiple diverse responses for a single prompt using different
+random seeds. Uses llama-cpp-python with CUDA GPU acceleration.
 """
 
 from __future__ import annotations
 
-import glob
+import re
 from pathlib import Path
-from typing import cast
 
-import torch
-import torch.nn.functional as F
-from safetensors.torch import load_file
-from tqdm import tqdm
-from transformers import AutoConfig, AutoTokenizer
+from llama_cpp import Llama
 
-from olmo_core.nn.attention import Attention
-from olmo_core.nn.hf.convert import convert_state_from_hf
-from olmo_core.nn.transformer.block import TransformerBlock
-from olmo_core.nn.transformer.model import Transformer
-
-from olmo_tap.constants import VOCAB_SIZE, WEIGHTS_DIR
-from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
+# Default model path relative to repo root
+DEFAULT_MODEL_PATH = Path(__file__).parent.parent / "models" / "Qwen3-8B-Q4_K_M.gguf"
 
 
-class HydraGenerator:
+# TODO: Investigate llama_batch low-level API for true batch inference with shared
+# prefill. Could reduce latency by ~40-60% for prompt processing when generating
+# multiple responses for the same prompt.
+#
+# Prolly not a bottleneck tho ngl
+
+
+class QwenGenerator:
     """
-    Batched text generation from a Hydra OLMo model.
+    Batched text generation using Qwen3-8B via llama-cpp-python.
 
-    The model is loaded once; ``generate_batch`` produces one response per seed
-    using head-averaged logits with temperature + top-p sampling.
+    Load the model once, then generate multiple responses per prompt.
+    Each generation uses a different seed for reproducible diversity.
+
     """
 
     def __init__(
         self,
-        weights_dir: str | Path = WEIGHTS_DIR,
-        model_size: str = "7b",
-        n_heads: int = 5,
-        heads_depth: int = 3,
-        device: str = "cuda",
-        dtype: torch.dtype = torch.bfloat16,
+        model_path: str | Path = DEFAULT_MODEL_PATH,
+        n_ctx: int = 8192,
+        n_gpu_layers: int = -1,
+        verbose: bool = False,
     ) -> None:
-        if not weights_dir:
-            raise ValueError(
-                "weights_dir not set. Set OLMO_WEIGHTS_DIR env var or pass weights_dir kwarg."
+        """
+        Load the Qwen3-8B model.
+
+        Args:
+            model_path: Path to GGUF model file
+            n_ctx: Context window size (default: 8192)
+            n_gpu_layers: GPU layers to offload (-1 = all)
+            verbose: Print model loading info
+
+        Raises:
+            FileNotFoundError: If model file doesn't exist
+            RuntimeError: If GPU not available or CUDA setup fails
+        """
+        self._model_path = Path(model_path)
+        self._n_ctx = n_ctx
+        self._n_gpu_layers = n_gpu_layers
+        self._verbose = verbose
+        self._llm: Llama | None = None
+
+        self._validate_environment()
+        self._load_model()
+
+    def _validate_environment(self) -> None:
+        """Check GPU and model availability. Raises on failure."""
+        try:
+            import llama_cpp.llama_cpp as llama_lib
+        except ImportError as e:
+            raise RuntimeError(
+                "llama-cpp-python not installed. Use: pixi run -e cuda <command>"
+            ) from e
+
+        if not llama_lib.llama_supports_gpu_offload():
+            raise RuntimeError(
+                "llama-cpp-python was compiled without CUDA support. "
+                "Reinstall with CUDA wheels: pip install llama-cpp-python --extra-index-url "
+                "https://abetlen.github.io/llama-cpp-python/whl/cu124"
             )
-        weights_dir = str(weights_dir)
 
-        factory = (
-            HydraTransformerConfig.from_olmo2_7B
-            if model_size == "7b"
-            else HydraTransformerConfig.from_olmo2_1B
-        )
-        cfg = factory(n_heads=n_heads, heads_depth=heads_depth)
-        model = cfg.build(init_device="meta")
-
-        # HF weights may be sharded across model-00001-of-000NN.safetensors files.
-        shard_files = sorted(glob.glob(f"{weights_dir}/model*.safetensors"))
-        if not shard_files:
+        if not self._model_path.exists():
             raise FileNotFoundError(
-                f"No safetensors found in {weights_dir}. "
-                "Ensure OLMO_WEIGHTS_DIR points to a downloaded OLMo2 HF repo."
+                f"Model not found at: {self._model_path}\n"
+                f"Run: pixi run -e cuda download-models"
             )
-        hf_state: dict[str, torch.Tensor] = {}
-        for f in shard_files:
-            hf_state.update(load_file(f, device="cpu"))
-        hf_config = AutoConfig.from_pretrained(weights_dir)
-        olmo_state = convert_state_from_hf(hf_config, hf_state)
-        del hf_state
 
-        HydraTransformer.load_olmo_state(
-            model, olmo_state, trunk_layers=cfg.trunk_layers, vocab_size=VOCAB_SIZE
+    def _load_model(self) -> None:
+        """Load the Llama model into GPU memory."""
+        self._llm = Llama(
+            model_path=str(self._model_path),
+            n_gpu_layers=self._n_gpu_layers,
+            n_ctx=self._n_ctx,
+            verbose=self._verbose,
         )
-        del olmo_state
-        model.to(device=device, dtype=dtype)
-        model.eval()
-
-        tokenizer = AutoTokenizer.from_pretrained(weights_dir)
-        assert tokenizer is not None
-
-        self._model = model
-        self._tokenizer = tokenizer
-        self._device = device
-        self._config = cfg
-        self._eos_token_id = tokenizer.eos_token_id
 
     def generate_batch(
         self,
@@ -94,133 +98,107 @@ class HydraGenerator:
         seeds: list[int],
         temperature: float = 0.7,
         top_p: float = 0.9,
-        max_tokens: int = 256,
+        max_tokens: int = 2048,
+        batch_size: int | None = None,
         verbose: bool = False,
     ) -> list[str]:
         """
-        Generate one response per seed for the given prompt.
+        Generate multiple diverse responses for a single prompt.
 
-        The KV cache is allocated once for the longest possible sequence and
-        reset between seeds, so allocation cost is paid only on the first call.
+        Each seed produces a deterministically different response.
+        If batch_size < len(seeds), shows progress in chunks.
+
+        Args:
+            prompt: Raw prompt text (auto-formatted in Qwen3 chat template)
+            seeds: List of random seeds, one per desired generation
+            temperature: Sampling temperature (default: 0.7)
+            top_p: Nucleus sampling parameter (default: 0.9)
+            max_tokens: Max tokens per generation (default: 2048)
+            batch_size: Progress bar chunk size (None = len(seeds))
+            verbose: Print each response as it streams (default: False)
+
+        Returns:
+            List of generated response strings, one per seed
         """
+        from tqdm import tqdm
+
         if not seeds:
             return []
 
-        tokenizer = self._tokenizer
-        device = self._device
-
-        messages = [{"role": "user", "content": prompt}]
-        chat_prompt = tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        )
-        input_ids = torch.tensor([tokenizer.encode(chat_prompt)], device=device)
-        max_seq_len = input_ids.shape[1] + max_tokens
-
-        self._model.init_kv_cache(batch_size=1, max_seq_len=max_seq_len)
-        managers = self._collect_kv_managers()
-
         responses: list[str] = []
-        for seed in tqdm(seeds, desc="Generating responses"):
-            if verbose:
-                print(f"\n--- Response {len(responses) + 1} (seed={seed}) ---")
-            self._reset_kv_cache(managers)
-            response = self._generate_one(
-                input_ids=input_ids,
-                seed=seed,
-                temperature=temperature,
-                top_p=top_p,
-                max_tokens=max_tokens,
-                verbose=verbose,
-            )
-            responses.append(response)
-            if verbose:
-                print()
+        effective_batch_size = batch_size if batch_size else len(seeds)
+
+        # Calculate number of batches for progress display
+        n_batches = (len(seeds) + effective_batch_size - 1) // effective_batch_size
+
+        for batch_idx in range(n_batches):
+            start_idx = batch_idx * effective_batch_size
+            end_idx = min(start_idx + effective_batch_size, len(seeds))
+            batch_seeds = seeds[start_idx:end_idx]
+
+            # Progress description
+            if n_batches > 1:
+                desc = f"Batch {batch_idx + 1}/{n_batches}"
+            else:
+                desc = "Generating responses"
+
+            for i, seed in enumerate(tqdm(batch_seeds, desc=desc)):
+                if verbose:
+                    print(f"\n--- Response {start_idx + i + 1} (seed={seed}) ---")
+                response = self._generate_single(
+                    prompt=prompt,
+                    seed=seed,
+                    temperature=temperature,
+                    top_p=top_p,
+                    max_tokens=max_tokens,
+                    verbose=verbose,
+                )
+                responses.append(response)
+                if verbose:
+                    print()
 
         return responses
 
-    @torch.no_grad()
-    def _generate_one(
+    def _generate_single(
         self,
-        input_ids: torch.Tensor,
+        prompt: str,
         seed: int,
         temperature: float,
         top_p: float,
         max_tokens: int,
-        verbose: bool,
+        verbose: bool = False,
     ) -> str:
-        rng = torch.Generator(device=self._device).manual_seed(seed)
-        tokenizer = self._tokenizer
+        """Generate a single response with the given seed."""
+        assert self._llm is not None, "Model not loaded"
 
-        # Collapse per-head logits to a single distribution via mean, then sample.
-        # This preserves the "one model, N seeded samples" semantics from the
-        # original Qwen-backed branch. Alternative worth trying: sample 1 token
-        # per head (diversity comes from the heads themselves, amortising the
-        # forward pass across N responses). Kept seed-based for now to avoid
-        # changing KLE semantics during the backend swap.
-        all_logits = self._model(input_ids, return_logits=True)
-        next_logits = all_logits[:, 0, -1, :].mean(dim=0)
-        next_token = _sample(next_logits, temperature, top_p, rng)
+        # /no_think disables Qwen3's thinking mode for direct answers
+        response = self._llm.create_chat_completion(
+            messages=[{"role": "user", "content": f"/no_think {prompt}"}],
+            temperature=temperature,
+            top_p=top_p,
+            max_tokens=max_tokens,
+            seed=seed,
+            stream=True,
+        )
 
-        generated: list[int] = [int(next_token.item())]
-        next_input = next_token.view(1, 1)
+        # Collect streamed response
+        content = ""
+        for chunk in response:
+            delta = chunk["choices"][0]["delta"]  # type: ignore[index]
+            # delta can be empty dict on final chunk, so use .get()
+            chunk_content = delta.get("content")
+            if chunk_content:
+                content += str(chunk_content)
+                if verbose:
+                    print(chunk_content, end="", flush=True)
 
-        for _ in range(max_tokens - 1):
-            if int(next_token.item()) == self._eos_token_id:
-                break
-            all_logits = self._model(next_input, return_logits=True)
-            next_logits = all_logits[:, 0, -1, :].mean(dim=0)
-            next_token = _sample(next_logits, temperature, top_p, rng)
-            generated.append(int(next_token.item()))
-            next_input = next_token.view(1, 1)
-            if verbose:
-                print(tokenizer.decode([generated[-1]]), end="", flush=True)
+        if not content or not content.strip():
+            raise RuntimeError(
+                f"Empty response generated with seed={seed}. "
+                "This may indicate a prompt issue or model problem."
+            )
 
-        if generated and generated[-1] == self._eos_token_id:
-            generated = generated[:-1]
+        # Strip empty think tags that Qwen3 may still output with /no_think
+        content = re.sub(r"<think>\s*</think>\s*", "", content)
 
-        return cast(str, tokenizer.decode(generated)).strip()
-
-    def _collect_kv_managers(self) -> list:
-        managers: list = []
-        for block in self._model.trunk.blocks.values():
-            attn = cast(TransformerBlock, block).attention
-            if isinstance(attn, Attention):
-                managers.append(attn.kv_cache_manager)
-        for head in self._model.heads:
-            for block in cast(Transformer, head).blocks.values():
-                attn = cast(TransformerBlock, block).attention
-                if isinstance(attn, Attention):
-                    managers.append(attn.kv_cache_manager)
-        return managers
-
-    @staticmethod
-    def _reset_kv_cache(managers: list) -> None:
-        for m in managers:
-            if m is not None:
-                m.cache_seqlens.fill_(0)
-
-
-def _sample(
-    logits: torch.Tensor,
-    temperature: float,
-    top_p: float,
-    rng: torch.Generator,
-) -> torch.Tensor:
-    """Temperature + nucleus (top-p) sampling over a 1-D logit vector."""
-    if temperature <= 0.0:
-        return logits.argmax(dim=-1, keepdim=True)
-
-    logits = logits.float() / temperature
-    probs = F.softmax(logits, dim=-1)
-
-    if top_p < 1.0:
-        sorted_probs, sorted_indices = torch.sort(probs, descending=True, dim=-1)
-        cumulative = torch.cumsum(sorted_probs, dim=-1)
-        # Keep all tokens up to and including the one that first crosses top_p
-        mask = (cumulative - sorted_probs) > top_p
-        sorted_probs = sorted_probs.masked_fill(mask, 0.0)
-        sorted_probs = sorted_probs / sorted_probs.sum()
-        sampled_sorted = torch.multinomial(sorted_probs, num_samples=1, generator=rng)
-        return sorted_indices.gather(-1, sampled_sorted)
-
-    return torch.multinomial(probs, num_samples=1, generator=rng)
+        return content.strip()

@@ -6,22 +6,19 @@ Measures semantic uncertainty in LLM generations using KLE ([arXiv:2405.20003](h
 
 | File | Purpose |
 |------|---------|
-| `pipeline.py` | `compute_kle()` — main entry point |
-| `generation.py` | `HydraGenerator` — seeded sampling from Hydra OLMo |
-| `nli.py` | `ModernBERTScorer` — pairwise NLI similarity |
-| `entropy.py` | `kle_from_similarity()` — KLE math (W → L → K → ρ → VNE) |
+| `pipeline.py` | `compute_kle()` - main entry point |
+| `generation.py` | `QwenGenerator` - batch text generation |
+| `nli.py` | `ModernBERTScorer` - pairwise NLI similarity |
+| `entropy.py` | `kle_from_similarity()` - KLE math (W → L → K → ρ → VNE) |
 
 ## Commands
 
 ```bash
-pixi run -e cuda kle "prompt"     # Run the full pipeline
-pixi run -e cuda olmo "prompt"    # Test Hydra OLMo generation only
-pixi run -e cuda nli "s1" "s2"    # Test NLI scoring only
+pixi run -e cuda download-models   # Download models (~6GB)
+pixi run -e cuda kle "prompt"      # Run full pipeline
+pixi run -e cuda qwen "prompt"     # Test generation only
+pixi run -e cuda nli "s1" "s2"     # Test NLI scoring only
 ```
-
-Requires `OLMO_WEIGHTS_DIR` in `.env` pointing at a downloaded OLMo2 HF repo
-(see the top-level `olmo_tap/README.md` for the one-time setup). The
-ModernBERT NLI model is fetched from HuggingFace on first use.
 
 ## Usage
 
@@ -42,6 +39,7 @@ entropy = compute_kle(
 
 - [ ] Benchmarking against ground truth
 - [ ] Tuning lengthscale `t` parameter
-- [ ] Batched per-head sampling (use head-level diversity instead of seed-only)
+- [ ] Speed optimisation (batch prefill, caching)
 - [ ] UI integration
 - [ ] Graphical visualisation of similarity matrix
+- [ ] Clean up logging (replace prints with proper logging)
