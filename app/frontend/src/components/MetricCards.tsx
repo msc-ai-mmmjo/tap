@@ -14,21 +14,21 @@ interface MetricInfo {
 const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> = {
   certainty: {
     definition:
-      "How confident the model is that each claim in its answer is factually correct. Scores near 1.0 mean the model's internal signals match patterns seen in verified-correct answers; low scores mean the claim should be double-checked before acting on it.",
+      "How likely each claim in the answer is to be factually correct. Scores near 100% mean high confidence; low scores flag claims worth double-checking before acting on them.",
     paper:
-      'Method: Kapoor et al., "Language Models Must Be Taught to Know What They Don\'t Know" (NeurIPS 2024).',
+      'Method: Kapoor et al., "Large Language Models Must Be Taught to Know What They Don\'t Know" (NeurIPS 2024).',
   },
   security: {
     definition:
-      "Whether the answer can be trusted not to have been shaped by tampered training data. 'Certified' means the response would provably stay the same even if a bounded number of poisoned examples had been slipped into training.",
+      "How many tampered training examples an attacker would need to plant to change this answer to a harmful one. Higher means the answer is provably harder to manipulate.",
     paper:
-      'Method: "Towards Poisoning Robustness Certification for Natural Language Generation".',
+      'Method: Ghitu & Wicker, "Towards Poisoning Robustness Certification for Natural Language Generation".',
   },
   robustness: {
     definition:
-      "Whether the model held its ground against adversarial prompts designed to jailbreak it into unsafe or incorrect output. 'Passed' means known attack strings failed to change the answer.",
+      "Whether the answer holds up against jailbreak attempts — short gibberish strings appended to the prompt that try to flip the response. 'Passed' means no attempt succeeded.",
     paper:
-      'Method: "AmpleGCG-Plus: A Strong Generative Model of Adversarial Suffixes to Jailbreak LLMs with Higher Success Rates".',
+      'Method: Kumar et al., "AmpleGCG-Plus: A Strong Generative Model of Adversarial Suffixes to Jailbreak LLMs with Higher Success Rates in Fewer Attempts".',
   },
 };
 
@@ -200,8 +200,8 @@ export function MetricCards({ data }: Props) {
         index="01"
         label="Certainty"
         info={METRIC_INFO.certainty}
-        value={data.overall_confidence.toFixed(2)}
-        caption="LoRA probe avg · P(correct)"
+        value={`${Math.round(data.overall_confidence * 100)}%`}
+        caption="Average likelihood each claim is correct"
       />
       <MetricCell
         index="02"
@@ -209,7 +209,7 @@ export function MetricCards({ data }: Props) {
         info={METRIC_INFO.security}
         value={securityValue}
         valueColour={data.security.certified ? 'var(--color-ok)' : 'var(--color-warn)'}
-        caption={`TPA budget · ${data.security.tpa_budget ?? '—'} samples`}
+        caption={`Withstands up to ${data.security.tpa_budget ?? '—'} tampered training examples`}
       />
       <MetricCell
         index="03"

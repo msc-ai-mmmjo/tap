@@ -61,7 +61,7 @@ export function ClaimCard({ claim, index }: Props) {
           className="font-mono text-[9.5px] uppercase tracking-[0.14em]"
           style={{ color: 'var(--color-ink-soft)' }}
         >
-          P(correct)
+          Confidence
         </div>
       </div>
     </li>
