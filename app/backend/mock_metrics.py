@@ -58,13 +58,13 @@ def mock_security_status() -> dict:
     return {
         "certified": True,
         "tpa_budget": random.randint(30, 80),
-        "detail": "Stable under Targeted Partition Aggregation analysis",
+        "detail": "Certified radius against targeted poisoning",
     }
 
 
 def mock_robustness_status(prompt: str) -> dict:
     return {
         "passed": True,
-        "detail": "No adversarial content detected",
+        "detail": "No generated suffix flipped the response",
         "flagged_tokens": [],
     }
