@@ -7,18 +7,14 @@ Natural Language Inference. Produces the similarity matrix W for KLE calculation
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-# Lazy import torch to avoid CUDA context conflict with llama-cpp-python.
-# PyTorch must be imported AFTER llama-cpp-python initializes CUDA.
-# torch is imported inside methods that need it.
+import torch
 
 # TYPE_CHECKING is False at runtime, True during static analysis.
 # This lets us import types for hints without requiring transformers
 # to be installed when the module is imported in non-CUDA environments.
 if TYPE_CHECKING:
-    import torch
     from transformers.models.auto.modeling_auto import (
         AutoModelForSequenceClassification as AutoModelType,
     )
@@ -26,8 +22,8 @@ if TYPE_CHECKING:
 # Type alias for raw probability data from NLI scoring
 RawProbabilities = dict[tuple[int, int], dict[str, dict[str, float]]]
 
-# Default model path relative to repo root
-DEFAULT_MODEL_PATH = Path(__file__).parent.parent / "models" / "ModernBERT-large-nli"
+# HuggingFace repo id; downloaded + cached on first use.
+DEFAULT_MODEL_ID = "tasksource/ModernBERT-large-nli"
 
 # ModernBERT-large-nli label indices (from config.json id2label)
 # 0: entailment, 1: neutral, 2: contradiction
@@ -50,57 +46,46 @@ class ModernBERTScorer:
     def __init__(
         self,
         sentences: list[str],
-        model_path: str | Path | None = None,
+        model_id: str = DEFAULT_MODEL_ID,
     ) -> None:
         """
         Prepare NLI scorer with sentences.
 
         Args:
             sentences: List of N sentences to compare
-            model_path: Override default model path (for testing)
+            model_id: HuggingFace repo id or local path (default: tasksource/ModernBERT-large-nli)
 
         Raises:
             RuntimeError: If CUDA not available
-            FileNotFoundError: If model not found at path
         """
         self.sentences = sentences
-        self._model_path = Path(model_path) if model_path else DEFAULT_MODEL_PATH
+        self._model_id = model_id
 
         # Validate environment and load model
         self._validate_environment()
-        self._ensure_model_loaded()
+        self._ensure_model_loaded(model_id)
 
     def _validate_environment(self) -> None:
-        """Check CUDA and model availability. Raises on failure."""
-        import torch
-
+        """Check CUDA availability. Raises on failure."""
         if not torch.cuda.is_available():
             raise RuntimeError(
                 "CUDA not available. NLI scoring requires GPU.\n"
                 "Use: pixi run -e cuda <command>"
             )
 
-        if not self._model_path.exists():
-            raise FileNotFoundError(
-                f"NLI model not found at: {self._model_path}\n"
-                f"Run: pixi run -e cuda download-models"
-            )
-
     @classmethod
-    def _ensure_model_loaded(cls) -> None:
+    def _ensure_model_loaded(cls, model_id: str) -> None:
         """Load model on first instantiation (class-level singleton)."""
         if cls._model is not None:
             return
 
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-        print("Loading ModernBERT NLI model...")
+        print(f"Loading ModernBERT NLI model from {model_id}...")
 
-        cls._tokenizer = AutoTokenizer.from_pretrained(DEFAULT_MODEL_PATH)
+        cls._tokenizer = AutoTokenizer.from_pretrained(model_id)
         cls._model = (
-            AutoModelForSequenceClassification.from_pretrained(DEFAULT_MODEL_PATH)
-            .cuda()
-            .eval()
+            AutoModelForSequenceClassification.from_pretrained(model_id).cuda().eval()
         )
 
         print("ModernBERT NLI model loaded!")
@@ -121,8 +106,6 @@ class ModernBERTScorer:
             N x N symmetric similarity matrix W with W[i,j] in [0, 2], diagonal = 0.
             If verbose=True, returns (W, raw_probabilities) tuple.
         """
-        import torch  # Lazy import to avoid CUDA conflict with llama-cpp-python
-
         n = len(self.sentences)
 
         # Handle edge cases

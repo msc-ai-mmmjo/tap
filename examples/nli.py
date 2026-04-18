@@ -11,9 +11,7 @@ except ImportError:
 
 def main() -> None:
     if len(sys.argv) < 3:
-        print(
-            "Usage: pixi run -e cuda test-nli 'sentence1' 'sentence2' ['sentence3' ...]"
-        )
+        print("Usage: pixi run -e cuda nli 'sentence1' 'sentence2' ['sentence3' ...]")
         sys.exit(1)
 
     sentences = sys.argv[1:]
