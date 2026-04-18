@@ -43,9 +43,9 @@ function App() {
             className="font-mono text-[10.5px] text-right leading-snug uppercase tracking-[0.12em] hidden sm:block"
             style={{ color: 'var(--color-ink-muted)' }}
           >
-            Claim-level certainty<br />
-            Poisoning certificate<br />
-            Adversarial probe
+            Per-claim confidence<br />
+            Tampering resistance<br />
+            Jailbreak resistance
           </div>
         </div>
         <div className="max-w-3xl mx-auto px-6 pb-3">
@@ -74,7 +74,7 @@ function App() {
                 style={{ color: 'var(--color-ink-2)' }}
               >
                 Large language models can sound confident while being wrong, manipulated, or
-                jailbroken — a serious risk in clinical settings. TAP decomposes each answer
+                jailbroken — a serious risk in clinical settings. TAP breaks each answer
                 into individual claims and reports three trust signals alongside the response.
               </p>
 
@@ -84,15 +84,15 @@ function App() {
               >
                 <li>
                   <span style={{ color: 'var(--color-accent)' }}>01 </span>
-                  Uncertainty <span style={{ color: 'var(--color-ink-soft)' }}>— per-claim P(correct)</span>
+                  Certainty <span style={{ color: 'var(--color-ink-soft)' }}>— how likely each claim is correct</span>
                 </li>
                 <li>
                   <span style={{ color: 'var(--color-accent)' }}>02 </span>
-                  Security <span style={{ color: 'var(--color-ink-soft)' }}>— certified poisoning bound</span>
+                  Security <span style={{ color: 'var(--color-ink-soft)' }}>— resistance to training-data tampering</span>
                 </li>
                 <li>
                   <span style={{ color: 'var(--color-accent)' }}>03 </span>
-                  Robustness <span style={{ color: 'var(--color-ink-soft)' }}>— adversarial-prompt probe</span>
+                  Robustness <span style={{ color: 'var(--color-ink-soft)' }}>— resistance to jailbreak prompts</span>
                 </li>
               </ul>
 
