@@ -45,7 +45,11 @@ def encode_second_pass(
         add_generation_prompt=True,
     )
     format_enc = tokenizer(
-        enc, padding="max_length", truncation=True, max_length=max_seq_len
+        enc,
+        padding="max_length",
+        truncation=True,
+        max_length=max_seq_len,
+        return_tensors="pt",
     )
     return format_enc
 
@@ -74,22 +78,26 @@ def preprocess_example(
 
     # first pass to frozen LLM head
     first_enc = tokenizer(
-        first_chat, padding="max_length", truncation=True, max_length=max_seq_len
+        first_chat,
+        padding="max_length",
+        truncation=True,
+        max_length=max_seq_len,
+        return_tensors="pt",
     )
 
     # generating encoding for all answers (A,B,C,D)
-    second_enc = torch.empty((4, max_seq_len), dtype=torch.long)
-    second_enc_masks = torch.empty((4, max_seq_len), dtype=torch.long)
+    second_enc = torch.zeros((4, max_seq_len), dtype=torch.long)
+    second_enc_masks = torch.zeros((4, max_seq_len), dtype=torch.long)
 
     for ans_idx, ans in enumerate(["A", "B", "C", "D"]):
         enc = encode_second_pass(tokenizer, first_prompt, ans, max_seq_len)
-        second_enc[ans_idx] = enc["input_ids"]
-        second_enc_masks[ans_idx] = enc["attention_mask"]
+        second_enc[ans_idx] = enc["input_ids"].squeeze(0)
+        second_enc_masks[ans_idx] = enc["attention_mask"].squeeze(0)
 
     label = token_ids[int(example["cop"])]
 
     return {
-        "first_input_ids": first_enc["input_ids"],
+        "first_input_ids": first_enc["input_ids"].squeeze(0),
         "second_pass_ids": second_enc,
         "attention_mask_first": first_enc["attention_mask"].squeeze(0),
         "attention_mask_second": second_enc_masks,

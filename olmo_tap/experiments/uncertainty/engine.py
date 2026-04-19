@@ -92,19 +92,16 @@ def train(
             # is_correct: 1 if model was valid AND matched ground truth label
             is_correct = (valid_mask & (pred_token_ids == labels)).float()
 
-            # aligning shape of hidden_state
-            final_hidden = hidden_state[b_idx, last_idx_first, :].unsqueeze(
-                1
-            )  # (batch, 1, d_model)
-            # zero-filled residual tensor matching the second pass shape
+            # residual tensor matching trunk output shape and dtype
             aligned_residual = torch.zeros(
                 (input_ids.size(0), chosen_ids.size(1), hidden_state.size(-1)),
+                dtype=hidden_state.dtype,
                 device=device,
             )
-
-            # place the first pass's hidden_state at the end of the second pass
+            # inject first pass's final hidden state at the end of the second pass
+            final_hidden = hidden_state[b_idx, last_idx_first, :]  # (batch, d_model)
             last_idx_second = chosen_masks.sum(dim=-1) - 1
-            aligned_residual[b_idx, last_idx_second, :] = final_hidden.squeeze(1)
+            aligned_residual[b_idx, last_idx_second, :] = final_hidden
 
             # second pass: uncertainty head at index 0
             uncertainty_logits = model.forward(

@@ -91,16 +91,15 @@ def main():
 
         model = build_base_model(prod_config)
 
-        # load and merge weights for the current frozen head cycle
+        # load and merge weights for the current frozen head cycle.
+        # head_idx is always 1: the engine reads the frozen LLM from slot 1
+        # and trains the uncertainty LoRA on slot 0. frozen_head_idx only
+        # selects which shard's weights to load into slot 1.
         prod_path = PROD_WEIGHTS_DIR / f"shard_{frozen_head_idx}_lora.pt"
-        load_and_merge_lora_weights(
-            model, prod_config, prod_path, head_idx=frozen_head_idx
-        )
+        load_and_merge_lora_weights(model, prod_config, prod_path, head_idx=1)
 
         rob_path = ROBUST_WEIGHTS_DIR / f"shard_{frozen_head_idx}_lora.pt"
-        load_and_merge_lora_weights(
-            model, robust_config, rob_path, head_idx=frozen_head_idx
-        )
+        load_and_merge_lora_weights(model, robust_config, rob_path, head_idx=1)
 
         m_config = HydraLoRAConfig(
             n_heads_final=n_heads,
@@ -172,6 +171,9 @@ def main():
 
         train(model, exp_config, optimizer, scheduler)
         wandb.finish()
+
+        del model, optimizer, scheduler
+        torch.cuda.empty_cache()
 
 
 if __name__ == "__main__":
