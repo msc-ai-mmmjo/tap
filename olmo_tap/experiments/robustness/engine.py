@@ -68,14 +68,24 @@ def train(
                 batch["input_ids_clean"].to(device),
                 batch["input_ids_poisoned"].to(device),
             )
+            clean_mask = batch["attention_mask_clean"].to(device)
+            poisoned_mask = batch["attention_mask_poisoned"].to(device)
+            # Real last-token indices per row; `[:, -1, :]` would read a pad position
+            # under right-padding.
+            b_idx = torch.arange(clean_qs.size(0), device=device)
+            clean_last = clean_mask.sum(dim=-1) - 1
+            poisoned_last = poisoned_mask.sum(dim=-1) - 1
+
             # clean pass - target distribution (no grad)
             with torch.no_grad():
-                clean_logits = model(clean_qs, return_logits=True)[0, :, -1, :]
+                clean_all = model(clean_qs, return_logits=True)
+                clean_logits = clean_all[0, b_idx, clean_last, :]
                 clean_probs = F.softmax(clean_logits, dim=-1)
                 clean_argmax_logits = torch.argmax(clean_logits, dim=-1)
 
             # poisoned pass
-            poisoned_logits = model(poisoned_qs, return_logits=True)[0, :, -1, :]
+            poisoned_all = model(poisoned_qs, return_logits=True)
+            poisoned_logits = poisoned_all[0, b_idx, poisoned_last, :]
             log_poisoned_probs = F.log_softmax(poisoned_logits, dim=-1)
             poison_argmax_logits = torch.argmax(poisoned_logits, dim=-1)
 
