@@ -52,9 +52,7 @@ def main():
     if all((out_dir / f).exists() for f in required):
         clean_list = list(torch.load(out_dir / "clean.pt", weights_only=True))
         poisoned_list = list(torch.load(out_dir / "poisoned.pt", weights_only=True))
-        clean_mask_list = list(
-            torch.load(out_dir / "clean_mask.pt", weights_only=True)
-        )
+        clean_mask_list = list(torch.load(out_dir / "clean_mask.pt", weights_only=True))
         poisoned_mask_list = list(
             torch.load(out_dir / "poisoned_mask.pt", weights_only=True)
         )
@@ -112,9 +110,7 @@ def main():
             torch.save(torch.stack(clean_list), out_dir / "clean.pt")
             torch.save(torch.stack(poisoned_list), out_dir / "poisoned.pt")
             torch.save(torch.stack(clean_mask_list), out_dir / "clean_mask.pt")
-            torch.save(
-                torch.stack(poisoned_mask_list), out_dir / "poisoned_mask.pt"
-            )
+            torch.save(torch.stack(poisoned_mask_list), out_dir / "poisoned_mask.pt")
 
         if (i + 1) % 100 == 0 or i == start_idx:
             elapsed = time.time() - t0
