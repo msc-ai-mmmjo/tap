@@ -191,6 +191,18 @@ class HydraTransformer(nn.Module):
                 if isinstance(attn, Attention):
                     attn.init_kv_cache_manager(batch_size, max_seq_len)
 
+    def reset_kv_cache(self):
+        """Reset KV cache position counters to 0 before each generation."""
+        for block in self.trunk.blocks.values():
+            attn = cast(TransformerBlock, block).attention
+            if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
+                attn.kv_cache_manager.cache_seqlens.fill_(0)
+        for head in self.heads:
+            for block in cast(Transformer, head).blocks.values():
+                attn = cast(TransformerBlock, block).attention
+                if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
+                    attn.kv_cache_manager.cache_seqlens.fill_(0)
+
     def forward(
         self,
         input_ids: torch.Tensor,

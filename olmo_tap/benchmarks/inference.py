@@ -6,7 +6,7 @@ from typing import cast, Any
 
 import torch
 
-from olmo_core.nn.attention import AttentionBackendName, Attention
+from olmo_core.nn.attention import AttentionBackendName, Attention, KVCacheManager
 from olmo_core.nn.transformer import Transformer, TransformerBlock
 from olmo_core.nn.transformer.config import TransformerConfig
 from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
@@ -42,7 +42,7 @@ def build_baseline_model(dtype=torch.bfloat16, device="cuda"):
     return model
 
 
-def get_all_kv_cache_managers(model):
+def get_all_kv_cache_managers(model) -> list[KVCacheManager | None]:
     managers = []
     if isinstance(model, HydraTransformer):
         for block in model.trunk.blocks.values():
@@ -63,9 +63,10 @@ def get_all_kv_cache_managers(model):
     return managers
 
 
-def reset_kv_cache_position(managers, position):
+def reset_kv_cache_position(managers: list[KVCacheManager | None], position):
     for m in managers:
-        m.cache_seqlens.fill_(position)
+        if m is not None:
+            m.cache_seqlens.fill_(position)
 
 
 def forward_and_sample(model, input_ids):

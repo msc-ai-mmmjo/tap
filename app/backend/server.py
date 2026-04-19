@@ -1,19 +1,40 @@
+import os
 import re
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from huggingface_hub import InferenceClient
 from pydantic import BaseModel
+from transformers import TokenizersBackend
 
-from app.backend.constants import HF_TOKEN
+from app.backend.hydra_inference import generate, load_model, MODEL_NAME
 from app.backend.mock_metrics import (
     mock_claim_confidence,
     mock_robustness_status,
     mock_security_status,
 )
-from gradio_demo.constants import MODEL
+from app.backend.constants import HF_TOKEN
+from gradio_demo.constants import MODEL as HF_MODEL
+from olmo_tap.constants import MAX_NEW_TOKENS
+from olmo_tap.hydra import HydraTransformer
 
-app = FastAPI(title="Trustworthy Answer Protocol — API")
+_model: HydraTransformer | None = None
+_tokenizer: TokenizersBackend | None = None
+_device: str = "cuda"
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _model, _tokenizer, _device
+    _device = os.getenv("DEVICE", "cuda")
+    _model, _tokenizer = load_model(device=_device)
+    yield
+    _model = None
+    _tokenizer = None
+
+
+app = FastAPI(title="Trustworthy Answer Protocol — API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -32,11 +53,7 @@ class ChatRequest(BaseModel):
 
 
 def decompose_into_claims(text: str) -> list[str]:
-    """
-    Split model response into individual clinical assertions.
-    Simple sentence-level splitting for now.
-    Filter out very short sentences (likely not claims).
-    """
+    """Split response into individual assertions. Filters sentences shorter than 20 chars."""
     sentences = re.split(r"(?<=[.!?])\s+", text.strip())
     claims = [s.strip() for s in sentences if len(s.strip()) > 20]
     if not claims:
@@ -49,17 +66,24 @@ def call_hf_model(messages: list[dict]) -> str:
     if not HF_TOKEN:
         raise ValueError("HF_TOKEN environment variable not set")
 
-    client = InferenceClient(MODEL, token=HF_TOKEN)
+    client = InferenceClient(HF_MODEL, token=HF_TOKEN)
     response = client.chat_completion(messages, max_tokens=500)
     return response.choices[0].message.content or ""
 
 
 @app.post("/api/analyse")
-async def analyse(request: ChatRequest):
+async def analyse(request: ChatRequest, hf: bool = False):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
     robustness = mock_robustness_status(messages[-1]["content"])
 
-    raw_response = call_hf_model(messages)
+    if hf or _model is None or _tokenizer is None:
+        raw_response = call_hf_model(messages)
+        model = HF_MODEL
+    else:
+        raw_response = generate(
+            _model, _tokenizer, messages, MAX_NEW_TOKENS, device=_device
+        )
+        model = MODEL_NAME
 
     claims_text = decompose_into_claims(raw_response)
     claims = []
@@ -84,7 +108,7 @@ async def analyse(request: ChatRequest):
         "security": mock_security_status(),
         "robustness": robustness,
         "raw_response": raw_response,
-        "model": MODEL,
+        "model": model,
     }
 
 
