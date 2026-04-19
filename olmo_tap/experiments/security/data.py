@@ -56,6 +56,7 @@ def preprocess_example(
 
     return {
         "input_ids": encoding["input_ids"].squeeze(0),
+        "attention_mask": encoding["attention_mask"].squeeze(0),
         "label": label,
     }
 
@@ -85,6 +86,9 @@ def load_shard(
             "token_ids": token_ids,
         },
         remove_columns=["question", "opa", "opb", "opc", "opd", "cop"],
+        # Stale caches from before the attention_mask addition have the same
+        # fingerprint on some HF datasets versions; force reprocess.
+        load_from_cache_file=False,
     )
     shard_ds.set_format("torch")
 

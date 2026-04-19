@@ -105,16 +105,18 @@ def evaluate(
             return_tensors="pt",
         )
         input_ids = encoding["input_ids"].to(device)
+        attention_mask = encoding["attention_mask"].to(device)
 
-        # Get logits — handle both HydraTransformer (n_heads, batch, seq, vocab)
-        # and standard models (batch, seq, vocab)
-        logits = model(input_ids, return_logits=True, last_token_only=True)
-        if logits.dim() == 4:
-            logits = get_mcq_logits(
-                logits[0, :, 0, :], token_ids
-            )  # head 0, seq dim is 1
-        else:
-            logits = get_mcq_logits(logits[:, -1, :], token_ids)  # last position
+        # Full-seq logits — we need per-row position slicing so last_token_only
+        # doesn't apply here. Right-padding puts real tokens at indices 0..n_real-1,
+        # so reading `[:, -1, :]` would read a pad position.
+        logits_full = model(input_ids, return_logits=True)
+        head0 = logits_full[0] if logits_full.dim() == 4 else logits_full
+
+        last_idx = attention_mask.sum(dim=-1) - 1  # (batch,)
+        b_idx = torch.arange(input_ids.size(0), device=device)
+        last_logits = head0[b_idx, last_idx, :]
+        logits = get_mcq_logits(last_logits, token_ids)
 
         # find argmax logit indices to verify correctness
         preds = torch.argmax(logits, dim=-1)
@@ -172,7 +174,10 @@ def main():
         model.eval()
     else:
         # Load finetuned model from checkpoint
-        from olmo_tap.experiments.utils.model_builder import build_base_model
+        from olmo_tap.experiments.utils.model_builder import (
+            build_base_model,
+            inject_lora,
+        )
         from olmo_tap.experiments.utils.config import HydraLoRAConfig
 
         m_config = HydraLoRAConfig(
@@ -184,6 +189,8 @@ def main():
         )
         m_config.device = device
         model = build_base_model(m_config)
+        # Wrap head 0 with fresh LoRA so PEFT-style state_dict keys line up
+        inject_lora(model, m_config)
 
         ckpt = torch.load(args.checkpoint, map_location=device)
         state = ckpt["head_state_dict"] if "head_state_dict" in ckpt else ckpt
