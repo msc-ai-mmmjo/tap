@@ -79,22 +79,18 @@ def preprocess_example(
     )
 
     # generating encoding for all answers (A,B,C,D) and all numbers of consensus scores (1 through 9)
-    second_ids = [[] for _ in range(4)]  # shape (4, n_voting_heads)
-    second_mask = [[] for _ in range(4)]  # shape (4, n_voting_heads)
+    second_enc = [[] for _ in range(4)]  # shape (4, n_voting_heads)
     for ans_idx, ans in enumerate(["A", "B", "C", "D"]):
         for i in range(1, n_voting_heads + 1):  # consensus scores
-            enc = encode_second_pass(
-                tokenizer, first_prompt, ans, max_seq_len, i, n_voting_heads
+            second_enc[ans_idx].append(
+                encode_second_pass(
+                    tokenizer, first_prompt, ans, max_seq_len, i, n_voting_heads
+                )["input_ids"]
             )
-            second_ids[ans_idx].append(enc["input_ids"])
-            second_mask[ans_idx].append(enc["attention_mask"])
 
-    # Masks let training gather logits at the real last token under right-padding.
     return {
         "first_input_ids": first_enc["input_ids"],
-        "first_attention_mask": first_enc["attention_mask"],
-        "second_pass_ids": torch.tensor(second_ids),
-        "second_pass_mask": torch.tensor(second_mask),
+        "second_pass_ids": torch.tensor(second_enc),
         "label": example["cop"],
     }
 
@@ -123,9 +119,6 @@ def load_shard(config: ExperimentConfig) -> tuple[DataLoader, int, int, int, int
             "n_voting_heads": n_voting_heads,
         },
         remove_columns=["question", "opa", "opb", "opc", "opd", "cop"],
-        # Stale caches from before the attention_mask addition have the same
-        # fingerprint on some HF datasets versions; force reprocess.
-        load_from_cache_file=False,
     )
     shard_ds.set_format("torch")
 

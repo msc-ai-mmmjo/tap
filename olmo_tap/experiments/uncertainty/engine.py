@@ -105,20 +105,13 @@ def train(
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:
             # first pass: frozen head determines model's answer
-            first_ids = batch["first_input_ids"].to(device)
-            first_mask = batch["first_attention_mask"].to(device)
-            # Real last-token indices per row; `[:, -1, :]` would read a pad position
-            # under right-padding.
-            b_idx = torch.arange(first_ids.size(0), device=device)
-            first_last = first_mask.sum(dim=-1) - 1
-
             with torch.no_grad():
                 # custom method to internally calculate variance of heads' hidden states
                 all_logits, hidden_var = model.residual_forward(
-                    first_ids, return_logits=True
+                    batch["first_input_ids"].to(device), return_logits=True
                 )
-                # Exclude uncertainty head, gather at real last token: (n_heads - 1, batch_size, vocab_size)
-                logits = all_logits[1:, b_idx, first_last, :]
+                # Exclude uncertainty head, and only take last token logits: (n_heads - 1, batch_size, vocab_size)
+                logits = all_logits[1:, :, -1, :]
                 probs = F.softmax(logits, dim=-1)
                 modal_answers, consensus_scores = entropy_weighted_mode(
                     probs, exp_config
@@ -128,22 +121,18 @@ def train(
             second_pass_ids = batch["second_pass_ids"].to(
                 device
             )  # shape: (batch_size, 4, n_heads, seq_len)
-            second_pass_mask = batch["second_pass_mask"].to(device)
             second_ids = select_second_pass_inputs(
                 second_pass_ids, modal_answers, consensus_scores, exp_config
             )  # (batch_size, seq_len)
-            second_mask = select_second_pass_inputs(
-                second_pass_mask, modal_answers, consensus_scores, exp_config
-            )
-            second_last = second_mask.sum(dim=-1) - 1
 
             # is_correct: whether the model's modal answer matches the ground truth
             is_correct = (batch["label"].to(device) == modal_answers).float()
 
             # second pass: uncertainty head, loss only on A/B token logits
             # inject heads' hidden state variance at top of trunk (base of uncertainty head)
-            second_all = model(second_ids, residual=hidden_var, return_logits=True)
-            logits = second_all[0, b_idx, second_last, :]
+            logits = model(second_ids, residual=hidden_var, return_logits=True)[
+                0, :, -1, :
+            ]
             probs = F.softmax(logits, dim=-1)
             calib_probs = get_calibration_prob(probs, t_config)
 
