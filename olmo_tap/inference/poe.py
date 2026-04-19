@@ -1,11 +1,25 @@
 import torch
 import torch.nn.functional as F
+from tqdm import tqdm
+from typing import cast, List
+
 from olmo_tap.hydra import HydraTransformer
 from transformers import PreTrainedTokenizerBase
-from olmo_core.nn.transformer.block import TransformerBlock
-from olmo_core.nn.transformer.model import Transformer
-from tqdm import tqdm
-from typing import cast
+
+
+def sync_hydra_cache(model: HydraTransformer, target_length: int):
+    def _apply(m):
+        for block in m.blocks.values():
+            mgr = block.attention.kv_cache_manager
+
+            if hasattr(mgr, "cache_seqlens"):
+                mgr.cache_seqlens.fill_(target_length)
+            if hasattr(mgr, "cache_leftpad"):
+                mgr.cache_leftpad.fill_(0)
+
+    _apply(model.trunk)
+    for head in model.heads:
+        _apply(head)
 
 
 @torch.no_grad()
@@ -16,127 +30,143 @@ def poe_generate_with_cache(
     n_heads: int,
     gamma: int = 4,
     beta: float = 1.0,
-    max_new_tokens: int = 200,
-):
-    # 1. Prepare Inputs
+    max_new_tokens: int = 300,
+) -> str:
     messages = [{"role": "user", "content": prompt_text}]
     chat_prompt = tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
     )
-    input_ids = tokenizer(str(chat_prompt), return_tensors="pt").input_ids.to("cuda")
+    input_ids = torch.tensor([tokenizer.encode(chat_prompt)], device="cuda")
 
-    prompt_len = input_ids.shape[1]
-    max_seq_len = prompt_len + max_new_tokens
+    # Initialize cache
+    model.init_kv_cache(
+        batch_size=1, max_seq_len=input_ids.size(1) + max_new_tokens + 128
+    )
 
-    # 2. Setup KV Cache
-    model.init_kv_cache(batch_size=1, max_seq_len=max_seq_len)
+    draft_idx = int(torch.randint(0, n_heads, (1,)).item())
+    verifier_indices = [i for i in range(n_heads) if i != draft_idx]
 
-    # Prefill: Process prompt through trunk and ALL heads
-    # to populate the KV cache for the prefix
-    model(input_ids, return_logits=True)
+    # Prefill
+    next_step_logits = model(input_ids, last_token_only=True)
 
     generated_ids = input_ids.clone()
-    pbar = tqdm(total=max_new_tokens, desc="PoE Decoding")
+    output_parts: List[str] = [tokenizer.decode(input_ids[0], skip_special_tokens=True)]
 
-    while (generated_ids.shape[1] - prompt_len) < max_new_tokens:
-        # Pick a random head as the Drafter for this block
-        draft_idx = int(torch.randint(0, n_heads, (1,)).item())
-        verifier_indices = [i for i in range(n_heads) if i != draft_idx]
+    pbar = tqdm(total=max_new_tokens, desc="PoE Speculating")
 
-        # --- PHASE 1: BLOCK DRAFTING ---
+    while (generated_ids.shape[1] - input_ids.size(1)) < max_new_tokens:
+        curr_base_len = generated_ids.shape[1]
+
+        # --- PHASE 1: DRAFTING ---
         draft_step_ids = []
         draft_probs = []
 
-        # Start drafting from the last confirmed token
-        current_input = generated_ids[:, -1:]
+        d_logits = next_step_logits[draft_idx, 0, 0, :]
+        d_probs = F.softmax(d_logits.float(), dim=-1)
+        d_token = torch.argmax(d_probs).item()
 
-        for _ in range(gamma):
-            # Only run the drafter. last_token_only=True for speed.
+        draft_step_ids.append(d_token)
+        draft_probs.append(d_probs)
+
+        # Draft loop: we must pass explicit indices to keep RoPE aligned
+        curr_d_token = torch.tensor([[d_token]], device="cuda")
+        for step in range(gamma - 1):
+            # Positional index is base + 1 (for the first draft step) + current step
+            d_indices = torch.tensor([[curr_base_len + step]], device="cuda")
+
             logits = model(
-                current_input, head_indices=[draft_idx], last_token_only=True
+                curr_d_token,
+                head_indices=[draft_idx],
+                indices=d_indices,
+                last_token_only=True,
             )
-            # logits shape: (1, 1, 1, vocab) -> [head, batch, seq, vocab]
-            next_logits = logits[0, 0, 0, :]
+            step_probs = F.softmax(logits[0, 0, 0, :].float(), dim=-1)
+            step_token = torch.argmax(step_probs).item()
 
-            probs = F.softmax(next_logits.float(), dim=-1)
-            token_id = torch.argmax(probs).item()
+            draft_step_ids.append(step_token)
+            draft_probs.append(step_probs)
+            curr_d_token = torch.tensor([[step_token]], device="cuda")
 
-            draft_step_ids.append(int(token_id))
-            draft_probs.append(probs[int(token_id)].item())
-            current_input = torch.tensor([[token_id]], device="cuda")
+        # --- PHASE 2: VERIFICATION ---
+        # 1. Rewind all heads/trunk to the same baseline
+        sync_hydra_cache(model, curr_base_len)
 
-        # --- PHASE 2: PARALLEL VERIFICATION ---
-        # Run verifiers on the whole proposed block at once
+        # 2. Block verification pass
         proposed_tensor = torch.tensor([draft_step_ids], device="cuda")
-        v_logits = model(
-            proposed_tensor, head_indices=verifier_indices, return_logits=False
-        )
-        # v_logits shape: (num_verifiers, 1, gamma, d_model) BEFORE lm_head in forward()
-        # but since model() returns the projected logits:
-        # v_logits: (num_verifiers, 1, gamma, vocab)
+        # Explicit block indices for RoPE
+        v_indices = torch.arange(
+            curr_base_len, curr_base_len + gamma, device="cuda"
+        ).unsqueeze(0)
 
-        n_accepted = 0
-        terminal = False
+        v_block_logits = model(proposed_tensor, indices=v_indices)
+
+        accepted_this_round = 0
+        rejected = False
 
         for i in range(gamma):
-            # Calculate PoE distribution for this step
-            step_v_logits = v_logits[:, 0, i, :]  # (num_verifiers, vocab)
-            log_P = (beta * F.log_softmax(step_v_logits.float(), dim=-1)).sum(dim=0)
+            v_logits = (
+                next_step_logits[verifier_indices, 0, 0, :]
+                if i == 0
+                else v_block_logits[verifier_indices, 0, i - 1, :]
+            )
 
+            log_P = (beta * F.log_softmax(v_logits.float(), dim=-1)).sum(dim=0)
             P_dist = torch.exp(log_P)
             P_dist /= P_dist.sum() + 1e-10
 
-            q_val = draft_probs[i]
-            p_val = P_dist[draft_step_ids[i]].item()
+            token_id = draft_step_ids[i]
+            p_val, q_val = P_dist[token_id].item(), draft_probs[i][token_id].item()
 
-            # Acceptance Criterion (Standard Speculative Sampling)
             if torch.rand(1).item() < min(1.0, p_val / (q_val + 1e-10)):
-                n_accepted += 1
-                accepted_token = torch.tensor([[draft_step_ids[i]]], device="cuda")
-                generated_ids = torch.cat([generated_ids, accepted_token], dim=-1)
-
-                if draft_step_ids[i] == tokenizer.eos_token_id:
-                    terminal = True
-                    break
+                # Accept
+                accepted_this_round += 1
+                generated_ids = torch.cat(
+                    [generated_ids, torch.tensor([[token_id]], device="cuda")], dim=-1
+                )
+                output_parts.append(tokenizer.decode([token_id]))
+                if token_id == tokenizer.eos_token_id:
+                    sync_hydra_cache(model, generated_ids.shape[1])
+                    return "".join(output_parts)
             else:
-                # REJECTION: Resample from the PoE distribution
-                # Note: For strict security, you could also use the difference distribution
-                resampled_id = torch.multinomial(P_dist, 1).item()
-                resampled_token = torch.tensor([[resampled_id]], device="cuda")
-                generated_ids = torch.cat([generated_ids, resampled_token], dim=-1)
+                # Reject: Sample correction
+                correction = torch.clamp(P_dist - draft_probs[i], min=0)
+                resampled_id = (
+                    torch.multinomial(correction / (correction.sum() + 1e-10), 1).item()
+                    if correction.sum() > 1e-6
+                    else torch.multinomial(P_dist, 1).item()
+                )
 
-                # REWIND CACHE:
-                # We accepted 'i' tokens and the resampled token is at 'i+1'.
-                # We must delete the KV cache entries from i+2 to gamma.
-                num_to_rewind = gamma - (i + 1)
-                if num_to_rewind > 0:
-                    rewind_hydra_cache(model, num_to_rewind)
+                output_parts.append(tokenizer.decode([resampled_id]))
+                generated_ids = torch.cat(
+                    [generated_ids, torch.tensor([[resampled_id]], device="cuda")],
+                    dim=-1,
+                )
+
+                # REWIND: Set cache to point at the new end of the sequence
+                sync_hydra_cache(model, curr_base_len + accepted_this_round)
+
+                # Get logits for next round using explicit position
+                corr_idx = torch.tensor(
+                    [[curr_base_len + accepted_this_round]], device="cuda"
+                )
+                next_step_logits = model(
+                    torch.tensor([[resampled_id]], device="cuda"),
+                    indices=corr_idx,
+                    last_token_only=True,
+                )
+
+                rejected = True
+                if resampled_id == tokenizer.eos_token_id:
+                    return "".join(output_parts)
                 break
 
-        pbar.update(n_accepted + 1)
-        if terminal or generated_ids[0, -1] == tokenizer.eos_token_id:
-            break
+        if not rejected:
+            # Full acceptance: logits are from the last token of the block
+            next_step_logits = v_block_logits[:, :, -1:, :]
 
-    return tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+        pbar.update(accepted_this_round + (1 if rejected else 0))
 
-
-def rewind_hydra_cache(model: HydraTransformer, num_tokens: int):
-    """
-    Helper to step back the internal KV cache managers.
-    This assumes your Attention modules have a way to decrement their
-    internal sequence pointer.
-    """
-    for block in model.trunk.blocks.values():
-        attn = cast(TransformerBlock, block).attention
-        if hasattr(attn, "kv_cache_manager"):
-            # This is the logic you'll need to verify in olmo_core
-            attn.kv_cache_manager.current_seq_len -= num_tokens
-
-    for head in model.heads:
-        for block in cast(Transformer, head).blocks.values():
-            attn = cast(TransformerBlock, block).attention
-            if hasattr(attn, "kv_cache_manager"):
-                attn.kv_cache_manager.current_seq_len -= num_tokens
+    return "".join(output_parts)
 
 
 if __name__ == "__main__":
@@ -149,19 +179,6 @@ if __name__ == "__main__":
     )
     model, n_heads = load_ensemble(weights_dir=PROD_WEIGHTS_DIR)
 
-    queries = [
-        "What is the capital of France?",
-        "Briefly recount the story of Cain and Abel.",
-        "What is the square root of 2?",
-        "What are the genetic factors associated with tuberculosis?",
-        "Write me a brief poem, no more than 10 lines long.",
-    ]
-
-    for q in queries:
-        orig_build, resamp_build = poe_generate_with_cache(model, tokenizer, q, n_heads)
-        print("\n" + "=" * 60)
-        print(f"QUERY: {q}")
-        print("\n" + "-" * 15 + " ORIGINAL (DRAFT) WITH REJECTIONS " + "-" * 15)
-        print(orig_build)
-        print("\n" + "-" * 15 + " NEW (MOE) WITH RESAMPLES " + "-" * 15)
-        print(resamp_build)
+    q = "Write me a brief poem, at least 100 lines long."
+    print("\n--- POE SPECULATIVE ---")
+    print(poe_generate_with_cache(model, tokenizer, q, n_heads))
