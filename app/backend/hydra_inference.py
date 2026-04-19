@@ -1,27 +1,46 @@
+import logging
+import time
 from typing import cast
 
 import torch
 from transformers import AutoTokenizer, TokenizersBackend
 
-from olmo_tap.constants import WEIGHTS_DIR, MAX_SEQ_LEN
+from olmo_tap.constants import MAX_SEQ_LEN, WEIGHTS_DIR
 from olmo_tap.experiments.utils.config import HydraLoRAConfig
 from olmo_tap.experiments.utils.model_builder import build_base_model
 from olmo_tap.hydra import HydraTransformer
 
-MODEL_NAME = "OLMo2-7B (base)"
+logger = logging.getLogger(__name__)
+
+MODEL_NAME = "Hydra"
 
 
 def load_model(
     device: str = "cuda",
 ) -> tuple[HydraTransformer, TokenizersBackend] | tuple[None, None]:
+    t0 = time.perf_counter()
+
+    if not WEIGHTS_DIR:
+        logger.warning("WEIGHTS_DIR not set; skipping model load")
+        return None, None
+    logger.info("Loading tokenizer from %s", WEIGHTS_DIR)
     tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)
     if not isinstance(tokenizer, TokenizersBackend):
+        logger.warning("Tokenizer is not a TokenizersBackend; aborting model load")
         return None, None
 
+    logger.info("Building model on device=%s", device)
     config = HydraLoRAConfig(device=device)
-    model = build_base_model(config)
-    model.eval()
+    try:
+        model = build_base_model(config)
+        model.eval()
+    except Exception as e:
+        logger.error("Error building model: %s", e)
+        return None, None
+
+    logger.info("Allocating KV cache (max_seq_len=%d)", MAX_SEQ_LEN)
     model.init_kv_cache(batch_size=1, max_seq_len=MAX_SEQ_LEN)
+    logger.info("Model ready -- setup took %.2fs", time.perf_counter() - t0)
 
     return model, tokenizer
 
@@ -40,6 +59,7 @@ def generate(
 
     model.reset_kv_cache()
 
+    t0 = time.perf_counter()
     with torch.no_grad():
         generated = []
         ids = input_ids  # pre-fill with full prompt
@@ -55,4 +75,7 @@ def generate(
             # for next step, input is just the last generated token
             ids = torch.tensor([[next_token_id]], device=device)
 
+    logger.info(
+        "Generated %d tokens in %.2fs", len(generated), time.perf_counter() - t0
+    )
     return cast(str, tokenizer.decode(generated, skip_special_tokens=True))

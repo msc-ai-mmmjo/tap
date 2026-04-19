@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 from contextlib import asynccontextmanager
@@ -19,6 +20,11 @@ from gradio_demo.constants import MODEL as HF_MODEL
 from olmo_tap.constants import MAX_NEW_TOKENS
 from olmo_tap.hydra import HydraTransformer
 
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 _model: HydraTransformer | None = None
 _tokenizer: TokenizersBackend | None = None
 _device: str = "cuda"
@@ -28,8 +34,12 @@ _device: str = "cuda"
 async def lifespan(app: FastAPI):
     global _model, _tokenizer, _device
     _device = os.getenv("DEVICE", "cuda")
+    logger.info("Starting up — device=%s", _device)
     _model, _tokenizer = load_model(device=_device)
+    if _model is None:
+        logger.warning("Model unavailable; requests will fall back to HF API")
     yield
+    logger.info("Shutting down")
     _model = None
     _tokenizer = None
 
@@ -75,6 +85,7 @@ def call_hf_model(messages: list[dict]) -> str:
 async def analyse(request: ChatRequest, hf: bool = False):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
     robustness = mock_robustness_status(messages[-1]["content"])
+    logger.info("Latest user message: %s", messages[-1]["content"])
 
     if hf or _model is None or _tokenizer is None:
         raw_response = call_hf_model(messages)
@@ -84,6 +95,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
             _model, _tokenizer, messages, MAX_NEW_TOKENS, device=_device
         )
         model = MODEL_NAME
+    logger.info("Generation complete (%d chars)", len(raw_response))
 
     claims_text = decompose_into_claims(raw_response)
     claims = []
