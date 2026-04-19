@@ -5,7 +5,7 @@ from typing import cast
 import torch
 from transformers import AutoTokenizer, TokenizersBackend
 
-from olmo_tap.constants import HYDRA_WEIGHTS_DIR, MAX_SEQ_LEN
+from olmo_tap.constants import MAX_SEQ_LEN, WEIGHTS_DIR
 from olmo_tap.experiments.utils.config import HydraLoRAConfig
 from olmo_tap.experiments.utils.model_builder import build_base_model
 from olmo_tap.hydra import HydraTransformer
@@ -19,8 +19,8 @@ def load_model(
     device: str = "cuda",
 ) -> tuple[HydraTransformer, TokenizersBackend] | tuple[None, None]:
     t0 = time.perf_counter()
-    logger.info("Loading tokenizer from %s", HYDRA_WEIGHTS_DIR)
-    tokenizer = AutoTokenizer.from_pretrained(HYDRA_WEIGHTS_DIR)
+    logger.info("Loading tokenizer from %s", WEIGHTS_DIR)
+    tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)
     if not isinstance(tokenizer, TokenizersBackend):
         logger.warning("Tokenizer is not a TokenizersBackend; aborting model load")
         return None, None
@@ -71,5 +71,7 @@ def generate(
             # for next step, input is just the last generated token
             ids = torch.tensor([[next_token_id]], device=device)
 
-    logger.info("Generated %d tokens in %.2fs", len(generated), time.perf_counter() - t0)
+    logger.info(
+        "Generated %d tokens in %.2fs", len(generated), time.perf_counter() - t0
+    )
     return cast(str, tokenizer.decode(generated, skip_special_tokens=True))
