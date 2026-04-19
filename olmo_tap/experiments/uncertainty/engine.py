@@ -64,10 +64,10 @@ def train(
                     return_logits=True,
                 )
 
-            #  indexing for first pass (LLM head at index 1)
+            # indexing for first pass (LLM head at position 0 in returned tensor)
             last_idx_first = attention_mask_first.sum(dim=-1) - 1
             b_idx = torch.arange(input_ids.size(0), device=device)
-            first_pass_logits = all_logits[1, b_idx, last_idx_first, :]
+            first_pass_logits = all_logits[0, b_idx, last_idx_first, :]
             pred_token_ids = first_pass_logits.argmax(dim=-1)  # (batch_size,)
 
             # checks if argmax is in [A_id, B_id, C_id, D_id]
@@ -106,16 +106,15 @@ def train(
             last_idx_second = chosen_masks.sum(dim=-1) - 1
             aligned_residual[b_idx, last_idx_second, :] = final_hidden.squeeze(1)
 
-            # second pass: uncertainty head (assuming index 2)
+            # second pass: uncertainty head at index 0
             uncertainty_logits = model.forward(
                 chosen_ids,
-                residual=hidden_state,
+                residual=aligned_residual,
                 head_indices=[0],  # only pass through uncertainty head
                 return_logits=True,
             )
 
             # index second pass correctly to ignore right-padding
-            last_idx_second = chosen_masks.sum(dim=-1) - 1
             logits_second = uncertainty_logits[0, b_idx, last_idx_second, :]
 
             probs = F.softmax(logits_second, dim=-1)
