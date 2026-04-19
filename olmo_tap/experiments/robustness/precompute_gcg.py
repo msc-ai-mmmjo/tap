@@ -45,10 +45,17 @@ def main():
     # Resume from existing checkpoint
     clean_list: list[torch.Tensor] = []
     poisoned_list: list[torch.Tensor] = []
+    clean_mask_list: list[torch.Tensor] = []
+    poisoned_mask_list: list[torch.Tensor] = []
     start_idx = 0
-    if (out_dir / "clean.pt").exists() and (out_dir / "poisoned.pt").exists():
+    required = ["clean.pt", "poisoned.pt", "clean_mask.pt", "poisoned_mask.pt"]
+    if all((out_dir / f).exists() for f in required):
         clean_list = list(torch.load(out_dir / "clean.pt", weights_only=True))
         poisoned_list = list(torch.load(out_dir / "poisoned.pt", weights_only=True))
+        clean_mask_list = list(torch.load(out_dir / "clean_mask.pt", weights_only=True))
+        poisoned_mask_list = list(
+            torch.load(out_dir / "poisoned_mask.pt", weights_only=True)
+        )
         start_idx = len(clean_list)
         print(f"Resuming from example {start_idx}")
 
@@ -67,13 +74,15 @@ def main():
             tokenize=False,
             add_generation_prompt=True,
         )
-        clean_ids = tok(
+        clean_enc = tok(
             clean_prompt,
             padding="max_length",
             truncation=True,
             max_length=MAX_SEQ_LEN,
             return_tensors="pt",
-        )["input_ids"].squeeze(0)
+        )
+        clean_ids = clean_enc["input_ids"].squeeze(0)
+        clean_mask = clean_enc["attention_mask"].squeeze(0)
 
         # Tokenize poisoned prompt (question + options + suffix)
         poisoned_prompt = tok.apply_chat_template(
@@ -81,20 +90,27 @@ def main():
             tokenize=False,
             add_generation_prompt=True,
         )
-        poisoned_ids = tok(
+        poisoned_enc = tok(
             poisoned_prompt,
             padding="max_length",
             truncation=True,
             max_length=MAX_SEQ_LEN,
             return_tensors="pt",
-        )["input_ids"].squeeze(0)
+        )
+        poisoned_ids = poisoned_enc["input_ids"].squeeze(0)
+        poisoned_mask = poisoned_enc["attention_mask"].squeeze(0)
 
         clean_list.append(clean_ids)
         poisoned_list.append(poisoned_ids)
+        # Masks let training gather logits at the real last token under right-padding.
+        clean_mask_list.append(clean_mask)
+        poisoned_mask_list.append(poisoned_mask)
 
         if (i + 1) % 100 == 0 or i == n - 1:
             torch.save(torch.stack(clean_list), out_dir / "clean.pt")
             torch.save(torch.stack(poisoned_list), out_dir / "poisoned.pt")
+            torch.save(torch.stack(clean_mask_list), out_dir / "clean_mask.pt")
+            torch.save(torch.stack(poisoned_mask_list), out_dir / "poisoned_mask.pt")
 
         if (i + 1) % 100 == 0 or i == start_idx:
             elapsed = time.time() - t0
