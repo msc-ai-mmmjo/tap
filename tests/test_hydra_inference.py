@@ -90,6 +90,7 @@ def test_load_model_returns_model_and_tokenizer():
     mock_tokenizer = MagicMock(spec=TokenizersBackend)
 
     with (
+        patch("app.backend.hydra_inference.WEIGHTS_DIR", "fake_weights"),
         patch("app.backend.hydra_inference.build_base_model", return_value=mock_model),
         patch("app.backend.hydra_inference.AutoTokenizer") as mock_auto,
     ):
