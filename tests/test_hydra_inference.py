@@ -31,7 +31,7 @@ def test_generate_returns_decoded_tokens():
     mock_tokenizer.decode.assert_called_once_with([7, 7, 7], skip_special_tokens=True)
 
 
-def test_generate_calls_init_kv_cache():
+def test_generate_calls_reset_kv_cache():
     vocab_size = 10
     logits = torch.zeros(1, 1, 1, vocab_size)
     logits[0, 0, 0, 2] = 10.0
@@ -52,7 +52,8 @@ def test_generate_calls_init_kv_cache():
         device="cpu",
     )
 
-    mock_model.init_kv_cache.assert_called_once_with(batch_size=1, max_seq_len=7)
+    mock_model.reset_kv_cache.assert_called_once_with()
+    mock_model.init_kv_cache.assert_not_called()
 
 
 def test_generate_stops_at_eos():
