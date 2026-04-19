@@ -52,7 +52,8 @@ def poe_generate_with_cache(
 
     # ids tensor and output string list
     generated_ids = input_ids.clone()
-    output_parts: list[str] = [tokenizer.decode(input_ids[0], skip_special_tokens=True)]
+    decoded = cast(str, tokenizer.decode(input_ids[0], skip_special_tokens=True))
+    output_parts: list[str] = [decoded]
 
     pbar = tqdm(total=max_new_tokens, desc="PoE Speculating")
 
@@ -124,7 +125,7 @@ def poe_generate_with_cache(
                 generated_ids = torch.cat(
                     [generated_ids, torch.tensor([[token_id]], device="cuda")], dim=-1
                 )
-                output_parts.append(tokenizer.decode([token_id]))
+                output_parts.append(cast(str, tokenizer.decode([token_id])))
                 if token_id == tokenizer.eos_token_id:
                     sync_hydra_cache(model, generated_ids.shape[1])
                     return "".join(output_parts)
@@ -137,7 +138,7 @@ def poe_generate_with_cache(
                     else torch.multinomial(P_dist, 1).item()
                 )
 
-                output_parts.append(tokenizer.decode([resampled_id]))
+                output_parts.append(cast(str, tokenizer.decode([resampled_id])))
                 generated_ids = torch.cat(
                     [generated_ids, torch.tensor([[resampled_id]], device="cuda")],
                     dim=-1,
