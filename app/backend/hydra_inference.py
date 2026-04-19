@@ -19,6 +19,10 @@ def load_model(
     device: str = "cuda",
 ) -> tuple[HydraTransformer, TokenizersBackend] | tuple[None, None]:
     t0 = time.perf_counter()
+
+    if not WEIGHTS_DIR:
+        logger.warning("WEIGHTS_DIR not set; skipping model load")
+        return None, None
     logger.info("Loading tokenizer from %s", WEIGHTS_DIR)
     tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)
     if not isinstance(tokenizer, TokenizersBackend):
@@ -36,7 +40,7 @@ def load_model(
 
     logger.info("Allocating KV cache (max_seq_len=%d)", MAX_SEQ_LEN)
     model.init_kv_cache(batch_size=1, max_seq_len=MAX_SEQ_LEN)
-    logger.info("Model ready — setup took %.2fs", time.perf_counter() - t0)
+    logger.info("Model ready -- setup took %.2fs", time.perf_counter() - t0)
 
     return model, tokenizer
 

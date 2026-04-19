@@ -6,13 +6,17 @@ expandable per-claim trust analysis. Connects to the same HuggingFace model as t
 Gradio POC. Metric scores are currently mocked and will be replaced with our OLMo when ready.
 
 ## Quick start
+Ensure you have weights for an OLMo-7b model in your `/vol/bitbucket/$USER/`, and that `OLMO_WEIGHTS_DIR` in your `.env` reflects this
 
 ```bash
 # Set up environment (from repo root)
 edit app/.env with your HF token
 
-# Start backend using pixi
-pixi run app-api
+# Check which GPU isn't being hogged (lets say GPU 1)
+nvidia-smi
+
+# Start backend using pixi,
+CUDA_VISIBLE_DEVICES=1 pixi run -e cuda app-api
 # Runs at http://localhost:8000
 
 # Start frontend (separate terminal)

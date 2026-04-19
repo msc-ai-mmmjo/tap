@@ -7,6 +7,7 @@ load_dotenv(override=True)
 
 MAX_NEW_TOKENS = 20
 MAX_SEQ_LEN = 4096
+
 WEIGHTS_DIR = os.getenv("OLMO_WEIGHTS_DIR", "")
 
 VOCAB_SIZE = 100352
@@ -26,5 +27,3 @@ ROBUST_WEIGHTS_DIR = Path(
         str(Path(__file__).resolve().parent / "weights" / "robust"),
     )
 )
-
-# print(f"Using weights from: {WEIGHTS_DIR}")

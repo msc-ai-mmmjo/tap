@@ -85,13 +85,12 @@ def call_hf_model(messages: list[dict]) -> str:
 async def analyse(request: ChatRequest, hf: bool = False):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
     robustness = mock_robustness_status(messages[-1]["content"])
+    logger.info("Latest user message: %s", messages[-1]["content"])
 
     if hf or _model is None or _tokenizer is None:
-        logger.info("Generating via HF API (model=%s)", HF_MODEL)
         raw_response = call_hf_model(messages)
         model = HF_MODEL
     else:
-        logger.info("Generating via local model")
         raw_response = generate(
             _model, _tokenizer, messages, MAX_NEW_TOKENS, device=_device
         )
