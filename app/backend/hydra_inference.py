@@ -13,14 +13,15 @@ MODEL_NAME = "OLMo2-7B (base)"
 
 def load_model(
     device: str = "cuda",
-) -> tuple[HydraTransformer, TokenizersBackend]:
+) -> tuple[HydraTransformer, TokenizersBackend] | tuple[None, None]:
+    tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)
+    if not isinstance(tokenizer, TokenizersBackend):
+        return None, None
+
     config = HydraLoRAConfig(device=device)
     model = build_base_model(config)
     model.eval()
-    tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)
-    assert isinstance(tokenizer, TokenizersBackend), (
-        f"Expected TokenizersBackend, got {type(tokenizer)}"
-    )
+
     return model, tokenizer
 
 

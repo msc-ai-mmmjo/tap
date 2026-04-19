@@ -2,7 +2,7 @@ import os
 import re
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from huggingface_hub import InferenceClient
 from pydantic import BaseModel
@@ -73,18 +73,17 @@ def call_hf_model(messages: list[dict]) -> str:
 
 @app.post("/api/analyse")
 async def analyse(request: ChatRequest, hf: bool = False):
-    # TODO: remove hf option
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
     robustness = mock_robustness_status(messages[-1]["content"])
 
-    if hf:
+    if hf or _model is None or _tokenizer is None:
         raw_response = call_hf_model(messages)
+        model = HF_MODEL
     else:
-        if _model is None or _tokenizer is None:
-            raise HTTPException(status_code=503, detail="Model or tokenizer not loaded")
         raw_response = generate(
             _model, _tokenizer, messages, MAX_NEW_TOKENS, device=_device
         )
+        model = MODEL_NAME
 
     claims_text = decompose_into_claims(raw_response)
     claims = []
@@ -109,7 +108,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
         "security": mock_security_status(),
         "robustness": robustness,
         "raw_response": raw_response,
-        "model": HF_MODEL if hf else MODEL_NAME,
+        "model": model,
     }
 
 
