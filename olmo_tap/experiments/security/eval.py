@@ -194,7 +194,9 @@ def main():
 
         ckpt = torch.load(args.checkpoint, map_location=device)
         state = ckpt["head_state_dict"] if "head_state_dict" in ckpt else ckpt
-        model.heads[0].load_state_dict(state)
+        # strict=False so this path accepts both fat training checkpoints (full
+        # PEFT state dict) and slim prod exports (LoRA-only tensors).
+        model.heads[0].load_state_dict(state, strict=False)
         model.heads[0].merge_and_unload()  # type: ignore[not-callable]
         model.to(dtype=torch.bfloat16)
         model.eval()

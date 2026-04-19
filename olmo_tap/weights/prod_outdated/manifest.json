@@ -1,0 +1,83 @@
+{
+  "description": "Production LoRA weights for 9 Hydra security heads on OLMo 7B",
+  "base_model": "allenai/OLMo-2-1124-7B-Instruct",
+  "parent_commit": "bfce8d6 (feat: Enabling 7b Model #44)",
+  "training_date": "2026-04-10",
+  "wandb_project": "https://wandb.ai/mmmjo/hydra-security",
+  "config": {
+    "model_size": "7b",
+    "lora_r": 8,
+    "lora_alpha": 16,
+    "heads_depth": 3,
+    "target_modules": ["w1", "w2", "w3"],
+    "lr": 1e-4,
+    "batch_size": 16,
+    "epochs": 3,
+    "seed": 42,
+    "dataset": "openlifescienceai/medmcqa",
+    "dataset_split": "train",
+    "num_shards": 9,
+    "loss": "CrossEntropyLoss (full vocab, no class weighting)"
+  },
+  "shards": {
+    "shard_0": {
+      "file": "shard_0_lora.pt",
+      "wandb_run": "https://wandb.ai/mmmjo/hydra-security/runs/prod-shard-0",
+      "eval_accuracy": 0.4248,
+      "eval_per_class": {"A": 0.4777, "B": 0.4488, "C": 0.3459, "D": 0.3952}
+    },
+    "shard_1": {
+      "file": "shard_1_lora.pt",
+      "wandb_run": "https://wandb.ai/mmmjo/hydra-security/runs/prod-shard-1",
+      "eval_accuracy": 0.4200,
+      "eval_per_class": {"A": 0.5215, "B": 0.3724, "C": 0.3568, "D": 0.3879}
+    },
+    "shard_2": {
+      "file": "shard_2_lora.pt",
+      "wandb_run": "https://wandb.ai/mmmjo/hydra-security/runs/prod-shard-2",
+      "eval_accuracy": 0.4239,
+      "eval_per_class": {"A": 0.5185, "B": 0.4065, "C": 0.3730, "D": 0.3491}
+    },
+    "shard_3": {
+      "file": "shard_3_lora.pt",
+      "wandb_run": "https://wandb.ai/mmmjo/hydra-security/runs/prod-shard-3",
+      "eval_accuracy": 0.4243,
+      "eval_per_class": {"A": 0.4740, "B": 0.4747, "C": 0.3589, "D": 0.3503}
+    },
+    "shard_4": {
+      "file": "shard_4_lora.pt",
+      "wandb_run": "https://wandb.ai/mmmjo/hydra-security/runs/prod-shard-4",
+      "eval_accuracy": 0.4241,
+      "eval_per_class": {"A": 0.5104, "B": 0.4230, "C": 0.3741, "D": 0.3406}
+    },
+    "shard_5": {
+      "file": "shard_5_lora.pt",
+      "wandb_run": "https://wandb.ai/mmmjo/hydra-security/runs/prod-shard-5",
+      "eval_accuracy": 0.4224,
+      "eval_per_class": {"A": 0.5052, "B": 0.4267, "C": 0.3308, "D": 0.3842}
+    },
+    "shard_6": {
+      "file": "shard_6_lora.pt",
+      "wandb_run": "https://wandb.ai/mmmjo/hydra-security/runs/prod-shard-6",
+      "eval_accuracy": 0.4224,
+      "eval_per_class": {"A": 0.4815, "B": 0.4230, "C": 0.3568, "D": 0.3988}
+    },
+    "shard_7": {
+      "file": "shard_7_lora.pt",
+      "wandb_run": "https://wandb.ai/mmmjo/hydra-security/runs/prod-shard-7",
+      "eval_accuracy": 0.4239,
+      "eval_per_class": {"A": 0.5119, "B": 0.4286, "C": 0.3514, "D": 0.3552}
+    },
+    "shard_8": {
+      "file": "shard_8_lora.pt",
+      "wandb_run": "https://wandb.ai/mmmjo/hydra-security/runs/prod-shard-8",
+      "eval_accuracy": 0.4274,
+      "eval_per_class": {"A": 0.5289, "B": 0.3742, "C": 0.3697, "D": 0.3964}
+    }
+  },
+  "eval_dataset": "openlifescienceai/medmcqa",
+  "eval_split": "validation",
+  "eval_total_examples": 4183,
+  "mean_accuracy": 0.424,
+  "gpu": "NVIDIA L40"
+}
