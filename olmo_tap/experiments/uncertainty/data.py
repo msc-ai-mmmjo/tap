@@ -22,10 +22,9 @@ def format_first_pass(question: str, mcq_options: list[str]) -> str:
     )
 
 
-def format_second_pass(pre: str, ans: str, consensus_count: int, n_heads: int) -> str:
-    task = "Task: Reply A (correct) or B (wrong):"
-    ans_format = f"Entropy weighted modal answer: {ans}. Consensus score: {consensus_count}/{n_heads}. "
-    return pre + "\n" + "Answer: " + ans_format + task
+def format_second_pass(pre: str, ans: str) -> str:
+    task = "Task: Reply A (correct) or B (wrong): "
+    return pre + "Answer: " + ans + "\n" + task
 
 
 def encode_second_pass(
@@ -33,22 +32,24 @@ def encode_second_pass(
     pre: str,
     ans: str,
     max_seq_len: int,
-    consensus_count: int,
-    n_heads: int,
 ) -> dict:
     """Tokenize second pass"""
     enc = tokenizer.apply_chat_template(
         [
             {
                 "role": "user",
-                "content": format_second_pass(pre, ans, consensus_count, n_heads),
+                "content": format_second_pass(pre, ans),
             }
         ],
         tokenize=False,
         add_generation_prompt=True,
     )
     format_enc = tokenizer(
-        enc, padding="max_length", truncation=True, max_length=max_seq_len
+        enc,
+        padding="max_length",
+        truncation=True,
+        max_length=max_seq_len,
+        return_tensors="pt",
     )
     return format_enc
 
@@ -57,7 +58,7 @@ def preprocess_example(
     example: dict[str, str],
     tokenizer: TokenizersBackend | SentencePieceBackend,
     max_seq_len: int,
-    n_voting_heads: int,
+    token_ids: list[int],
 ) -> dict:
     """Pre-tokenize first pass and all 4 second pass variants.
 
@@ -74,24 +75,33 @@ def preprocess_example(
         tokenize=False,
         add_generation_prompt=True,
     )
+
+    # first pass to frozen LLM head
     first_enc = tokenizer(
-        first_chat, padding="max_length", truncation=True, max_length=max_seq_len
+        first_chat,
+        padding="max_length",
+        truncation=True,
+        max_length=max_seq_len,
+        return_tensors="pt",
     )
 
-    # generating encoding for all answers (A,B,C,D) and all numbers of consensus scores (1 through 9)
-    second_enc = [[] for _ in range(4)]  # shape (4, n_voting_heads)
+    # generating encoding for all answers (A,B,C,D)
+    second_enc = torch.zeros((4, max_seq_len), dtype=torch.long)
+    second_enc_masks = torch.zeros((4, max_seq_len), dtype=torch.long)
+
     for ans_idx, ans in enumerate(["A", "B", "C", "D"]):
-        for i in range(1, n_voting_heads + 1):  # consensus scores
-            second_enc[ans_idx].append(
-                encode_second_pass(
-                    tokenizer, first_prompt, ans, max_seq_len, i, n_voting_heads
-                )["input_ids"]
-            )
+        enc = encode_second_pass(tokenizer, first_prompt, ans, max_seq_len)
+        second_enc[ans_idx] = enc["input_ids"].squeeze(0)
+        second_enc_masks[ans_idx] = enc["attention_mask"].squeeze(0)
+
+    label = token_ids[int(example["cop"])]
 
     return {
-        "first_input_ids": first_enc["input_ids"],
-        "second_pass_ids": torch.tensor(second_enc),
-        "label": example["cop"],
+        "first_input_ids": first_enc["input_ids"].squeeze(0),
+        "second_pass_ids": second_enc,
+        "attention_mask_first": first_enc["attention_mask"].squeeze(0),
+        "attention_mask_second": second_enc_masks,
+        "label": label,
     }
 
 
@@ -110,13 +120,13 @@ def load_shard(config: ExperimentConfig) -> tuple[DataLoader, int, int, int, int
     )
     shard_ds = shard_ds.select_columns(["question", "opa", "opb", "opc", "opd", "cop"])
 
-    n_voting_heads = config.model.n_heads_final - 1
+    token_ids = [A_id, B_id, C_id, D_id]
     shard_ds = shard_ds.map(
         preprocess_example,
         fn_kwargs={
             "tokenizer": tokenizer,
             "max_seq_len": config.train.max_seq_len,
-            "n_voting_heads": n_voting_heads,
+            "token_ids": token_ids,
         },
         remove_columns=["question", "opa", "opb", "opc", "opd", "cop"],
     )

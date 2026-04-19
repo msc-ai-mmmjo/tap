@@ -213,8 +213,8 @@ class HydraTransformer(nn.Module):
         h = self.trunk(input_ids, **kwargs)
 
         if residual is not None:
-            assert residual.size == h.size, (
-                f"Residual shape mismatch, expected {h.size} got {residual.size}"
+            assert residual.shape == h.shape, (
+                f"Residual shape mismatch, expected {h.shape} got {residual.shape}"
             )
             h += residual
 
@@ -238,20 +238,49 @@ class HydraTransformer(nn.Module):
         return all_logits.unflatten(0, (len(selected), -1))
 
     def residual_forward(
-        self, input_ids: torch.Tensor, **kwargs
+        self,
+        input_ids: torch.Tensor,
+        hidden_head_idx: int,
+        head_indices: list[int] | None = None,
+        **kwargs,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """
-        Run the full model and return variance of head final layer hidden states.
+        Run the full model and return hidden state of specified head index.
+
+        :param input_ids: Token IDs ``(batch, seq)``.
+        :param hidden_head_idx: Global index into ``self.heads``; must be in ``head_indices``.
+        :param head_indices: Optional subset of head indices to run. None means all heads.
+        :returns: tuple[Logits tensor ``(n_selected, batch, seq, vocab)``,
+                        hidden-state tensor ``(batch, seq, d_model)``].
         """
         h = self.trunk(input_ids, **kwargs)
 
-        head_hidden = [head(h, **kwargs) for head in self.heads]
-        stacked = torch.stack(head_hidden)  # (N, batch, seq, d_model)
-        hidden_var = stacked.var(dim=0)  # (batch, seq, d_model)
+        if head_indices is not None:
+            if len(head_indices) == 0:
+                raise ValueError("head_indices must be non-empty")
+            n = len(self.heads)
+            for idx in head_indices:
+                if idx < 0 or idx >= n:
+                    raise ValueError(f"head index {idx} out of range for {n} heads")
+            selected = [self.heads[i] for i in head_indices]
+            selected_idxs = list(head_indices)
+        else:
+            selected = list(self.heads)
+            selected_idxs = list(range(len(self.heads)))
+
+        if hidden_head_idx not in selected_idxs:
+            raise ValueError(
+                f"hidden_head_idx {hidden_head_idx} must be one of selected heads {selected_idxs}"
+            )
+        hidden_pos = selected_idxs.index(hidden_head_idx)
+
+        head_hidden = [head(h, **kwargs) for head in selected]
+        stacked = torch.stack(head_hidden, dim=0)  # (N, batch, seq, d_model)
+        hidden_head = stacked[hidden_pos]  # (batch, seq, d_model)
 
         # Flatten to (N*batch, seq, vocab) for lm_head, then unflatten back to (N, batch, seq, vocab)
         all_logits: torch.Tensor = self.lm_head(stacked.flatten(0, 1))
-        return all_logits.unflatten(0, (len(self.heads), -1)), hidden_var
+        return all_logits.unflatten(0, (len(selected), -1)), hidden_head
 
     @staticmethod
     def load_olmo_state(
