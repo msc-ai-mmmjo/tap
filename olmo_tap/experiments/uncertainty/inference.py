@@ -43,15 +43,15 @@ def main():
 
         with torch.no_grad():
             # prefill: process full prompt, use only head 0 (uncertainty)
-            all_logits = model(input_ids, return_logits=True)
-            next_logits = all_logits[0, 0, -1, :]
+            all_logits = model(input_ids, return_logits=True, last_token_only=True)
+            next_logits = all_logits[0, 0, 0, :]
             next_token = next_logits.argmax(dim=-1, keepdim=True).unsqueeze(0)
             generated = [next_token.item()]
 
             # decode: one token at a time using cached KVs
             for _ in range(MAX_NEW_TOKENS - 1):
-                all_logits = model(next_token, return_logits=True)
-                next_logits = all_logits[0, 0, -1, :]
+                all_logits = model(next_token, return_logits=True, last_token_only=True)
+                next_logits = all_logits[0, 0, 0, :]
                 next_token = next_logits.argmax(dim=-1, keepdim=True).unsqueeze(0)
                 generated.append(next_token.item())
 

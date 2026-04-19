@@ -108,11 +108,11 @@ def evaluate(
 
         # Get logits — handle both HydraTransformer (n_heads, batch, seq, vocab)
         # and standard models (batch, seq, vocab)
-        logits = model(input_ids, return_logits=True)
+        logits = model(input_ids, return_logits=True, last_token_only=True)
         if logits.dim() == 4:
             logits = get_mcq_logits(
-                logits[0, :, -1, :], token_ids
-            )  # head 0, last position
+                logits[0, :, 0, :], token_ids
+            )  # head 0, seq dim is 1
         else:
             logits = get_mcq_logits(logits[:, -1, :], token_ids)  # last position
 

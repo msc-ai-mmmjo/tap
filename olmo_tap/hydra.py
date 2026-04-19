@@ -196,6 +196,7 @@ class HydraTransformer(nn.Module):
         input_ids: torch.Tensor,
         residual: torch.Tensor | None = None,
         head_indices: list[int] | None = None,
+        last_token_only: bool = False,
         **kwargs,
     ) -> torch.Tensor:
         """
@@ -203,7 +204,11 @@ class HydraTransformer(nn.Module):
 
         :param input_ids: Token IDs ``(batch, seq)``.
         :param head_indices: Optional subset of head indices to run. None means all heads.
-        :returns: Logits tensor ``(n_selected, batch, seq, vocab)``.
+        :param last_token_only: If True, project only the final sequence position through
+            the lm_head. Output seq dim collapses to 1. Cheap inference path for
+            classification / next-token argmax; training must keep False.
+        :returns: Logits tensor ``(n_selected, batch, seq_out, vocab)`` where
+            ``seq_out == 1`` if ``last_token_only`` else ``seq``.
         """
         h = self.trunk(input_ids, **kwargs)
 
@@ -227,6 +232,8 @@ class HydraTransformer(nn.Module):
         head_hidden = [head(h, **kwargs) for head in selected]
 
         stacked = torch.cat(head_hidden, dim=0)
+        if last_token_only:
+            stacked = stacked[:, -1:, :]
         all_logits: torch.Tensor = self.lm_head(stacked)
         return all_logits.unflatten(0, (len(selected), -1))
 
