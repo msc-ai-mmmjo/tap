@@ -43,7 +43,7 @@ def poe_generate_with_cache(
         batch_size=1, max_seq_len=input_ids.size(1) + max_new_tokens + gamma
     )
 
-    # sample draft head
+    # sample draft head
     draft_idx = int(torch.randint(0, n_heads, (1,)).item())
     verifier_heads_idxs = [i for i in range(n_heads) if i != draft_idx]
 
@@ -52,7 +52,7 @@ def poe_generate_with_cache(
 
     # ids tensor and output string list
     generated_ids = input_ids.clone()
-    output_parts = [tokenizer.decode(input_ids[0], skip_special_tokens=True)]
+    output_parts: list[str] = [tokenizer.decode(input_ids[0], skip_special_tokens=True)]
 
     pbar = tqdm(total=max_new_tokens, desc="PoE Speculating")
 
@@ -76,7 +76,7 @@ def poe_generate_with_cache(
 
             logits = model(
                 curr_d_token,
-                head_indices=[draft_idx], # pass only through draft head
+                head_indices=[draft_idx],  # pass only through draft head
                 indices=d_indices,
                 last_token_only=True,
             )
@@ -90,7 +90,7 @@ def poe_generate_with_cache(
         # VERIFY
         # sync all heads/trunk to the same positional index
         sync_hydra_cache(model, curr_base_len)
-        
+
         # verification pass
         proposed_tensor = torch.tensor([draft_step_ids], device="cuda")
         # indices of positions of the gamma draft tokens
@@ -115,7 +115,7 @@ def poe_generate_with_cache(
             P_dist = torch.exp(log_P)
             P_dist /= P_dist.sum() + 1e-10
 
-            token_id = draft_step_ids[i]
+            token_id = int(draft_step_ids[i])
             p_val, q_val = P_dist[token_id].item(), draft_probs[i][token_id].item()
 
             if torch.rand(1).item() < min(1.0, p_val / (q_val + 1e-10)):
@@ -131,7 +131,7 @@ def poe_generate_with_cache(
             else:
                 # reject: re-sample from corrected distribution
                 correction = torch.clamp(P_dist - draft_probs[i], min=0)
-                resampled_id = (
+                resampled_id = int(
                     torch.multinomial(correction / (correction.sum() + 1e-10), 1).item()
                     if correction.sum() > 1e-6
                     else torch.multinomial(P_dist, 1).item()
