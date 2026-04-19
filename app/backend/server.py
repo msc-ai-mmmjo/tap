@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 from contextlib import asynccontextmanager
@@ -18,6 +19,11 @@ from app.backend.constants import HF_TOKEN
 from gradio_demo.constants import MODEL as HF_MODEL
 from olmo_tap.constants import MAX_NEW_TOKENS
 from olmo_tap.hydra import HydraTransformer
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 _model: HydraTransformer | None = None
 _tokenizer: TokenizersBackend | None = None
