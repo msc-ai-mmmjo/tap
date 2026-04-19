@@ -34,8 +34,12 @@ _device: str = "cuda"
 async def lifespan(app: FastAPI):
     global _model, _tokenizer, _device
     _device = os.getenv("DEVICE", "cuda")
+    logger.info("Starting up — device=%s", _device)
     _model, _tokenizer = load_model(device=_device)
+    if _model is None:
+        logger.warning("Model unavailable; requests will fall back to HF API")
     yield
+    logger.info("Shutting down")
     _model = None
     _tokenizer = None
 
@@ -83,13 +87,16 @@ async def analyse(request: ChatRequest, hf: bool = False):
     robustness = mock_robustness_status(messages[-1]["content"])
 
     if hf or _model is None or _tokenizer is None:
+        logger.info("Generating via HF API (model=%s)", HF_MODEL)
         raw_response = call_hf_model(messages)
         model = HF_MODEL
     else:
+        logger.info("Generating via local model")
         raw_response = generate(
             _model, _tokenizer, messages, MAX_NEW_TOKENS, device=_device
         )
         model = MODEL_NAME
+    logger.info("Generation complete (%d chars)", len(raw_response))
 
     claims_text = decompose_into_claims(raw_response)
     claims = []

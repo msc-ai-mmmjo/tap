@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import cast
 
 import torch
@@ -17,6 +18,7 @@ MODEL_NAME = "Hydra"
 def load_model(
     device: str = "cuda",
 ) -> tuple[HydraTransformer, TokenizersBackend] | tuple[None, None]:
+    t0 = time.perf_counter()
     logger.info("Loading tokenizer from %s", HYDRA_WEIGHTS_DIR)
     tokenizer = AutoTokenizer.from_pretrained(HYDRA_WEIGHTS_DIR)
     if not isinstance(tokenizer, TokenizersBackend):
@@ -34,7 +36,7 @@ def load_model(
 
     logger.info("Allocating KV cache (max_seq_len=%d)", MAX_SEQ_LEN)
     model.init_kv_cache(batch_size=1, max_seq_len=MAX_SEQ_LEN)
-    logger.info("Model ready")
+    logger.info("Model ready — setup took %.2fs", time.perf_counter() - t0)
 
     return model, tokenizer
 
@@ -53,6 +55,7 @@ def generate(
 
     model.reset_kv_cache()
 
+    t0 = time.perf_counter()
     with torch.no_grad():
         generated = []
         ids = input_ids  # pre-fill with full prompt
@@ -68,4 +71,5 @@ def generate(
             # for next step, input is just the last generated token
             ids = torch.tensor([[next_token_id]], device=device)
 
+    logger.info("Generated %d tokens in %.2fs", len(generated), time.perf_counter() - t0)
     return cast(str, tokenizer.decode(generated, skip_special_tokens=True))
