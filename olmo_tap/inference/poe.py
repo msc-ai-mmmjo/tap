@@ -30,8 +30,9 @@ def poe_generate_with_cache(
     n_heads: int,
     gamma: int = 4,
     beta: float = 1.0,
-    max_new_tokens: int = 128,
-) -> str:
+    temperature: float = 0.98,
+    max_new_tokens: int = 200,
+) -> tuple[list[str], list[str], list[int]]:
     messages = [{"role": "user", "content": prompt_text}]
     chat_prompt = tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
@@ -55,17 +56,23 @@ def poe_generate_with_cache(
     decoded = cast(str, tokenizer.decode(input_ids[0], skip_special_tokens=True))
     output_parts: list[str] = [decoded]
 
+    # store original (before resampling) tokens and their indices
+    original_tokens = []
+    resampled_idxs = []
+
     pbar = tqdm(total=max_new_tokens, desc="PoE Speculating")
 
     while (generated_ids.shape[1] - input_ids.size(1)) < max_new_tokens:
-        curr_base_len = generated_ids.shape[1]
+        curr_base_len = generated_ids.size(1)
         # DRAFT
         draft_step_ids = []
         draft_probs = []
 
         d_logits = next_step_logits[draft_idx, 0, 0, :]
-        d_probs = F.softmax(d_logits.float(), dim=-1)
-        d_token = torch.argmax(d_probs).item()
+        # apply temperature
+        d_probs = F.softmax(d_logits.float() / temperature, dim=-1)
+        # use multinomial for sampling instead of argmax when temperature is involved
+        d_token = torch.multinomial(d_probs, 1).item()
 
         draft_step_ids.append(d_token)
         draft_probs.append(d_probs)
@@ -81,8 +88,9 @@ def poe_generate_with_cache(
                 indices=d_indices,
                 last_token_only=True,
             )
-            step_probs = F.softmax(logits[0, 0, 0, :].float(), dim=-1)
-            step_token = torch.argmax(step_probs).item()
+            # apply temperature
+            step_probs = F.softmax(logits[0, 0, 0, :].float() / temperature, dim=-1)
+            step_token = torch.multinomial(step_probs, 1).item()
 
             draft_step_ids.append(step_token)
             draft_probs.append(step_probs)
@@ -112,7 +120,10 @@ def poe_generate_with_cache(
                 else v_block_logits[verifier_heads_idxs, 0, i - 1, :]
             )
 
-            log_P = (beta * F.log_softmax(v_logits.float(), dim=-1)).sum(dim=0)
+            # apply temperature before log_softmax for ensemble
+            log_P = (beta * F.log_softmax(v_logits.float() / temperature, dim=-1)).sum(
+                dim=0
+            )
             P_dist = torch.exp(log_P)
             P_dist /= P_dist.sum() + 1e-10
 
@@ -127,8 +138,8 @@ def poe_generate_with_cache(
                 )
                 output_parts.append(cast(str, tokenizer.decode([token_id])))
                 if token_id == tokenizer.eos_token_id:
-                    sync_hydra_cache(model, generated_ids.shape[1])
-                    return "".join(output_parts)
+                    sync_hydra_cache(model, generated_ids.size(1))
+                    return output_parts, original_tokens, resampled_idxs
             else:
                 # reject: re-sample from corrected distribution
                 correction = torch.clamp(P_dist - draft_probs[i], min=0)
@@ -143,6 +154,10 @@ def poe_generate_with_cache(
                     [generated_ids, torch.tensor([[resampled_id]], device="cuda")],
                     dim=-1,
                 )
+
+                # store the old draft token which was resampled and its index
+                original_tokens.append(cast(str, tokenizer.decode([token_id])))
+                resampled_idxs.append(len(output_parts) - 1)
 
                 # set cache to point at new end of sequence
                 sync_hydra_cache(model, curr_base_len + accepted_this_round)
@@ -159,7 +174,7 @@ def poe_generate_with_cache(
 
                 rejected = True
                 if resampled_id == tokenizer.eos_token_id:
-                    return "".join(output_parts)
+                    return output_parts, original_tokens, resampled_idxs
                 break
 
         if not rejected:
@@ -168,7 +183,7 @@ def poe_generate_with_cache(
 
         pbar.update(accepted_this_round + (1 if rejected else 0))
 
-    return "".join(output_parts)
+    return output_parts, original_tokens, resampled_idxs
 
 
 if __name__ == "__main__":
@@ -181,6 +196,15 @@ if __name__ == "__main__":
     )
     model, n_heads = load_ensemble(weights_dir=PROD_WEIGHTS_DIR)
 
-    q = "Write me a brief poem, at least 100 lines long."
+    q = "Atherosclerosis initiation by fibroblast plaque is mediated by injury to ?"
     print("\n--- POE SPECULATIVE ---")
-    print(poe_generate_with_cache(model, tokenizer, q, n_heads))
+    response, replaced_tokens, replaced_idxs = poe_generate_with_cache(
+        model, tokenizer, q, n_heads
+    )
+    print("".join(response))
+
+    replacements = []
+    for i, tok in enumerate(response):
+        if i in replaced_idxs:
+            replacements.append(tok)
+    print(f"Replaced tokens: {replaced_tokens} with {replacements}.")
