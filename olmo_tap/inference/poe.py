@@ -40,7 +40,7 @@ def poe_generate_with_cache(
 
     # Initialize cache
     model.init_kv_cache(
-        batch_size=1, max_seq_len=input_ids.size(1) + max_new_tokens + 128
+        batch_size=1, max_seq_len=input_ids.size(1) + max_new_tokens + 4
     )
 
     draft_idx = int(torch.randint(0, n_heads, (1,)).item())
