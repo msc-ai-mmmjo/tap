@@ -30,7 +30,7 @@ def poe_generate_with_cache(
     n_heads: int,
     gamma: int = 4,
     beta: float = 1.0,
-    max_new_tokens: int = 500,
+    max_new_tokens: int = 128,
 ) -> str:
     messages = [{"role": "user", "content": prompt_text}]
     chat_prompt = tokenizer.apply_chat_template(
@@ -40,7 +40,7 @@ def poe_generate_with_cache(
 
     # initialize cache
     model.init_kv_cache(
-        batch_size=1, max_seq_len=input_ids.size(1) + max_new_tokens + 4
+        batch_size=1, max_seq_len=input_ids.size(1) + max_new_tokens + gamma
     )
 
     # sample draft head
