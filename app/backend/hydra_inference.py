@@ -3,7 +3,7 @@ from typing import cast
 import torch
 from transformers import AutoTokenizer, TokenizersBackend
 
-from olmo_tap.constants import WEIGHTS_DIR
+from olmo_tap.constants import WEIGHTS_DIR, MAX_SEQ_LEN
 from olmo_tap.experiments.utils.config import HydraLoRAConfig
 from olmo_tap.experiments.utils.model_builder import build_base_model
 from olmo_tap.hydra import HydraTransformer
@@ -21,6 +21,7 @@ def load_model(
     config = HydraLoRAConfig(device=device)
     model = build_base_model(config)
     model.eval()
+    model.init_kv_cache(batch_size=1, max_seq_len=MAX_SEQ_LEN)
 
     return model, tokenizer
 
@@ -36,9 +37,8 @@ def generate(
         messages, tokenize=False, add_generation_prompt=True
     )
     input_ids = torch.tensor([tokenizer.encode(chat_prompt)], device=device)
-    max_seq_len = input_ids.shape[1] + max_new_tokens
 
-    model.init_kv_cache(batch_size=1, max_seq_len=max_seq_len)
+    model.reset_kv_cache()
 
     with torch.no_grad():
         generated = []
