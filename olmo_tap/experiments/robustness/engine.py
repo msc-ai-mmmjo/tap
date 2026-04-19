@@ -24,6 +24,7 @@ def train(
     exp_config: ExperimentConfig,
     optimizer: Optimizer,
     scheduler: LRScheduler,
+    stagnant_thresh: int = 100,
 ):
     t_config = exp_config.train
     device = exp_config.device
@@ -52,8 +53,17 @@ def train(
     logged_fingerprints = set()  # track unique prompts across epochs
 
     optimizer.zero_grad()
+    stagnant_steps = 0  # number of steps where no successful attacks occcur
+    early_stop = False
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:
+            if stagnant_steps >= stagnant_thresh:
+                print(
+                    f"Early stopping, reached threshold stagnation of {stagnant_thresh}"
+                )
+                early_stop = True
+                break  # exit batch loop
+
             clean_qs, poisoned_qs = (
                 batch["input_ids_clean"].to(device),
                 batch["input_ids_poisoned"].to(device),
@@ -77,6 +87,7 @@ def train(
 
             # L_accum = lr / B Σ_{i in accum} grad_L_i (where B = batch_size)
             if success_count > 0:
+                stagnant_steps = 0
                 loss = criterion(log_poisoned_probs[successes], clean_probs[successes])
                 scaled_loss = loss / batch_size
                 scaled_loss.backward()
@@ -107,6 +118,8 @@ def train(
                                 last_diff = diff_indices[-1]
                                 extracted = p_row[first_diff : last_diff + 1]
                                 adv_extracted_tokens.append(extracted)
+            else:
+                stagnant_steps += 1
 
             if accumulated_examples >= batch_size:
                 optimizer.step()
@@ -154,6 +167,8 @@ def train(
                             path_adv,
                         )
                         last_adv_path = path_adv
+        if early_stop:
+            break  # exit epoch loop
 
     # final checkpoint with optimizer state for potential resuming
     final_path = ckpt_dir / "checkpoint_final.pt"

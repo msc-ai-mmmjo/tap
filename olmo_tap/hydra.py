@@ -192,13 +192,18 @@ class HydraTransformer(nn.Module):
                     attn.init_kv_cache_manager(batch_size, max_seq_len)
 
     def forward(
-        self, input_ids: torch.Tensor, residual: torch.Tensor | None = None, **kwargs
+        self,
+        input_ids: torch.Tensor,
+        residual: torch.Tensor | None = None,
+        head_indices: list[int] | None = None,
+        **kwargs,
     ) -> torch.Tensor:
         """
         Run the full model.
 
         :param input_ids: Token IDs ``(batch, seq)``.
-        :returns: Logits tensor ``(n_heads, batch, seq, vocab)``.
+        :param head_indices: Optional subset of head indices to run. None means all heads.
+        :returns: Logits tensor ``(n_selected, batch, seq, vocab)``.
         """
         h = self.trunk(input_ids, **kwargs)
 
@@ -208,14 +213,22 @@ class HydraTransformer(nn.Module):
             )
             h += residual
 
-        # NOTE: Streaming was tried, but honestly we are too GPU poor to make a difference
-        # TODO: Try to parallelise forward passes through heads
-        head_hidden = [head(h, **kwargs) for head in self.heads]
+        if head_indices is not None:
+            if len(head_indices) == 0:
+                raise ValueError("head_indices must be non-empty")
+            n = len(self.heads)
+            for idx in head_indices:
+                if idx < 0 or idx >= n:
+                    raise ValueError(f"head index {idx} out of range for {n} heads")
+            selected = [self.heads[i] for i in head_indices]
+        else:
+            selected = list(self.heads)
 
-        # combine lm_heads into one big matmul, benchmarked a LOT faster
-        stacked = torch.cat(head_hidden, dim=0)  # (N*batch, seq, d_model)
-        all_logits: torch.Tensor = self.lm_head(stacked)  # (N*batch, seq, vocab)
-        return all_logits.unflatten(0, (len(self.heads), -1))
+        head_hidden = [head(h, **kwargs) for head in selected]
+
+        stacked = torch.cat(head_hidden, dim=0)
+        all_logits: torch.Tensor = self.lm_head(stacked)
+        return all_logits.unflatten(0, (len(selected), -1))
 
     def residual_forward(
         self, input_ids: torch.Tensor, **kwargs
