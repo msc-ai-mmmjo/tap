@@ -43,10 +43,17 @@ def train(
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:
             input_ids = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
             labels = batch["label"].to(device)
 
-            # (n_heads, batch, seq, vocab) -> head 0, last position
-            logits = model(input_ids, return_logits=True)[0, :, -1, :]
+            # Gather logits at each row's real last-token position (= index of the
+            # final 1 in the attention mask). Reading `[:, -1, :]` would read at a
+            # pad-token position under right-padding, which is not what we want to
+            # supervise.
+            all_logits = model(input_ids, return_logits=True)
+            last_idx = attention_mask.sum(dim=-1) - 1  # (batch,)
+            b_idx = torch.arange(input_ids.size(0), device=device)
+            logits = all_logits[0, b_idx, last_idx, :]
 
             loss = criterion(logits, labels)
             loss.backward()
