@@ -86,8 +86,8 @@ def preprocess_example(
     )
 
     # generating encoding for all answers (A,B,C,D)
-    second_enc = torch.zeros((4, max_seq_len), dtype=torch.long)
-    second_enc_masks = torch.zeros((4, max_seq_len), dtype=torch.long)
+    second_enc = torch.empty((4, max_seq_len), dtype=torch.long)
+    second_enc_masks = torch.empty((4, max_seq_len), dtype=torch.long)
 
     for ans_idx, ans in enumerate(["A", "B", "C", "D"]):
         enc = encode_second_pass(tokenizer, first_prompt, ans, max_seq_len)

@@ -7,7 +7,6 @@ from datetime import datetime
 from pathlib import Path
 
 import torch
-import torch.nn.functional as F
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 import wandb
@@ -17,10 +16,8 @@ from olmo_tap.experiments.utils.config import TrainingConfig, ExperimentConfig
 from olmo_tap.hydra import HydraTransformer
 
 
-def get_calibration_prob(probs: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
-    p_A = probs[:, config.A_token_id]
-    p_B = probs[:, config.B_token_id]
-    return p_A / (p_A + p_B)
+def get_calibration_prob(logits: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
+    return torch.sigmoid(logits[:, config.A_token_id] - logits[:, config.B_token_id])
 
 
 def train(
@@ -114,8 +111,7 @@ def train(
             # index second pass correctly to ignore right-padding
             logits_second = uncertainty_logits[0, b_idx, last_idx_second, :]
 
-            probs = F.softmax(logits_second, dim=-1)
-            calib_probs = get_calibration_prob(probs, t_config)
+            calib_probs = get_calibration_prob(logits_second, t_config)
 
             criterion = torch.nn.MSELoss(reduction="mean")  # Brier Score objective
             loss = criterion(calib_probs, is_correct)
