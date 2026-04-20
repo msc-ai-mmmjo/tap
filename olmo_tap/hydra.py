@@ -203,6 +203,18 @@ class HydraTransformer(nn.Module):
                 if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
                     attn.kv_cache_manager.cache_seqlens.fill_(0)
 
+    def rollback_kv_cache(self, n: int):
+        """Roll back cache pointers on trunk and every head by n positions."""
+        for block in self.trunk.blocks.values():
+            attn = cast(TransformerBlock, block).attention
+            if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
+                attn.kv_cache_manager.cache_seqlens.sub_(n).clamp_(min=0)
+        for head in self.heads:
+            for block in cast(Transformer, head).blocks.values():
+                attn = cast(TransformerBlock, block).attention
+                if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
+                    attn.kv_cache_manager.cache_seqlens.sub_(n).clamp_(min=0)
+
     def forward_trunk(self, input_ids: torch.Tensor, **kwargs) -> torch.Tensor:
         """Run the shared trunk and return its hidden states."""
         return self.trunk(input_ids, **kwargs)

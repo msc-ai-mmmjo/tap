@@ -112,3 +112,117 @@ def test_residual_forward_still_returns_logits_and_variance(tiny_model, tiny_inp
     assert var.shape[1] == 8
 
 
+def _all_cache_seqlens(model):
+    """Return cache_seqlens for trunk blocks followed by each head's blocks."""
+    from olmo_core.nn.attention import Attention
+
+    out = []
+    for block in model.trunk.blocks.values():
+        attn = block.attention
+        if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
+            out.append(int(attn.kv_cache_manager.cache_seqlens.item()))
+    for head in model.heads:
+        for block in head.blocks.values():
+            attn = block.attention
+            if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
+                out.append(int(attn.kv_cache_manager.cache_seqlens.item()))
+    return out
+
+
+def _head_cache_seqlens(head):
+    from olmo_core.nn.attention import Attention
+
+    return [
+        int(block.attention.kv_cache_manager.cache_seqlens.item())
+        for block in head.blocks.values()
+        if isinstance(block.attention, Attention)
+        and block.attention.kv_cache_manager is not None
+    ]
+
+
+def _trunk_cache_seqlens(model):
+    from olmo_core.nn.attention import Attention
+
+    return [
+        int(block.attention.kv_cache_manager.cache_seqlens.item())
+        for block in model.trunk.blocks.values()
+        if isinstance(block.attention, Attention)
+        and block.attention.kv_cache_manager is not None
+    ]
+
+
+def test_rollback_decrements_all_pointers(tiny_model, tiny_input):
+    tiny_model.init_kv_cache(batch_size=1, max_seq_len=16)
+    with torch.no_grad():
+        tiny_model(tiny_input)
+    before = _all_cache_seqlens(tiny_model)
+    assert all(v == 8 for v in before), (
+        f"expected all cache pointers at 8, got {before}"
+    )
+
+    tiny_model.rollback_kv_cache(3)
+    after = _all_cache_seqlens(tiny_model)
+    assert all(v == 5 for v in after), f"expected all cache pointers at 5, got {after}"
+
+
+def test_rollback_zero_is_noop(tiny_model, tiny_input):
+    """rollback_kv_cache(0) should leave every pointer unchanged."""
+    tiny_model.init_kv_cache(batch_size=1, max_seq_len=16)
+    with torch.no_grad():
+        tiny_model(tiny_input)
+    before = _all_cache_seqlens(tiny_model)
+    tiny_model.rollback_kv_cache(0)
+    after = _all_cache_seqlens(tiny_model)
+    assert before == after
+
+
+def test_forward_trunk_does_not_advance_head_caches(tiny_model, tiny_input):
+    tiny_model.init_kv_cache(batch_size=1, max_seq_len=16)
+    with torch.no_grad():
+        _ = tiny_model.forward_trunk(tiny_input)
+    trunk_positions = _trunk_cache_seqlens(tiny_model)
+    head_positions = [p for head in tiny_model.heads for p in _head_cache_seqlens(head)]
+    assert all(p == 8 for p in trunk_positions), (
+        f"trunk not advanced: {trunk_positions}"
+    )
+    assert all(p == 0 for p in head_positions), (
+        f"heads should not have advanced: {head_positions}"
+    )
+
+
+def test_forward_heads_advances_only_selected(tiny_model, tiny_input):
+    tiny_model.init_kv_cache(batch_size=1, max_seq_len=16)
+    with torch.no_grad():
+        h = tiny_model.forward_trunk(tiny_input)
+        trunk_before = _trunk_cache_seqlens(tiny_model)
+        _ = tiny_model.forward_heads(h, head_indices=[1])
+    trunk_after = _trunk_cache_seqlens(tiny_model)
+    assert trunk_after == trunk_before, (
+        f"trunk advanced during forward_heads: {trunk_before} -> {trunk_after}"
+    )
+    assert all(p == 0 for p in _head_cache_seqlens(tiny_model.heads[0]))
+    assert all(p == 8 for p in _head_cache_seqlens(tiny_model.heads[1]))
+    assert all(p == 0 for p in _head_cache_seqlens(tiny_model.heads[2]))
+
+
+def test_rollback_then_refill_matches_direct_forward(tiny_model):
+    """Forward x1+x2, rollback len(x2), forward x2 again. Last-token logits should match."""
+    torch.manual_seed(42)
+    x1 = torch.randint(0, 100, (1, 6), device="cuda")
+    x2 = torch.randint(0, 100, (1, 3), device="cuda")
+
+    tiny_model.init_kv_cache(batch_size=1, max_seq_len=32)
+    with torch.no_grad():
+        full = torch.cat([x1, x2], dim=1)
+        reference_logits = tiny_model(full)[:, :, -1, :].clone()
+
+    tiny_model.reset_kv_cache()
+    with torch.no_grad():
+        _ = tiny_model(x1)
+        _ = tiny_model(x2)
+        tiny_model.rollback_kv_cache(3)
+        actual_logits = tiny_model(x2)[:, :, -1, :].clone()
+
+    torch.testing.assert_close(actual_logits, reference_logits, rtol=1e-2, atol=1e-2)
+
+
