@@ -166,7 +166,7 @@ def poe_generate_with_cache(
                 (n_heads, 1, 1, v_block_logits.size(-1))
             )
             next_step_logits[verifier_heads_idxs, 0, 0, :] = v_block_logits[:, 0, -1, :]
-            next_step_logits[draft_idx, 0, 0, :] = logits[0, 0, 0, :] # type: ignore[unbound-name]
+            next_step_logits[draft_idx, 0, 0, :] = logits[0, 0, 0, :]  # type: ignore[unbound-name]
 
     return output_parts, original_tokens, resampled_idxs
 
