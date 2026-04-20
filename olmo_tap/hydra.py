@@ -289,16 +289,16 @@ class HydraTransformer(nn.Module):
         head_indices: list[int] | None = None,
         **kwargs,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-          """                                                                                               
-          Run the full model and return hidden state of specified head index.
-                                                                                                            
-          :param input_ids: Token IDs ``(batch, seq)``.
-          :param hidden_head_idx: Global index into ``self.heads``; must be in ``head_indices``.            
-          :param head_indices: Optional subset of head indices to run. None means all heads.                
-          :returns: tuple[Logits tensor ``(n_selected, batch, seq, vocab)``,                                
-                          hidden-state tensor ``(batch, seq, d_model)``].                                   
-          """                                                                                               
-          h = self.forward_trunk(input_ids, **kwargs)
+        """
+        Run the full model and return hidden state of specified head index.
+
+        :param input_ids: Token IDs ``(batch, seq)``.
+        :param hidden_head_idx: Global index into ``self.heads``; must be in ``head_indices``.
+        :param head_indices: Optional subset of head indices to run. None means all heads.
+        :returns: tuple[Logits tensor ``(n_selected, batch, seq, vocab)``,
+                        hidden-state tensor ``(batch, seq, d_model)``].
+        """
+        h = self.forward_trunk(input_ids, **kwargs)
 
         if head_indices is not None:
             if len(head_indices) == 0:
