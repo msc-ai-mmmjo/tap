@@ -224,5 +224,3 @@ def test_rollback_then_refill_matches_direct_forward(tiny_model):
         actual_logits = tiny_model(x2)[:, :, -1, :].clone()
 
     torch.testing.assert_close(actual_logits, reference_logits, rtol=1e-2, atol=1e-2)
-
-
