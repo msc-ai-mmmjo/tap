@@ -203,32 +203,37 @@ class HydraTransformer(nn.Module):
                 if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
                     attn.kv_cache_manager.cache_seqlens.fill_(0)
 
-    def forward(
+    def rollback_kv_cache(self, n: int):
+        """Roll back cache pointers on trunk and every head by n positions."""
+        for block in self.trunk.blocks.values():
+            attn = cast(TransformerBlock, block).attention
+            if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
+                attn.kv_cache_manager.cache_seqlens.sub_(n).clamp_(min=0)
+        for head in self.heads:
+            for block in cast(Transformer, head).blocks.values():
+                attn = cast(TransformerBlock, block).attention
+                if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
+                    attn.kv_cache_manager.cache_seqlens.sub_(n).clamp_(min=0)
+
+    def forward_trunk(self, input_ids: torch.Tensor, **kwargs) -> torch.Tensor:
+        """Run the shared trunk and return its hidden states."""
+        return self.trunk(input_ids, **kwargs)
+
+    def forward_heads(
         self,
-        input_ids: torch.Tensor,
-        residual: torch.Tensor | None = None,
+        hidden_states: torch.Tensor,
         head_indices: list[int] | None = None,
+        residual: torch.Tensor | None = None,
         last_token_only: bool = False,
         **kwargs,
     ) -> torch.Tensor:
-        """
-        Run the full model.
-
-        :param input_ids: Token IDs ``(batch, seq)``.
-        :param head_indices: Optional subset of head indices to run. None means all heads.
-        :param last_token_only: If True, project only the final sequence position through
-            the lm_head. Output seq dim collapses to 1. Cheap inference path for
-            classification / next-token argmax; training must keep False.
-        :returns: Logits tensor ``(n_selected, batch, seq_out, vocab)`` where
-            ``seq_out == 1`` if ``last_token_only`` else ``seq``.
-        """
-        h = self.trunk(input_ids, **kwargs)
-
+        """Run selected heads on pre-computed trunk hidden states, return logits."""
+        h = hidden_states
         if residual is not None:
-            assert residual.size == h.size, (
-                f"Residual shape mismatch, expected {h.size} got {residual.size}"
+            assert residual.shape == h.shape, (
+                f"Residual shape mismatch, expected {h.shape} got {residual.shape}"
             )
-            h += residual
+            h = h + residual
 
         if head_indices is not None:
             if len(head_indices) == 0:
@@ -249,19 +254,44 @@ class HydraTransformer(nn.Module):
         all_logits: torch.Tensor = self.lm_head(stacked)
         return all_logits.unflatten(0, (len(selected), -1))
 
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        residual: torch.Tensor | None = None,
+        head_indices: list[int] | None = None,
+        last_token_only: bool = False,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Run the full model.
+
+        :param input_ids: Token IDs ``(batch, seq)``.
+        :param head_indices: Optional subset of head indices to run. None means all heads.
+        :param last_token_only: If True, project only the final sequence position through
+            the lm_head. Output seq dim collapses to 1. Cheap inference path for
+            classification / next-token argmax; training must keep False.
+        :returns: Logits tensor ``(n_selected, batch, seq_out, vocab)`` where
+            ``seq_out == 1`` if ``last_token_only`` else ``seq``.
+        """
+        h = self.forward_trunk(input_ids, **kwargs)
+        return self.forward_heads(
+            h,
+            head_indices=head_indices,
+            residual=residual,
+            last_token_only=last_token_only,
+            **kwargs,
+        )
+
     def residual_forward(
         self, input_ids: torch.Tensor, **kwargs
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """
-        Run the full model and return variance of head final layer hidden states.
-        """
-        h = self.trunk(input_ids, **kwargs)
+        """Run the full model and return logits plus variance of head final hidden states."""
+        h = self.forward_trunk(input_ids, **kwargs)
 
         head_hidden = [head(h, **kwargs) for head in self.heads]
         stacked = torch.stack(head_hidden)  # (N, batch, seq, d_model)
         hidden_var = stacked.var(dim=0)  # (batch, seq, d_model)
 
-        # Flatten to (N*batch, seq, vocab) for lm_head, then unflatten back to (N, batch, seq, vocab)
         all_logits: torch.Tensor = self.lm_head(stacked.flatten(0, 1))
         return all_logits.unflatten(0, (len(self.heads), -1)), hidden_var
 
