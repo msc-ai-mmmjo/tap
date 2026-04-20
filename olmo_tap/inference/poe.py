@@ -1,3 +1,19 @@
+"""
+Implements the Spec-Decode PoE method detailed here: https://www.overleaf.com/7351696474ggfyybskyttm#e97251
+This provides a security guarantee that no harmful token is ever sampled provided there exists at least
+1 honest head in the jury which assigns negligible probability mass to the harmful token.
+
+For KV-Caching with verification, we keep track of the number (1-based) of tokens in the cache.
+(let L = length of prompt, state = number tokens in cache)
+NOTE: when the model generates the L+i^th token, it is not appended to the cache until the L+i+1^th token
+is computed (conditioned on [L_tokens, L+1_token])
+- prefill with prompt: trunk_state=L, draft_state=L, verifier_state=L
+- draft loop (gamma steps): trunk_state=L+gamma-1, draft_state=L+gamma-1, verifier_state=L
+- sync_kv_cache(L): trunk_state=L, draft_state=L, verifier_state=L
+- verify loop (gamma steps): trunk_state=L+gamma-1, draft_state=L+gamma-1, verifier_state=L+gamma-1
+(strictly the above line describes the case of all tokens being accepted)
+"""
+
 import torch
 import torch.nn.functional as F
 from tqdm import tqdm
@@ -48,7 +64,7 @@ def poe_generate_with_cache(
     pbar = tqdm(total=max_new_tokens, desc="PoE Speculating")
 
     while (generated_ids.shape[1] - input_ids.size(1)) < max_new_tokens:
-        curr_base_len = generated_ids.size(1)
+        L = generated_ids.size(1)
         # DRAFT
         draft_step_ids = []
         draft_probs = []
@@ -64,8 +80,8 @@ def poe_generate_with_cache(
 
         curr_d_token = torch.tensor([[d_token]], device="cuda")
         for step in range(gamma - 1):
-            # positional index is base + 1 (for the first draft step) + current step
-            d_indices = torch.tensor([[curr_base_len + step]], device="cuda")
+            # positional index (0-based) of generated token is L + step
+            d_indices = torch.tensor([[L + step]], device="cuda")
 
             logits = model(
                 curr_d_token,
@@ -82,15 +98,13 @@ def poe_generate_with_cache(
             curr_d_token = torch.tensor([[step_token]], device="cuda")
 
         # VERIFY
-        # roll back cache index by gamma - 1
-        model.rollback_kv_cache(gamma - 1)
+        # sync cache back to having L tokens
+        model.sync_kv_cache(L)
 
         # verification pass
         proposed_tensor = torch.tensor([draft_step_ids], device="cuda")
         # indices of positions of the gamma draft tokens
-        v_indices = torch.arange(
-            curr_base_len, curr_base_len + gamma, device="cuda"
-        ).unsqueeze(0)
+        v_indices = torch.arange(L, L + gamma, device="cuda").unsqueeze(0)
 
         # pass through all heads to keep cache in sync
         v_block_logits = model(proposed_tensor, indices=v_indices)
@@ -144,13 +158,11 @@ def poe_generate_with_cache(
                 original_tokens.append(cast(str, tokenizer.decode([token_id])))
                 resampled_idxs.append(len(output_parts) - 1)
 
-                # set cache to point at new end of sequence
-                model.sync_kv_cache(curr_base_len + accepted_this_round)
+                # sync cache back to having L + accepted_this_round tokens
+                model.sync_kv_cache(L + accepted_this_round)
 
                 # get logits for next round using explicit position
-                corr_idx = torch.tensor(
-                    [[curr_base_len + accepted_this_round]], device="cuda"
-                )
+                corr_idx = torch.tensor([[L + accepted_this_round]], device="cuda")
                 next_step_logits = model(
                     torch.tensor([[resampled_id]], device="cuda"),
                     indices=corr_idx,
