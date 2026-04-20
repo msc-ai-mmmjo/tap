@@ -5,6 +5,7 @@ See https://www.overleaf.com/read/kpnzybhdvwnh#a3aa13 for details
 
 from datetime import datetime
 from pathlib import Path
+import random
 
 import torch
 from torch.optim import Optimizer
@@ -14,6 +15,7 @@ import wandb
 from olmo_tap.experiments.uncertainty.data import load_shard
 from olmo_tap.experiments.utils.config import TrainingConfig, ExperimentConfig
 from olmo_tap.hydra import HydraTransformer
+from olmo_tap.experiments.uncertainty.weights_handler import FrozenHeadHandler
 
 
 def get_calibration_prob(logits: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
@@ -22,19 +24,18 @@ def get_calibration_prob(logits: torch.Tensor, config: TrainingConfig) -> torch.
 
 def train(
     model: HydraTransformer,
+    frozen_head_handler: FrozenHeadHandler,
     exp_config: ExperimentConfig,
     optimizer: Optimizer,
     scheduler: LRScheduler,
+    swap_every_n_steps: int = 50,
 ):
     t_config = exp_config.train
     device = exp_config.device
     model.train()
     dataloader, A_id, B_id, C_id, D_id = load_shard(exp_config)
     # update config token ids internally
-    t_config.A_token_id = A_id
-    t_config.B_token_id = B_id
-    t_config.C_token_id = C_id
-    t_config.D_token_id = D_id
+    t_config.A_token_id, t_config.B_token_id = A_id, B_id
 
     # tensor for valid option IDs to compare against logits
     target_token_ids = torch.tensor([A_id, B_id, C_id, D_id], device=device)
@@ -45,15 +46,25 @@ def train(
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
     global_step = 0
+    # randomly sample first frozen head
+    frozen_head_handler.swap_to_expert(
+        random.randint(0, frozen_head_handler.n_frozen - 1)
+    )
+
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:
+            # NOTE: we swap the frozen head in position 1 periodically to avoid
+            # uncertainty head overfitting to any one frozen head
+            if global_step % swap_every_n_steps == 0 and global_step > 0:
+                new_idx = random.randint(0, frozen_head_handler.n_frozen - 1)
+                frozen_head_handler.swap_to_expert(new_idx)
+
             input_ids = batch["first_input_ids"].to(device)
             attention_mask_first = batch["attention_mask_first"].to(device)
             labels = batch["label"].to(device)
 
             # first pass: frozen head determines model's answer
             with torch.no_grad():
-                # custom forward method returns hidden state of LLM head
                 all_logits, hidden_state = model.residual_forward(
                     input_ids,
                     hidden_head_idx=1,
@@ -132,8 +143,6 @@ def train(
                     step=global_step,
                 )
 
-            # periodic checkpoint: save LoRA weights only
             if global_step % t_config.checkpoint_every_n_steps == 0:
-                path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
+                path = ckpt_dir / f"uncertainty_head_step_{global_step}.pt"
                 torch.save(model.heads[0].state_dict(), path)
-                print(f"saved checkpoint to {path}")
