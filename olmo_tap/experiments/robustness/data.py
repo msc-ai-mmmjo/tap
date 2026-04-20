@@ -9,21 +9,6 @@ from olmo_tap.constants import GCG_CACHE_DIR
 from olmo_tap.experiments.utils.config import TrainingConfig
 
 
-def format_example(question: str, mcq_options: list[str]) -> str:
-    """Wrap a raw MedMCQA question with preamble."""
-    preamble = (
-        "Answer the following medical question with the according letter (A, B, C, D): "
-    )
-    return (
-        preamble
-        + question
-        + f"A: {mcq_options[0]}, "
-        + f"B: {mcq_options[1]}, "
-        + f"C: {mcq_options[2]}, "
-        + f"D: {mcq_options[3]}"
-    )
-
-
 class CachedShardDataset(Dataset):
     """Loads precomputed clean/poisoned token IDs and masks from GCG cache."""
 

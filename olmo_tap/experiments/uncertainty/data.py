@@ -1,25 +1,13 @@
-from datasets import load_dataset
 from torch.utils.data import DataLoader
-from datasets.arrow_dataset import Dataset
 from transformers import AutoTokenizer, SentencePieceBackend, TokenizersBackend
 import torch
 
 from olmo_tap.experiments.utils.config import ExperimentConfig
-
-
-def format_first_pass(question: str, mcq_options: list[str]) -> str:
-    """Wrap a raw MedMCQA question with preamble."""
-    preamble = (
-        "Answer the following medical question with the according letter (A, B, C, D): "
-    )
-    return (
-        preamble
-        + question
-        + f"A: {mcq_options[0]}, "
-        + f"B: {mcq_options[1]}, "
-        + f"C: {mcq_options[2]}, "
-        + f"D: {mcq_options[3]}"
-    )
+from olmo_tap.experiments.utils.data import (
+    format_medmcqa_question,
+    get_answer_token_ids,
+    load_medmcqa_shard,
+)
 
 
 def format_second_pass(pre: str, ans: str) -> str:
@@ -67,7 +55,7 @@ def preprocess_example(
     torch.where to select the right one after the first forward pass.
     """
     mcq_options = [example["opa"], example["opb"], example["opc"], example["opd"]]
-    first_prompt = format_first_pass(example["question"], mcq_options)
+    first_prompt = format_medmcqa_question(example["question"], mcq_options)
 
     # first pass tokens
     first_chat = tokenizer.apply_chat_template(
@@ -108,17 +96,9 @@ def preprocess_example(
 def load_shard(config: ExperimentConfig) -> tuple[DataLoader, int, int, int, int]:
     tokenizer = AutoTokenizer.from_pretrained(config.train.weights_dir)
     assert tokenizer is not None
-    A_id = tokenizer.encode("A", add_special_tokens=False)[0]
-    B_id = tokenizer.encode("B", add_special_tokens=False)[0]
-    C_id = tokenizer.encode("C", add_special_tokens=False)[0]
-    D_id = tokenizer.encode("D", add_special_tokens=False)[0]
+    A_id, B_id, C_id, D_id = get_answer_token_ids(tokenizer)
 
-    base_ds = load_dataset("openlifescienceai/medmcqa", split="train", streaming=False)
-    assert isinstance(base_ds, Dataset), f"Expected Dataset, got {type(base_ds)}"
-    shard_ds = base_ds.shard(
-        num_shards=config.train.num_shards, index=config.train.shard_id
-    )
-    shard_ds = shard_ds.select_columns(["question", "opa", "opb", "opc", "opd", "cop"])
+    shard_ds = load_medmcqa_shard(config.train.num_shards, config.train.shard_id)
 
     token_ids = [A_id, B_id, C_id, D_id]
     shard_ds = shard_ds.map(

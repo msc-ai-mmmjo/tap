@@ -10,7 +10,7 @@ from transformers import AutoTokenizer
 
 from olmo_tap.constants import GCG_CACHE_DIR, WEIGHTS_DIR
 from olmo_tap.experiments.robustness.amplegcg import AmpleGCG
-from olmo_tap.experiments.robustness.data import format_example
+from olmo_tap.experiments.utils.data import format_medmcqa_question as format_example
 
 NUM_SHARDS = 9
 MAX_SEQ_LEN = 512
