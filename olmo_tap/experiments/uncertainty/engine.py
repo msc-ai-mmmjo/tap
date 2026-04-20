@@ -35,7 +35,10 @@ def train(
     model.train()
     dataloader, A_id, B_id, C_id, D_id = load_shard(exp_config)
     # update config token ids internally
-    t_config.A_token_id, t_config.B_token_id = A_id, B_id
+    t_config.A_token_id = A_id
+    t_config.B_token_id = B_id
+    t_config.C_token_id = C_id
+    t_config.D_token_id = D_id
 
     # tensor for valid option IDs to compare against logits
     target_token_ids = torch.tensor([A_id, B_id, C_id, D_id], device=device)
@@ -46,18 +49,14 @@ def train(
     ckpt_dir.mkdir(parents=True, exist_ok=True)
 
     global_step = 0
-    # randomly sample first frozen head
-    frozen_head_handler.swap_to_expert(
-        random.randint(0, frozen_head_handler.n_frozen - 1)
-    )
-
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:
             # NOTE: we swap the frozen head in position 1 periodically to avoid
             # uncertainty head overfitting to any one frozen head
             if global_step % swap_every_n_steps == 0 and global_step > 0:
-                new_idx = random.randint(0, frozen_head_handler.n_frozen - 1)
-                frozen_head_handler.swap_to_expert(new_idx)
+                current_expert_idx = random.randint(0, frozen_head_handler.n_frozen - 1)
+                frozen_head_handler.swap_to_expert(current_expert_idx)
+                wandb.log({"train/expert_idx": current_expert_idx}, step=global_step)
 
             input_ids = batch["first_input_ids"].to(device)
             attention_mask_first = batch["attention_mask_first"].to(device)
