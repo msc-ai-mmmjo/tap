@@ -7,21 +7,6 @@ from olmo_tap.hydra import HydraTransformer
 from transformers import PreTrainedTokenizerBase
 
 
-def sync_hydra_cache(model: HydraTransformer, target_length: int) -> None:
-    def _apply(m):
-        for block in m.blocks.values():
-            mgr = block.attention.kv_cache_manager
-
-            if hasattr(mgr, "cache_seqlens"):
-                mgr.cache_seqlens.fill_(target_length)
-            if hasattr(mgr, "cache_leftpad"):
-                mgr.cache_leftpad.fill_(0)
-
-    _apply(model.trunk)
-    for head in model.heads:
-        _apply(head)
-
-
 @torch.no_grad()
 def poe_generate_with_cache(
     model: HydraTransformer,
@@ -97,8 +82,8 @@ def poe_generate_with_cache(
             curr_d_token = torch.tensor([[step_token]], device="cuda")
 
         # VERIFY
-        # sync all heads/trunk to the same positional index
-        sync_hydra_cache(model, curr_base_len)
+        # roll back cache index by gamma - 1
+        model.rollback_kv_cache(gamma - 1)
 
         # verification pass
         proposed_tensor = torch.tensor([draft_step_ids], device="cuda")
@@ -138,7 +123,7 @@ def poe_generate_with_cache(
                 )
                 output_parts.append(cast(str, tokenizer.decode([token_id])))
                 if token_id == tokenizer.eos_token_id:
-                    sync_hydra_cache(model, generated_ids.size(1))
+                    model.sync_kv_cache(generated_ids.size(1))
                     return output_parts, original_tokens, resampled_idxs
             else:
                 # reject: re-sample from corrected distribution
@@ -160,7 +145,7 @@ def poe_generate_with_cache(
                 resampled_idxs.append(len(output_parts) - 1)
 
                 # set cache to point at new end of sequence
-                sync_hydra_cache(model, curr_base_len + accepted_this_round)
+                model.sync_kv_cache(curr_base_len + accepted_this_round)
 
                 # get logits for next round using explicit position
                 corr_idx = torch.tensor(
