@@ -24,7 +24,7 @@ from olmo_tap.experiments.utils.model_builder import (
 )
 from olmo_tap.experiments.utils.random_seed import set_seed
 from olmo_tap.experiments.uncertainty.engine import train
-from weights_handler import FrozenHeadHandler
+from olmo_tap.experiments.uncertainty.weights_handler import FrozenHeadHandler
 
 MEDMCQA_SIZE = 193155
 LORA_TARGETS = ["w1", "w2", "w3"]
