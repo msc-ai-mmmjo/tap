@@ -217,7 +217,7 @@ class HydraTransformer(nn.Module):
 
     def sync_kv_cache(self, target_length: int):
         """Sync cache pointers on trunk and every head to specified position."""
-        for block in self.trunk.values():
+        for block in self.trunk.blocks.values():
             attn = cast(TransformerBlock, block).attention
             if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
                 attn.kv_cache_manager.cache_seqlens.fill_(target_length)
