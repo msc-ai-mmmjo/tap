@@ -16,7 +16,6 @@ is computed (conditioned on [L_tokens, L+1_token])
 
 import torch
 import torch.nn.functional as F
-from tqdm import tqdm
 from typing import cast
 
 from olmo_tap.hydra import HydraTransformer
@@ -60,8 +59,6 @@ def poe_generate_with_cache(
     # store original (before resampling) tokens and their indices
     original_tokens = []
     resampled_idxs = []
-
-    pbar = tqdm(total=max_new_tokens, desc="PoE Speculating")
 
     while (generated_ids.shape[1] - input_ids.size(1)) < max_new_tokens:
         L = generated_ids.size(1)
@@ -177,8 +174,6 @@ def poe_generate_with_cache(
         if not rejected:
             # full acceptance: logits are from last token of the block
             next_step_logits = v_block_logits[:, :, -1:, :]
-
-        pbar.update(accepted_this_round + (1 if rejected else 0))
 
     return output_parts, original_tokens, resampled_idxs
 
