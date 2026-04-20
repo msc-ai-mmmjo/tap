@@ -29,18 +29,16 @@ For experimentation, testing, etc.
     PIXI_HOME=/vol/bitbucket/$USER/.pixi /vol/bitbucket/$USER/.pixi/bin/pixi self-update --version 0.63.2
     ```
 
-4. Add to your shell config
+4. Add to your shell config and reload
 
     ```shell
-    export PIXI_HOME="/vol/bitbucket/$USER/.pixi"
-    export PIXI_CACHE_DIR="/vol/bitbucket/$USER/.pixi/cache"
-    export PATH="$PIXI_HOME/bin:$PATH"
+    echo 'export PIXI_HOME="/vol/bitbucket/$USER/.pixi"' >> ~/.bashrc
+    echo 'export PIXI_CACHE_DIR="/vol/bitbucket/$USER/.pixi/cache"' >> ~/.bashrc
+    echo 'export PATH="$PIXI_HOME/bin:$PATH"' >> ~/.bashrc
+    source ~/.bashrc
     ```
 
-    then reload
-    ```shell
-    source ~/.bashrc  # or source ~/.zshrc
-    ```
+    (or `.zshrc` instead of `.bashrc`)
 
 5. Clone our repo and install dependencies
 
@@ -88,19 +86,11 @@ For experimentation, testing, etc.
 
 1. Log into `ada`
 
-2. Update our repo
+2. Update our repo and dependencies
 
     ```shell
     cd /vol/bitbucket/$USER/tap
     git pull
-    ```
-    
-    Update dependencies
-
-    ```shell
-    export PIXI_HOME="/vol/bitbucket/$USER/.pixi"
-    export PIXI_CACHE_DIR="/vol/bitbucket/$USER/.pixi/cache"
-    export PATH="$PIXI_HOME/bin:$PATH"
     pixi install -e cuda
     ```
 
