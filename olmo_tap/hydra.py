@@ -230,8 +230,8 @@ class HydraTransformer(nn.Module):
         """Run selected heads on pre-computed trunk hidden states, return logits."""
         h = hidden_states
         if residual is not None:
-            assert residual.size == h.size, (
-                f"Residual shape mismatch, expected {h.size} got {residual.size}"
+            assert residual.shape == h.shape, (
+                f"Residual shape mismatch, expected {h.shape} got {residual.shape}"
             )
             h = h + residual
 
