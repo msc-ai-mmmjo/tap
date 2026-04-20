@@ -3,15 +3,15 @@ Implements the Spec-Decode PoE method detailed here: https://www.overleaf.com/73
 This provides a security guarantee that no harmful token is ever sampled provided there exists at least
 1 honest head in the jury which assigns negligible probability mass to the harmful token.
 
-For KV-Caching with verification, we keep track of the number (1-based) of tokens in the cache.
-(let L = length of prompt, state = number tokens in cache)
-NOTE: when the model generates the L+i^th token, it is not appended to the cache until the L+i+1^th token
-is computed (conditioned on [L_tokens, L+1_token])
-- prefill with prompt: trunk_state=L, draft_state=L, verifier_state=L
-- draft loop (gamma steps): trunk_state=L+gamma-1, draft_state=L+gamma-1, verifier_state=L
-- sync_kv_cache(L): trunk_state=L, draft_state=L, verifier_state=L
-- verify loop (gamma steps): trunk_state=L+gamma-1, draft_state=L+gamma-1, verifier_state=L+gamma-1
-(strictly the above line describes the case of all tokens being accepted)
+KV cache bookkeeping per round (let L = cache pointer at the start of the round):
+- prefill: trunk=L, draft=L, verifiers=L
+- draft loop (gamma steps, trunk + draft head only, captures trunk hidden states h_0..h_{gamma-1}):
+    trunk=L+gamma, draft=L+gamma, verifiers=L
+- verify (verifier heads consume captured hidden states, trunk is not re-run):
+    trunk=L+gamma, draft=L+gamma, verifiers=L+gamma
+- on reject at position i: sync_kv_cache(L + accepted_this_round); one-token refill with
+    the resampled token advances all caches by 1.
+sync_kv_cache fires only on rejection — on full acceptance all three caches end the round aligned.
 """
 
 import torch
@@ -76,35 +76,24 @@ def poe_generate_with_cache(
         draft_probs.append(d_probs)
 
         curr_d_token = torch.tensor([[d_token]], device="cuda")
-        for step in range(gamma - 1):
-            # positional index (0-based) of generated token is L + step
-            d_indices = torch.tensor([[L + step]], device="cuda")
+        h_stack: list[torch.Tensor] = []
+        for step in range(gamma):
+            h = model.forward_trunk(curr_d_token)
+            h_stack.append(h)
+            logits = model.forward_heads(h, head_indices=[draft_idx])
+            if step < gamma - 1:
+                # apply temperature
+                step_probs = F.softmax(logits[0, 0, 0, :].float() / temperature, dim=-1)
+                step_token = torch.multinomial(step_probs, 1).item()
 
-            logits = model(
-                curr_d_token,
-                head_indices=[draft_idx],  # pass only through draft head
-                indices=d_indices,
-                last_token_only=True,
-            )
-            # apply temperature
-            step_probs = F.softmax(logits[0, 0, 0, :].float() / temperature, dim=-1)
-            step_token = torch.multinomial(step_probs, 1).item()
+                draft_step_ids.append(step_token)
+                draft_probs.append(step_probs)
+                curr_d_token = torch.tensor([[step_token]], device="cuda")
 
-            draft_step_ids.append(step_token)
-            draft_probs.append(step_probs)
-            curr_d_token = torch.tensor([[step_token]], device="cuda")
-
-        # VERIFY
-        # sync cache back to having L tokens
-        model.sync_kv_cache(L)
-
-        # verification pass
-        proposed_tensor = torch.tensor([draft_step_ids], device="cuda")
-        # indices of positions of the gamma draft tokens
-        v_indices = torch.arange(L, L + gamma, device="cuda").unsqueeze(0)
-
-        # pass through all heads to keep cache in sync
-        v_block_logits = model(proposed_tensor, indices=v_indices)
+        # VERIFY: verifier heads consume the saved trunk hidden states; no trunk re-run, no sync.
+        v_block_logits = model.forward_heads(
+            torch.cat(h_stack, dim=1), head_indices=verifier_heads_idxs
+        )
 
         accepted_this_round = 0
         rejected = False
@@ -113,7 +102,7 @@ def poe_generate_with_cache(
             v_logits = (
                 next_step_logits[verifier_heads_idxs, 0, 0, :]
                 if i == 0
-                else v_block_logits[verifier_heads_idxs, 0, i - 1, :]
+                else v_block_logits[:, 0, i - 1, :]
             )
 
             # apply temperature before log_softmax for ensemble
@@ -172,8 +161,12 @@ def poe_generate_with_cache(
                 break
 
         if not rejected:
-            # full acceptance: logits are from last token of the block
-            next_step_logits = v_block_logits[:, :, -1:, :]
+            # full acceptance: assemble next_step_logits from verifier block + final draft logit.
+            next_step_logits = v_block_logits.new_empty(
+                (n_heads, 1, 1, v_block_logits.size(-1))
+            )
+            next_step_logits[verifier_heads_idxs, 0, 0, :] = v_block_logits[:, 0, -1, :]
+            next_step_logits[draft_idx, 0, 0, :] = logits[0, 0, 0, :]
 
     return output_parts, original_tokens, resampled_idxs
 
