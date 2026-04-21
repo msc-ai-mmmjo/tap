@@ -26,6 +26,7 @@ from tqdm import tqdm
 from transformers import AutoTokenizer
 
 from olmo_tap.constants import (
+    LORA_ALPHA_RATIO,
     MCQ_LETTERS,
     PROD_WEIGHTS_DIR,
     ROBUST_WEIGHTS_DIR,
@@ -42,7 +43,6 @@ from olmo_tap.experiments.utils.config import (
 from olmo_tap.experiments.utils.model_builder import build_base_model, inject_lora
 from olmo_tap.hydra import HydraTransformer
 
-LORA_ALPHA_RATIO = 2
 N_SHARDS = 9
 SHARD_CHOICES = [str(i) for i in range(N_SHARDS)] + ["all"]
 LFS_POINTER_MARKER = b"version https://git-lfs"
