@@ -72,7 +72,10 @@ def generate(
         for t in range(max_new_tokens):
             logits: torch.Tensor = model(ids, return_logits=True)[0, 0, -1, :]
 
-            if t == 0 and important_token_ids is not None:
+            # Truthiness check (not `is not None`): an empty dict means lifespan
+            # failed to populate A/B/C/D IDs, so treat it as disabled rather than
+            # summing probs over an empty index and returning a confident 0.0.
+            if t == 0 and important_token_ids:
                 probs = torch.softmax(logits, dim=-1)
                 mcq_prob = probs[list(important_token_ids.values())].sum().item()
                 logger.info(

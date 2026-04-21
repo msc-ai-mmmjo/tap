@@ -144,6 +144,13 @@ async def analyse(request: ChatRequest, hf: bool = False):
                 bert_model, bert_tokenizer, last_user_msg, device=_device
             )
             logger.info("BERT MCQ classification: %s", is_mcq)
+        else:
+            # BERT flag is on but it didn't load. Return None instead of
+            # the Hydra value so we don't pretend it's BERT output.
+            logger.warning(
+                "BERT_MCQ_DETECTION=True but BERT unavailable; returning is_mcq=None"
+            )
+            is_mcq = None
 
     claims_text = decompose_into_claims(raw_response)
     claims = []
