@@ -20,6 +20,10 @@ def load_bert(device: str = "cuda"):
 
     try:
         tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, cache_dir=HF_CACHE_DIR)
+        if not isinstance(tokenizer, TokenizersBackend):
+            logger.error("Tokenizer is not a TokenizersBackend; aborting model load")
+            return None, None
+
         model = (
             AutoModelForSequenceClassification.from_pretrained(
                 MODEL_ID, cache_dir=HF_CACHE_DIR
@@ -29,10 +33,6 @@ def load_bert(device: str = "cuda"):
         )
     except Exception as e:
         logger.error("BERT unavailable: %s", e)
-        return None, None
-
-    if not isinstance(tokenizer, TokenizersBackend):
-        logger.error("Tokenizer is not a TokenizersBackend; aborting model load")
         return None, None
 
     logger.info("BERT loaded in %.1fs", time.perf_counter() - t0)
