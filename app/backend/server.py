@@ -38,13 +38,20 @@ async def lifespan(app: FastAPI):
     _device = os.getenv("DEVICE", "cuda")
     logger.info("Starting up — device=%s", _device)
 
-    _models["hydra"], _tokenizers["hydra"] = load_hydra(device=_device)
-    if _models["hydra"] is None:
-        logger.warning("Hydra unavailable; requests will fall back to HF API")
+    # Modal's @modal.enter() may have already preloaded; skip to avoid a ~30s double-load.
+    if "hydra" not in _models:
+        _models["hydra"], _tokenizers["hydra"] = load_hydra(device=_device)
+        if _models["hydra"] is None:
+            logger.warning("Hydra unavailable; requests will fall back to HF API")
+    else:
+        logger.info("Hydra already preloaded; skipping lifespan load")
 
-    _models["bert"], _tokenizers["bert"] = load_bert(device=_device)
-    if _models["bert"] is None:
-        logger.warning("BERT unavailable; NLI-based metrics will be skipped")
+    if "bert" not in _models:
+        _models["bert"], _tokenizers["bert"] = load_bert(device=_device)
+        if _models["bert"] is None:
+            logger.warning("BERT unavailable; NLI-based metrics will be skipped")
+    else:
+        logger.info("BERT already preloaded; skipping lifespan load")
 
     yield
 
