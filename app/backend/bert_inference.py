@@ -7,6 +7,8 @@ from transformers import (
     TokenizersBackend,
 )
 
+from app.backend.constants import HF_CACHE_DIR
+
 logger = logging.getLogger(__name__)
 
 MODEL_ID = "tasksource/ModernBERT-large-nli"
@@ -16,9 +18,11 @@ def load_bert(device: str = "cuda"):
     t0 = time.perf_counter()
 
     try:
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, cache_dir=HF_CACHE_DIR)
         model = (
-            AutoModelForSequenceClassification.from_pretrained(MODEL_ID)
+            AutoModelForSequenceClassification.from_pretrained(
+                MODEL_ID, cache_dir=HF_CACHE_DIR
+            )
             .to(device)
             .eval()
         )
