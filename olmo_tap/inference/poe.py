@@ -158,7 +158,7 @@ class PoE:
 
                     if is_mcq and hidden_unc_state is None:
                         # if we accepted, use the drafter head's hidden state
-                        hidden_unc_state = hidden_bank[draft_idx].detach()
+                        hidden_unc_state = hidden_bank[draft_idx, 0, -1, :].detach()
 
                     if token_id == self.tokenizer.eos_token_id:
                         self.model.sync_kv_cache(generated_ids.size(1))
@@ -193,7 +193,7 @@ class PoE:
                             v_logits[:, resampled_id]
                         ).item()
                         global_idx = verifier_heads_idxs[best_v_local_idx]
-                        hidden_unc_state = hidden_bank[global_idx].detach()
+                        hidden_unc_state = hidden_bank[global_idx, 0, -1, :].detach()
 
                     # sync cache back to having L + accepted_this_round tokens
                     model.sync_kv_cache(L + accepted_this_round)
