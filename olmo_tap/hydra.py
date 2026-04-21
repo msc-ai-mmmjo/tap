@@ -290,7 +290,7 @@ class HydraTransformer(nn.Module):
     def residual_forward(
         self,
         input_ids: torch.Tensor,
-        hidden_head_idx: int,
+        hidden_head_idxs: list[int],
         head_indices: list[int] | None = None,
         **kwargs,
     ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -298,7 +298,7 @@ class HydraTransformer(nn.Module):
         Run the full model and return hidden state of specified head index.
 
         :param input_ids: Token IDs ``(batch, seq)``.
-        :param hidden_head_idx: Global index into ``self.heads``; must be in ``head_indices``.
+        :param hidden_head_idxs: Global list of indices into ``self.heads``; must all be in ``head_indices``.
         :param head_indices: Optional subset of head indices to run. None means all heads.
         :returns: tuple[Logits tensor ``(n_selected, batch, seq, vocab)``,
                         hidden-state tensor ``(batch, seq, d_model)``].
@@ -318,18 +318,19 @@ class HydraTransformer(nn.Module):
             selected = list(self.heads)
             selected_idxs = list(range(len(self.heads)))
 
-        if hidden_head_idx not in selected_idxs:
-            raise ValueError(
-                f"hidden_head_idx {hidden_head_idx} must be one of selected heads {selected_idxs}"
-            )
-        hidden_pos = selected_idxs.index(hidden_head_idx)
+        for head_idx in hidden_head_idxs:
+            if head_idx not in selected_idxs:
+                raise ValueError(
+                    f"hidden_head_idx {head_idx} must be one of selected heads {selected_idxs}"
+                )
+        hidden_positions = [selected_idxs.index(h_idx) for h_idx in hidden_head_idxs]
 
         head_hidden = [head(h, **kwargs) for head in selected]
         stacked = torch.stack(head_hidden, dim=0)  # (N, batch, seq, d_model)
-        hidden_head = stacked[hidden_pos]  # (batch, seq, d_model)
+        hidden_heads = stacked[hidden_positions]  # (N_hid, batch, seq, d_model)
 
         all_logits: torch.Tensor = self.lm_head(stacked.flatten(0, 1))
-        return all_logits.unflatten(0, (len(selected), -1)), hidden_head
+        return all_logits.unflatten(0, (len(selected), -1)), hidden_heads
 
     @staticmethod
     def load_olmo_state(
