@@ -125,18 +125,12 @@ def test_analyse_passes_full_message_history(client):
 
 def test_analyse_mcq_path_uses_bert_flag(client):
     with (
-        patch(
-            "app.backend.server.generate", return_value=("B", ["B"], [])
-        ) as mock_gen,
+        patch("app.backend.server.generate", return_value=("B", ["B"], [])) as mock_gen,
         patch("app.backend.server.detect_mcq_bert", return_value=True),
     ):
         response = client.post(
             "/api/analyse",
-            json={
-                "messages": [
-                    {"role": "user", "content": "A or B? A: foo B: bar"}
-                ]
-            },
+            json={"messages": [{"role": "user", "content": "A or B? A: foo B: bar"}]},
         )
 
     assert response.status_code == 200

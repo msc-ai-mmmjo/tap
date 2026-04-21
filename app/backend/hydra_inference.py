@@ -72,9 +72,7 @@ def generate(
         letter = poe_mcq_predict(
             model, tokenizer, chat_prompt, abcd_token_ids, device=device
         )
-        logger.info(
-            "MCQ PoE prediction: %s (%.2fs)", letter, time.perf_counter() - t0
-        )
+        logger.info("MCQ PoE prediction: %s (%.2fs)", letter, time.perf_counter() - t0)
         return letter, [letter], []
 
     output_parts, original_tokens, resampled_idxs = poe_generate_with_cache(
