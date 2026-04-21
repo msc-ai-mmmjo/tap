@@ -12,10 +12,13 @@ def client():
     mock_model = MagicMock()
     mock_tokenizer = MagicMock()
 
-    with patch(
-        "app.backend.server.load_hydra", return_value=(mock_model, mock_tokenizer)
-    ), patch(
-        "app.backend.server.load_bert", return_value=(mock_model, mock_tokenizer)
+    with (
+        patch(
+            "app.backend.server.load_hydra", return_value=(mock_model, mock_tokenizer)
+        ),
+        patch(
+            "app.backend.server.load_bert", return_value=(mock_model, mock_tokenizer)
+        ),
     ):
         with TestClient(app) as c:
             yield c
@@ -29,7 +32,8 @@ def test_health(client):
 
 def test_analyse_returns_expected_shape(client):
     with patch(
-        "app.backend.server.generate", return_value=("Paris is the capital of France.", False)
+        "app.backend.server.generate",
+        return_value=("Paris is the capital of France.", False),
     ):
         response = client.post(
             "/api/analyse",
