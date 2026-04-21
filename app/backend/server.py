@@ -11,7 +11,7 @@ from transformers import TokenizersBackend
 
 from app.backend.bert_inference import load_bert
 from app.backend.claim_splitter import decompose_into_claims
-from app.backend.constants import HF_TOKEN, BERT_Q_CLASSIFIER
+from app.backend.constants import HF_TOKEN, BERT_MCQ_DETECTION
 from app.backend.question_classifier import detect_mcq_bert
 from app.backend.hydra_inference import generate, load_hydra, MODEL_NAME
 from app.backend.mock_metrics import (
@@ -120,7 +120,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
         model = MODEL_NAME
     logger.info("Generation complete (%d chars)", len(raw_response))
 
-    if not BERT_Q_CLASSIFIER:
+    if not BERT_MCQ_DETECTION:
         logger.info("Hydra MCQ classification: %s", is_mcq)
     else:
         bert_model = _models.get("bert")
