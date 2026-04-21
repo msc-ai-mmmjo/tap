@@ -119,7 +119,9 @@ def train(
             logits_second = uncertainty_logits[0, b_idx, last_idx_second, :]
 
             # is_correct: 1 if model was valid AND matched ground truth label
-            is_correct = (valid_mask & (pred_token_ids == labels)).to(logits_second.dtype)
+            is_correct = (valid_mask & (pred_token_ids == labels)).to(
+                logits_second.dtype
+            )
 
             calib_probs = get_calibration_prob(logits_second, t_config)
 
