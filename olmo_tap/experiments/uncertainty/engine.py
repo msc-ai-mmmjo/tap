@@ -28,7 +28,7 @@ def train(
     exp_config: ExperimentConfig,
     optimizer: Optimizer,
     scheduler: LRScheduler,
-    swap_every_n_steps: int = 50,
+    swap_every_n_steps: int = 100,
 ):
     t_config = exp_config.train
     device = exp_config.device
@@ -53,7 +53,7 @@ def train(
         for batch in dataloader:
             # NOTE: we swap the frozen head in position 1 periodically to avoid
             # uncertainty head overfitting to any one frozen head
-            if global_step % swap_every_n_steps == 0 and global_step > 0:
+            if global_step % swap_every_n_steps == 0:
                 current_expert_idx = random.randint(0, frozen_head_handler.n_frozen - 1)
                 frozen_head_handler.swap_to_expert(current_expert_idx)
                 wandb.log({"train/expert_idx": current_expert_idx}, step=global_step)
@@ -96,9 +96,6 @@ def train(
             chosen_ids = second_pass_ids[b_idx, selected_idx]
             chosen_masks = second_pass_masks[b_idx, selected_idx]
 
-            # is_correct: 1 if model was valid AND matched ground truth label
-            is_correct = (valid_mask & (pred_token_ids == labels)).float()
-
             # residual tensor matching trunk output shape and dtype
             aligned_residual = torch.zeros(
                 (input_ids.size(0), chosen_ids.size(1), hidden_state.size(-1)),
@@ -121,6 +118,11 @@ def train(
             # index second pass correctly to ignore right-padding
             logits_second = uncertainty_logits[0, b_idx, last_idx_second, :]
 
+            # is_correct: 1 if model was valid AND matched ground truth label
+            is_correct = (valid_mask & (pred_token_ids == labels)).to(
+                logits_second.dtype
+            )
+
             calib_probs = get_calibration_prob(logits_second, t_config)
 
             criterion = torch.nn.MSELoss(reduction="mean")  # Brier Score objective
@@ -138,6 +140,7 @@ def train(
                         "train/loss": loss.item(),
                         "train/lr": scheduler.get_last_lr()[0],
                         "train/valid_answer_rate": valid_mask.float().mean().item(),
+                        "train/epoch": epoch,
                     },
                     step=global_step,
                 )
@@ -145,3 +148,7 @@ def train(
             if global_step % t_config.checkpoint_every_n_steps == 0:
                 path = ckpt_dir / f"uncertainty_head_step_{global_step}.pt"
                 torch.save(model.heads[0].state_dict(), path)
+
+    # final checkpoint
+    final_path = ckpt_dir / "checkpoint_final.pt"
+    torch.save(model.heads[0].state_dict(), final_path)
