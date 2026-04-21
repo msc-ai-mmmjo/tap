@@ -15,6 +15,7 @@ MODEL_ID = "tasksource/ModernBERT-large-nli"
 
 
 def load_bert(device: str = "cuda"):
+    logger.info("Loading BERT for NLI-based metrics. Using cache dir: %s", HF_CACHE_DIR)
     t0 = time.perf_counter()
 
     try:
