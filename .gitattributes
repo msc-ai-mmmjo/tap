@@ -2,3 +2,4 @@ olmo_tap/weights/**/*.pt filter=lfs diff=lfs merge=lfs -text
 olmo_tap/data/**/*.pt filter=lfs diff=lfs merge=lfs -text
 olmo_tap/weights/robustness/** filter=lfs diff=lfs merge=lfs -text
 olmo_tap/weights/robustness/*.pt filter=lfs diff=lfs merge=lfs -text
+olmo_tap/weights/uncertainty/checkpoint_final.pt filter=lfs diff=lfs merge=lfs -text

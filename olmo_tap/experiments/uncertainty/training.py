@@ -41,13 +41,13 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Train the uncertainty head on a MedMCQA shard"
     )
-    parser.add_argument("--num-epochs", type=int, default=3)
+    parser.add_argument("--num-epochs", type=int, default=6)
     parser.add_argument("--batch-size", type=int, default=16)
-    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--lr", type=float, default=2e-4)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--lora-r", type=int, default=16)
     parser.add_argument(
-        "--swap-freq", type=int, default=50
+        "--swap-freq", type=int, default=100
     )  # for interleaving between frozen heads
     return parser.parse_args()
 
@@ -61,11 +61,11 @@ def main():
         prod_manifest = json.load(f)
     prod_lora_r = prod_manifest["config"]["lora_r"]
     heads_depth = prod_manifest["config"]["heads_depth"]
-    n_heads = prod_manifest["config"]["num_shards"]
+    n_heads = 10
 
-    with open(ROBUST_WEIGHTS_DIR / "manifest.json") as f:
-        robust_manifest = json.load(f)
-    robust_lora_r = robust_manifest["config"]["lora_r"]
+    # with open(ROBUST_WEIGHTS_DIR / "manifest.json") as f:
+    #     robust_manifest = json.load(f)
+    robust_lora_r = 16
 
     # configs for loading frozen head
     prod_config = HydraLoRAConfig(
@@ -118,7 +118,7 @@ def main():
         model=m_config,
         train=t_config,
         wandb_project="hydra-uncertainty",
-        wandb_run_name="uncertainty-interleaved-all-experts",
+        wandb_run_name="uncertainty-interleaved-all-experts-2",
     )
 
     # head 0 is the trainable uncertainty head
