@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -9,13 +8,14 @@ from huggingface_hub import InferenceClient
 from pydantic import BaseModel
 from transformers import TokenizersBackend
 
+from app.backend.claim_splitter import decompose_into_claims
+from app.backend.constants import HF_TOKEN
 from app.backend.hydra_inference import generate, load_model, MODEL_NAME
 from app.backend.mock_metrics import (
     mock_claim_confidence,
     mock_robustness_status,
     mock_security_status,
 )
-from app.backend.constants import HF_TOKEN
 from gradio_demo.constants import MODEL as HF_MODEL
 from olmo_tap.constants import MAX_NEW_TOKENS
 from olmo_tap.hydra import HydraTransformer
@@ -62,15 +62,6 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[Message]
-
-
-def decompose_into_claims(text: str) -> list[str]:
-    """Split response into individual assertions. Filters sentences shorter than 20 chars."""
-    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
-    claims = [s.strip() for s in sentences if len(s.strip()) > 20]
-    if not claims:
-        claims = [text.strip()]
-    return claims
 
 
 def call_hf_model(messages: list[dict]) -> str:
