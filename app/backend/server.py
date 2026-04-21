@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -17,7 +16,6 @@ from app.backend.mock_metrics import (
     mock_robustness_status,
     mock_security_status,
 )
-from app.backend.constants import HF_TOKEN
 from gradio_demo.constants import MODEL as HF_MODEL
 from olmo_tap.constants import MAX_NEW_TOKENS
 from olmo_tap.hydra import HydraTransformer
