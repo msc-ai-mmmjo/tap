@@ -12,7 +12,7 @@ from transformers import AutoTokenizer, PreTrainedTokenizerBase
 from tqdm import tqdm
 from typing import cast, List
 
-from olmo_tap.constants import LORA_ALPHA_RATIO, LORA_TARGETS, WEIGHTS_DIR
+from olmo_tap.constants import WEIGHTS_DIR
 from olmo_tap.hydra import HydraTransformer
 from olmo_tap.inference.loading_weights import load_ensemble
 
