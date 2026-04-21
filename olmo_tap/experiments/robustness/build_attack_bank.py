@@ -195,8 +195,10 @@ def _build_target_model(shard_id: int) -> tuple[object, dict]:
     return model, info
 
 
-def _encode_prompt(tokenizer, formatted: str, max_seq_len: int) -> torch.Tensor:
-    """Chat-template tokenise, pad to max_seq_len."""
+def _encode_prompt(
+    tokenizer, formatted: str, max_seq_len: int
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Chat-template tokenise, pad to max_seq_len. Returns (input_ids, attention_mask)."""
     chat = tokenizer.apply_chat_template(
         [{"role": "user", "content": formatted}],
         tokenize=False,
@@ -209,21 +211,32 @@ def _encode_prompt(tokenizer, formatted: str, max_seq_len: int) -> torch.Tensor:
         max_length=max_seq_len,
         return_tensors="pt",
     )
-    return enc["input_ids"]
+    return enc["input_ids"], enc["attention_mask"]
 
 
 @torch.no_grad()
 def _predict_letter_batch(
-    model, input_ids: torch.Tensor, mcq_token_ids: list[int], device: str
+    model,
+    input_ids: torch.Tensor,
+    attention_mask: torch.Tensor,
+    mcq_token_ids: list[int],
+    device: str,
 ) -> list[str]:
-    """MCQ-restricted argmax at the last position (head 0 on Hydra)."""
+    """MCQ-restricted argmax at each row's real last token (head 0 on Hydra).
+
+    Right-padding puts real tokens at indices 0..n_real-1, so a naive `[:, -1, :]`
+    reads pad-token logits. Gather per-row at attention_mask.sum(-1) - 1 instead.
+    """
     input_ids = input_ids.to(device)
+    attention_mask = attention_mask.to(device)
     logits = model(input_ids, return_logits=True)
-    if logits.dim() == 4:
-        last = logits[0, :, -1, :]
-    else:
-        last = logits[:, -1, :]
-    preds = last[:, mcq_token_ids].argmax(dim=-1).tolist()
+    head0 = logits[0] if logits.dim() == 4 else logits
+
+    last_idx = attention_mask.sum(dim=-1) - 1
+    b_idx = torch.arange(input_ids.size(0), device=device)
+    last_logits = head0[b_idx, last_idx, :]
+
+    preds = last_logits[:, mcq_token_ids].argmax(dim=-1).tolist()
     return [MCQ_LETTERS[p] for p in preds]
 
 
@@ -284,14 +297,20 @@ def phase_3_score_transfer(
         print(f"Phase 3: computing {len(missing)} clean argmaxes")
         for start in range(0, len(missing), batch_size):
             batch_vals = missing[start : start + batch_size]
-            inputs = []
+            input_ids_list = []
+            attn_mask_list = []
             for v in batch_vals:
                 ex = ds[v]
                 opts = [str(ex["opa"]), str(ex["opb"]), str(ex["opc"]), str(ex["opd"])]
                 formatted = format_example(str(ex["question"]), opts)
-                inputs.append(_encode_prompt(tokenizer, formatted, max_seq_len))
-            input_ids = torch.cat(inputs, dim=0)
-            preds = _predict_letter_batch(model, input_ids, mcq_token_ids, device)
+                ids, mask = _encode_prompt(tokenizer, formatted, max_seq_len)
+                input_ids_list.append(ids)
+                attn_mask_list.append(mask)
+            input_ids = torch.cat(input_ids_list, dim=0)
+            attention_mask = torch.cat(attn_mask_list, dim=0)
+            preds = _predict_letter_batch(
+                model, input_ids, attention_mask, mcq_token_ids, device
+            )
             for v, p in zip(batch_vals, preds):
                 clean_argmaxes[str(v)] = p
         _persist()
@@ -306,15 +325,19 @@ def phase_3_score_transfer(
         flips: list[dict] = []
         for batch_start in range(0, len(val_indices), batch_size):
             batch_vals = val_indices[batch_start : batch_start + batch_size]
-            inputs = []
+            input_ids_list = []
+            attn_mask_list = []
             for v in batch_vals:
                 ex = ds[v]
                 opts = [str(ex["opa"]), str(ex["opb"]), str(ex["opc"]), str(ex["opd"])]
                 formatted = format_example(str(ex["question"]), opts) + suffix
-                inputs.append(_encode_prompt(tokenizer, formatted, max_seq_len))
-            input_ids = torch.cat(inputs, dim=0)
+                ids, mask = _encode_prompt(tokenizer, formatted, max_seq_len)
+                input_ids_list.append(ids)
+                attn_mask_list.append(mask)
+            input_ids = torch.cat(input_ids_list, dim=0)
+            attention_mask = torch.cat(attn_mask_list, dim=0)
             poisoned_preds = _predict_letter_batch(
-                model, input_ids, mcq_token_ids, device
+                model, input_ids, attention_mask, mcq_token_ids, device
             )
             for v, pred in zip(batch_vals, poisoned_preds):
                 flipped = pred != clean_argmaxes[str(v)]
