@@ -11,7 +11,13 @@ from transformers import TokenizersBackend
 
 from app.backend.bert_inference import load_bert
 from app.backend.claim_splitter import decompose_into_claims
-from app.backend.constants import HF_FALLBACK_MODEL as HF_MODEL, HF_TOKEN
+from app.backend.constants import (
+    BERT_MCQ_DETECTION,
+    HF_FALLBACK_MODEL as HF_MODEL,
+    HF_TOKEN,
+    MCQ_PROB_THRESHOLD,
+)
+from app.backend.question_classifier import detect_mcq_bert
 from app.backend.hydra_inference import generate, load_hydra, MODEL_NAME
 from app.backend.mock_metrics import (
     mock_claim_confidence,
@@ -26,9 +32,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-_models: dict[str, Any] = {}
+_models: dict[str, Any | None] = {}
 _tokenizers: dict[str, TokenizersBackend | None] = {}
 _device: str = "cuda"
+
+_important_tokens: dict[str, int] = {}
 
 
 @asynccontextmanager
@@ -44,6 +52,11 @@ async def lifespan(app: FastAPI):
             logger.warning("Hydra unavailable; requests will fall back to HF API")
     else:
         logger.info("Hydra already preloaded; skipping lifespan load")
+    if _tokenizers.get("hydra") is not None:
+        for token in ["A", "B", "C", "D"]:
+            _important_tokens[token] = _tokenizers["hydra"].encode(
+                token, add_special_tokens=False
+            )[0]
 
     if "bert" not in _models:
         _models["bert"], _tokenizers["bert"] = load_bert(device=_device)
@@ -95,18 +108,49 @@ async def analyse(request: ChatRequest, hf: bool = False):
     robustness = mock_robustness_status(messages[-1]["content"])
     logger.info("Latest user message: %s", messages[-1]["content"])
 
+    last_user_msg = next(
+        (m["content"] for m in reversed(messages) if m["role"] == "user"), ""
+    )
+
     hydra: HydraTransformer | None = _models.get("hydra")
     hydra_tokenizer: TokenizersBackend | None = _tokenizers.get("hydra")
 
+    is_mcq = None
     if hf or hydra is None or hydra_tokenizer is None:
-        raw_response = call_hf_model(messages)
         model = HF_MODEL
+        raw_response = call_hf_model(messages)
     else:
-        raw_response = generate(
-            hydra, hydra_tokenizer, messages, MAX_NEW_TOKENS, device=_device
-        )
         model = MODEL_NAME
-    logger.info("Generation complete (%d chars)", len(raw_response))
+        raw_response, mcq_prob = generate(
+            hydra,
+            hydra_tokenizer,
+            messages,
+            MAX_NEW_TOKENS,
+            device=_device,
+            important_token_ids=_important_tokens,
+        )
+        if mcq_prob is not None:
+            is_mcq = mcq_prob > MCQ_PROB_THRESHOLD
+
+    logger.info("Generation complete (%d chars): '%s'", len(raw_response), raw_response)
+
+    if not BERT_MCQ_DETECTION:
+        logger.info("Hydra MCQ classification: %s", is_mcq)
+    else:
+        bert_model = _models.get("bert")
+        bert_tokenizer = _tokenizers.get("bert")
+        if bert_model is not None and bert_tokenizer is not None:
+            is_mcq = detect_mcq_bert(
+                bert_model, bert_tokenizer, last_user_msg, device=_device
+            )
+            logger.info("BERT MCQ classification: %s", is_mcq)
+        else:
+            # BERT flag is on but it didn't load. Return None instead of
+            # the Hydra value so we don't pretend it's BERT output.
+            logger.warning(
+                "BERT_MCQ_DETECTION=True but BERT unavailable; returning is_mcq=None"
+            )
+            is_mcq = None
 
     claims_text = decompose_into_claims(raw_response)
     claims = []
@@ -132,6 +176,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
         "robustness": robustness,
         "raw_response": raw_response,
         "model": model,
+        "is_mcq": is_mcq,
     }
 
 

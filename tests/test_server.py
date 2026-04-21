@@ -12,8 +12,13 @@ def client():
     mock_model = MagicMock()
     mock_tokenizer = MagicMock()
 
-    with patch(
-        "app.backend.server.load_hydra", return_value=(mock_model, mock_tokenizer)
+    with (
+        patch(
+            "app.backend.server.load_hydra", return_value=(mock_model, mock_tokenizer)
+        ),
+        patch(
+            "app.backend.server.load_bert", return_value=(mock_model, mock_tokenizer)
+        ),
     ):
         with TestClient(app) as c:
             yield c
@@ -27,7 +32,8 @@ def test_health(client):
 
 def test_analyse_returns_expected_shape(client):
     with patch(
-        "app.backend.server.generate", return_value="Paris is the capital of France."
+        "app.backend.server.generate",
+        return_value=("Paris is the capital of France.", False),
     ):
         response = client.post(
             "/api/analyse",
@@ -53,6 +59,8 @@ def test_analyse_returns_expected_shape(client):
     assert "security" in data
     assert "robustness" in data
     assert "model" in data
+    assert "is_mcq" in data
+    assert isinstance(data["is_mcq"], bool) or data["is_mcq"] is None
 
 
 def test_analyse_passes_full_message_history(client):
@@ -61,7 +69,7 @@ def test_analyse_passes_full_message_history(client):
         {"role": "assistant", "content": "Hi there!"},
         {"role": "user", "content": "What is 2+2?"},
     ]
-    with patch("app.backend.server.generate", return_value="4.") as mock_gen:
+    with patch("app.backend.server.generate", return_value=("4.", False)) as mock_gen:
         client.post("/api/analyse", json={"messages": messages})
 
     called_messages = mock_gen.call_args[0][2]  # 3rd positional arg is messages

@@ -24,6 +24,7 @@ export interface AnalysisResponse {
   robustness: RobustnessStatus;
   raw_response: string;
   model: string;
+  is_mcq: boolean | null;
 }
 
 export interface ChatMessage {

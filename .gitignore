@@ -227,3 +227,6 @@ dist-ssr/
 
 # experiment outputs (checkpoints, logs)
 experiments/*/outputs/
+
+# Claude plugins
+superpowers/
