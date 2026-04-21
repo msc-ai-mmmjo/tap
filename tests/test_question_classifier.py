@@ -60,19 +60,24 @@ def test_bert_classifies_mcq_nonstandard_entailment_idx():
 def _make_hydra_mocks(winning: str):
     """
     winning: one of 'MCQ', 'OPEN', 'NONE'
-    Returns (model, tokenizer) mocks where the winning label token has the highest logit.
+    Returns (model, tokenizer) mocks where the winning label token has the highest logit
+    at the last sequence position. A decoy low value is set at position 0 to verify
+    the implementation reads from [-1], not [0].
     """
     token_ids = {"MCQ": 100, "OPEN": 200, "NONE": 300}
 
     tokenizer = MagicMock()
     tokenizer.apply_chat_template.return_value = "fake prompt"
     tokenizer.encode.side_effect = lambda text, **kwargs: (
-        [token_ids[text]] if text in token_ids else [1, 2, 3]
+        [token_ids[text]] if text in token_ids else [1, 2, 3, 4, 5]
     )
 
     vocab_size = 400
-    logits_tensor = torch.full((1, 1, 1, vocab_size), -10.0)
-    logits_tensor[0, 0, 0, token_ids[winning]] = 10.0
+    seq_len = 5
+    logits_tensor = torch.full((1, 1, seq_len, vocab_size), -10.0)
+    # winning token: high logit at last position, low decoy at first position
+    logits_tensor[0, 0, -1, token_ids[winning]] = 10.0
+    logits_tensor[0, 0, 0, token_ids[winning]] = -5.0  # decoy — should not be read
 
     model = MagicMock()
     model.return_value = logits_tensor

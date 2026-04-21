@@ -75,8 +75,8 @@ def classify_question_hydra(
     first_token_logits = logits[0, 0, -1, :]  # head 0, batch 0, last position
 
     candidate_token_ids = {
-        label: tokenizer.encode(label_str, add_special_tokens=False)[0]
-        for label_str, label in _HYDRA_LABELS.items()
+        qtype: tokenizer.encode(token_str, add_special_tokens=False)[0]
+        for token_str, qtype in _HYDRA_LABELS.items()
     }
     scores = {label: first_token_logits[tid].item() for label, tid in candidate_token_ids.items()}
     return max(scores, key=lambda k: scores[k])
