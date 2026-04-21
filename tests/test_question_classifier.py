@@ -7,14 +7,21 @@ from app.backend.question_classifier import classify_question_bert
 def _make_bert_mocks(entailment_idx: int, winning_label_idx: int):
     """
     winning_label_idx: 0=mcq, 1=open, 2=none
-    Returns (model, tokenizer) mocks where the winning label has the highest entailment score.
+    Returns (model, tokenizer) mocks where the winning label has the highest entailment score
+    at the specified entailment_idx column.
     """
     tokenizer = MagicMock()
     tokenizer.return_value = MagicMock()
     tokenizer.return_value.to.return_value = {"input_ids": torch.zeros(1, 10, dtype=torch.long)}
 
-    logits_list = [torch.tensor([[-1.0, 0.0, 0.5]]) for _ in range(3)]  # default: low entailment
-    logits_list[winning_label_idx] = torch.tensor([[-1.0, 0.0, 2.0]])   # winning: high entailment
+    def make_logits(is_winner):
+        base = [-1.0, 0.0, 0.5]
+        result = base[:]
+        if is_winner:
+            result[entailment_idx] = 2.0
+        return torch.tensor([result])
+
+    logits_list = [make_logits(i == winning_label_idx) for i in range(3)]
 
     call_count = [0]
     def fake_forward(**kwargs):
@@ -42,3 +49,9 @@ def test_bert_classifies_open():
 def test_bert_classifies_none():
     model, tokenizer = _make_bert_mocks(entailment_idx=2, winning_label_idx=2)
     assert classify_question_bert(model, tokenizer, "Hello there.", device="cpu") == "none"
+
+
+def test_bert_classifies_mcq_nonstandard_entailment_idx():
+    # entailment mapped to column 0; verifies the function reads label2id rather than hardcoding 2
+    model, tokenizer = _make_bert_mocks(entailment_idx=0, winning_label_idx=0)
+    assert classify_question_bert(model, tokenizer, "Which is correct? A. X B. Y", device="cpu") == "mcq"

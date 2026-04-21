@@ -2,6 +2,7 @@
 from typing import Literal
 
 import torch
+from transformers import AutoModelForSequenceClassification, PreTrainedTokenizerBase
 
 QuestionType = Literal["mcq", "open", "none"]
 
@@ -12,20 +13,25 @@ _BERT_HYPOTHESES: dict[str, str] = {
 }
 
 
-def classify_question_bert(model, tokenizer, text: str, device: str = "cuda") -> QuestionType:
+def classify_question_bert(
+    model: AutoModelForSequenceClassification,
+    tokenizer: PreTrainedTokenizerBase,
+    text: str,
+    device: str = "cuda",
+) -> QuestionType:
     entailment_idx = model.config.label2id.get("entailment", 2)
     scores: dict[str, float] = {}
 
-    for label, hypothesis in _BERT_HYPOTHESES.items():
-        inputs = tokenizer(
-            text,
-            hypothesis,
-            return_tensors="pt",
-            truncation=True,
-            max_length=512,
-        ).to(device)
-        with torch.no_grad():
+    with torch.no_grad():
+        for label, hypothesis in _BERT_HYPOTHESES.items():
+            inputs = tokenizer(
+                text,
+                hypothesis,
+                return_tensors="pt",
+                truncation=True,
+                max_length=512,
+            ).to(device)
             logits = model(**inputs).logits  # (1, num_labels)
-        scores[label] = logits[0, entailment_idx].item()
+            scores[label] = logits[0, entailment_idx].item()
 
     return max(scores, key=lambda k: scores[k])
