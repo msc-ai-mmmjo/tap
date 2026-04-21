@@ -11,7 +11,12 @@ from transformers import TokenizersBackend
 
 from app.backend.bert_inference import load_bert
 from app.backend.claim_splitter import decompose_into_claims
-from app.backend.constants import HF_TOKEN
+from app.backend.constants import HF_TOKEN, QUESTION_CLASSIFIER
+from app.backend.question_classifier import (
+    QuestionType,
+    classify_question_bert,
+    classify_question_hydra,
+)
 from app.backend.hydra_inference import generate, load_hydra, MODEL_NAME
 from app.backend.mock_metrics import (
     mock_claim_confidence,
@@ -83,11 +88,31 @@ def call_hf_model(messages: list[dict]) -> str:
     return response.choices[0].message.content or ""
 
 
+def _classify_question(text: str) -> QuestionType:
+    hydra = _models.get("hydra")
+    hydra_tok = _tokenizers.get("hydra")
+    bert = _models.get("bert")
+    bert_tok = _tokenizers.get("bert")
+
+    if QUESTION_CLASSIFIER == "hydra" and hydra is not None and hydra_tok is not None:
+        return classify_question_hydra(hydra, hydra_tok, text, device=_device)
+    if bert is not None and bert_tok is not None:
+        return classify_question_bert(bert, bert_tok, text, device=_device)
+    if hydra is not None and hydra_tok is not None:
+        return classify_question_hydra(hydra, hydra_tok, text, device=_device)
+    return "open"
+
+
 @app.post("/api/analyse")
 async def analyse(request: ChatRequest, hf: bool = False):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
     robustness = mock_robustness_status(messages[-1]["content"])
     logger.info("Latest user message: %s", messages[-1]["content"])
+
+    last_user_msg = next(
+        (m["content"] for m in reversed(messages) if m["role"] == "user"), ""
+    )
+    question_type = _classify_question(last_user_msg)
 
     hydra: HydraTransformer | None = _models.get("hydra")
     hydra_tokenizer: TokenizersBackend | None = _tokenizers.get("hydra")
@@ -126,6 +151,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
         "robustness": robustness,
         "raw_response": raw_response,
         "model": model,
+        "question_type": question_type,
     }
 
 
