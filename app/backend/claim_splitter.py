@@ -99,7 +99,7 @@ def _nltk_sentences(text: str) -> list[str]:
         if not nltk.download("punkt_tab", quiet=True):
             return [text]
         sentences = sent_tokenize(text)
-    return [s.strip() for s in sentences] or [text]
+    return [s.strip() for s in sentences if s.strip()] or [text]
 
 
 def decompose_into_claims(text: str) -> list[str]:
