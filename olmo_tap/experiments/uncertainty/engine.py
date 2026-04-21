@@ -66,7 +66,7 @@ def train(
             with torch.no_grad():
                 all_logits, hidden_state = model.residual_forward(
                     input_ids,
-                    hidden_head_idx=1,
+                    hidden_head_indices=[1],
                     head_indices=[1],  # only pass through LLM head
                     return_logits=True,
                 )

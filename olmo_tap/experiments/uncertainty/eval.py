@@ -165,7 +165,7 @@ def collect_predictions_for_shard(
 
         all_logits, hidden_state = model.residual_forward(
             input_ids,
-            hidden_head_idx=1,
+            hidden_head_indices=[1],
             head_indices=[1],
             return_logits=True,
         )

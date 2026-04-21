@@ -73,7 +73,7 @@ class PoE:
             input_ids,
             last_token_only=True,
             head_indices=llm_heads_indices,
-            hidden_head_idxs=llm_heads_indices,
+            hidden_head_indices=llm_heads_indices,
         )
 
         # ids tensor and output string list
@@ -129,6 +129,7 @@ class PoE:
 
             accepted_this_round = 0
             rejected = False
+            resampled_id = None
 
             for i in range(self.gamma):
                 v_logits = (
@@ -189,9 +190,9 @@ class PoE:
                     if is_mcq and hidden_unc_state is None:
                         # if we rejected, find best verifier head
                         # best by highest probability mass on resampled token
-                        best_v_local_idx = torch.argmax(
-                            v_logits[:, resampled_id]
-                        ).item()
+                        best_v_local_idx = int(
+                            torch.argmax(v_logits[:, resampled_id]).item()
+                        )
                         global_idx = verifier_heads_idxs[best_v_local_idx]
                         hidden_unc_state = hidden_bank[global_idx, 0, -1, :].detach()
 
@@ -250,9 +251,9 @@ class PoE:
             tokenize=True,
             add_generation_prompt=True,
             return_tensors="pt",
-        ).to("cuda")
+        )
 
-        input_ids = enc["input_ids"]
+        input_ids = enc["input_ids"].to("cuda")
         seq_len = input_ids.size(1)
 
         aligned_residual = torch.zeros(
