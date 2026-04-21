@@ -29,9 +29,7 @@ def test_health(client):
 
 def test_analyse_returns_expected_shape(client):
     with patch(
-        "app.backend.server.generate", return_value="Paris is the capital of France."
-    ), patch(
-        "app.backend.server._classify_question", return_value="open"
+        "app.backend.server.generate", return_value=("Paris is the capital of France.", False)
     ):
         response = client.post(
             "/api/analyse",
@@ -57,8 +55,8 @@ def test_analyse_returns_expected_shape(client):
     assert "security" in data
     assert "robustness" in data
     assert "model" in data
-    assert "question_type" in data
-    assert data["question_type"] in ("mcq", "open", "none")
+    assert "is_mcq" in data
+    assert isinstance(data["is_mcq"], bool) or data["is_mcq"] is None
 
 
 def test_analyse_passes_full_message_history(client):
@@ -67,9 +65,7 @@ def test_analyse_passes_full_message_history(client):
         {"role": "assistant", "content": "Hi there!"},
         {"role": "user", "content": "What is 2+2?"},
     ]
-    with patch("app.backend.server.generate", return_value="4.") as mock_gen, patch(
-        "app.backend.server._classify_question", return_value="open"
-    ):
+    with patch("app.backend.server.generate", return_value=("4.", False)) as mock_gen:
         client.post("/api/analyse", json={"messages": messages})
 
     called_messages = mock_gen.call_args[0][2]  # 3rd positional arg is messages
