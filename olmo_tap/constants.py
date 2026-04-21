@@ -24,7 +24,7 @@ PROD_WEIGHTS_DIR = Path(
 ROBUST_WEIGHTS_DIR = Path(
     os.getenv(
         "ROBUST_WEIGHTS_DIR",
-        str(Path(__file__).resolve().parent / "weights" / "robust"),
+        str(Path(__file__).resolve().parent / "weights" / "robustness"),
     )
 )
 ATTACK_BANK_DIR = Path(

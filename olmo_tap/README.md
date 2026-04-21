@@ -49,16 +49,16 @@ For experimentation, testing, etc.
     pixi install -e cuda
     ```
 
-6. Get model weights
-  
+6. Get model weights (OLMo 2 7B Instruct — our base model)
+
     ```shell
-    mkdir -p /vol/bitbucket/$USER/olmo2-1b-instruct-weights
+    mkdir -p /vol/bitbucket/$USER/olmo2-7b-instruct-weights
 
     HF_HUB_ENABLE_HF_TRANSFER=1 pixi run -e cuda python -c "
     from huggingface_hub import snapshot_download
     snapshot_download(
-        'allenai/OLMo-2-0425-1B-Instruct',
-        local_dir='/vol/bitbucket/$USER/olmo2-1b-instruct-weights',
+        'allenai/OLMo-2-1124-7B-Instruct',
+        local_dir='/vol/bitbucket/$USER/olmo2-7b-instruct-weights',
         ignore_patterns=['.gitattributes', 'README.md']
     )
     print('Done')
@@ -68,7 +68,7 @@ For experimentation, testing, etc.
 7. Update the weights path (`>>` appends to the file, `>` overwrites)
 
     ```shell
-    echo "OLMO_WEIGHTS_DIR = /vol/bitbucket/$USER/olmo2-1b-instruct-weights" >> .env
+    echo "OLMO_WEIGHTS_DIR=/vol/bitbucket/$USER/olmo2-7b-instruct-weights" >> .env
     ```
 
 8. Inspect GPU usage, and run on a free one (e.g. GPU 1)

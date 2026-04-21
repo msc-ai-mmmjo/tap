@@ -5,9 +5,9 @@ See https://www.overleaf.com/read/kpnzybhdvwnh#a3aa13 for details
 
 from datetime import datetime
 from pathlib import Path
+import random
 
 import torch
-import torch.nn.functional as F
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LRScheduler
 import wandb
@@ -15,76 +15,20 @@ import wandb
 from olmo_tap.experiments.uncertainty.data import load_shard
 from olmo_tap.experiments.utils.config import TrainingConfig, ExperimentConfig
 from olmo_tap.hydra import HydraTransformer
+from olmo_tap.experiments.uncertainty.weights_handler import FrozenHeadHandler
 
 
-def get_calibration_prob(probs: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
-    p_A = probs[:, config.A_token_id]
-    p_B = probs[:, config.B_token_id]
-    return p_A / (p_A + p_B)
-
-
-def get_answer(probs: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
-    # probs shape: (n_heads - 1, batch_size, vocab_size)
-    ans = probs[
-        :,
-        :,
-        [config.A_token_id, config.B_token_id, config.C_token_id, config.D_token_id],
-    ].argmax(dim=-1)
-    return ans
-
-
-def entropy(probs: torch.Tensor) -> torch.Tensor:
-    # probs shape: (n_heads - 1, batch_size, vocab_size)
-    entropy = -torch.sum(probs * probs.log(), dim=-1)
-    return entropy
-
-
-def entropy_weighted_mode(
-    probs: torch.Tensor, config: ExperimentConfig
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """
-    Aggregate discrete answers (A, B, C, D) from Hydra heads and weight each
-    bin with the sum of inverse entropies of voters for that class. We use
-    entropy over all logits as a measure of head certainty - if there is significant
-    probability mass on irrelevant logits, the head has failed the multiple choice
-    compression aspect of the question.
-    """
-    # probs shape: (n_heads - 1, batch_size, vocab_size)
-    inv_entr = 1 / (entropy(probs) + 1e-9)
-    answers = get_answer(probs, config.train)  # (n_heads - 1, batch_size)
-
-    one_hot_ans = F.one_hot(answers, num_classes=4).float()
-    # multiply by weights, sum over heads
-    weighted_votes = (one_hot_ans * inv_entr.unsqueeze(-1)).sum(
-        dim=0
-    )  # (batch_size, 4)
-    modal_answers = weighted_votes.argmax(dim=1)  # (batch_size,)
-
-    consensus_scores = (answers == modal_answers.unsqueeze(0)).sum(dim=0)
-
-    return modal_answers, consensus_scores
-
-
-def select_second_pass_inputs(
-    second_pass_ids: torch.Tensor,
-    modal_answers: torch.Tensor,
-    consensus_scores: torch.Tensor,
-    config: ExperimentConfig,
-) -> torch.Tensor:
-    # second_pass_ids: (batch_size, 4, n_voting_heads, seq_len)
-    batch_idx = torch.arange(second_pass_ids.size(0), device=config.device)
-    # consensus_scores are 1-based (1 to n_heads), so index is score - 1
-    consensus_idx = consensus_scores.long() - 1
-    answers_idx = modal_answers.long()
-
-    return second_pass_ids[batch_idx, answers_idx, consensus_idx, :]
+def get_calibration_prob(logits: torch.Tensor, config: TrainingConfig) -> torch.Tensor:
+    return torch.sigmoid(logits[:, config.A_token_id] - logits[:, config.B_token_id])
 
 
 def train(
     model: HydraTransformer,
+    frozen_head_handler: FrozenHeadHandler,
     exp_config: ExperimentConfig,
     optimizer: Optimizer,
     scheduler: LRScheduler,
+    swap_every_n_steps: int = 100,
 ):
     t_config = exp_config.train
     device = exp_config.device
@@ -96,6 +40,9 @@ def train(
     t_config.C_token_id = C_id
     t_config.D_token_id = D_id
 
+    # tensor for valid option IDs to compare against logits
+    target_token_ids = torch.tensor([A_id, B_id, C_id, D_id], device=device)
+
     # each run gets its own timestamped folder to avoid overwriting
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     ckpt_dir = Path(t_config.output_dir) / run_id / "checkpoints"
@@ -104,40 +51,82 @@ def train(
     global_step = 0
     for epoch in range(t_config.num_epochs):
         for batch in dataloader:
+            # NOTE: we swap the frozen head in position 1 periodically to avoid
+            # uncertainty head overfitting to any one frozen head
+            if global_step % swap_every_n_steps == 0:
+                current_expert_idx = random.randint(0, frozen_head_handler.n_frozen - 1)
+                frozen_head_handler.swap_to_expert(current_expert_idx)
+                wandb.log({"train/expert_idx": current_expert_idx}, step=global_step)
+
+            input_ids = batch["first_input_ids"].to(device)
+            attention_mask_first = batch["attention_mask_first"].to(device)
+            labels = batch["label"].to(device)
+
             # first pass: frozen head determines model's answer
             with torch.no_grad():
-                # custom method to internally calculate variance of heads' hidden states
-                all_logits, hidden_var = model.residual_forward(
-                    batch["first_input_ids"].to(device), return_logits=True
+                all_logits, hidden_state = model.residual_forward(
+                    input_ids,
+                    hidden_head_idx=1,
+                    head_indices=[1],  # only pass through LLM head
+                    return_logits=True,
                 )
-                # Exclude uncertainty head, and only take last token logits: (n_heads - 1, batch_size, vocab_size)
-                logits = all_logits[1:, :, -1, :]
-                probs = F.softmax(logits, dim=-1)
-                modal_answers, consensus_scores = entropy_weighted_mode(
-                    probs, exp_config
-                )  # shapes: (batch_size,)
 
-            # pick the pre-tokenized second-pass variant matching the model's answer and consensus
+            # indexing for first pass (LLM head at position 0 in returned tensor)
+            last_idx_first = attention_mask_first.sum(dim=-1) - 1
+            b_idx = torch.arange(input_ids.size(0), device=device)
+            first_pass_logits = all_logits[0, b_idx, last_idx_first, :]
+            pred_token_ids = first_pass_logits.argmax(dim=-1)  # (batch_size,)
+
+            # checks if argmax is in [A_id, B_id, C_id, D_id]
+            matches = pred_token_ids.unsqueeze(1) == target_token_ids.unsqueeze(0)
+            valid_mask = matches.any(dim=-1)
+
+            # selected_idx: which of the 4 pre-tokenized answers to use (0-3)
+            # if invalid, default to index 0 (will be marked wrong by is_correct anyway)
+            selected_idx = matches.long().argmax(dim=-1)
+
+            # pick the pre-tokenized second-pass variant matching the model's answer
             second_pass_ids = batch["second_pass_ids"].to(
                 device
-            )  # shape: (batch_size, 4, n_heads, seq_len)
-            second_ids = select_second_pass_inputs(
-                second_pass_ids, modal_answers, consensus_scores, exp_config
-            )  # (batch_size, seq_len)
+            )  # (batch, 4, max_seq_len)
+            second_pass_masks = batch["attention_mask_second"].to(
+                device
+            )  # (batch, 4, max_seq_len)
 
-            # is_correct: whether the model's modal answer matches the ground truth
-            is_correct = (batch["label"].to(device) == modal_answers).float()
+            chosen_ids = second_pass_ids[b_idx, selected_idx]
+            chosen_masks = second_pass_masks[b_idx, selected_idx]
 
-            # second pass: uncertainty head, loss only on A/B token logits
-            # inject heads' hidden state variance at top of trunk (base of uncertainty head)
-            logits = model(second_ids, residual=hidden_var, return_logits=True)[
-                0, :, -1, :
-            ]
-            probs = F.softmax(logits, dim=-1)
-            calib_probs = get_calibration_prob(probs, t_config)
+            # residual tensor matching trunk output shape and dtype
+            aligned_residual = torch.zeros(
+                (input_ids.size(0), chosen_ids.size(1), hidden_state.size(-1)),
+                dtype=hidden_state.dtype,
+                device=device,
+            )
+            # inject first pass's final hidden state at the end of the second pass
+            final_hidden = hidden_state[b_idx, last_idx_first, :]  # (batch, d_model)
+            last_idx_second = chosen_masks.sum(dim=-1) - 1
+            aligned_residual[b_idx, last_idx_second, :] = final_hidden
+
+            # second pass: uncertainty head at index 0
+            uncertainty_logits = model.forward(
+                chosen_ids,
+                residual=aligned_residual,
+                head_indices=[0],  # only pass through uncertainty head
+                return_logits=True,
+            )
+
+            # index second pass correctly to ignore right-padding
+            logits_second = uncertainty_logits[0, b_idx, last_idx_second, :]
+
+            # is_correct: 1 if model was valid AND matched ground truth label
+            is_correct = (valid_mask & (pred_token_ids == labels)).to(
+                logits_second.dtype
+            )
+
+            calib_probs = get_calibration_prob(logits_second, t_config)
 
             criterion = torch.nn.MSELoss(reduction="mean")  # Brier Score objective
-            loss = criterion(calib_probs, is_correct.float())
+            loss = criterion(calib_probs, is_correct)
 
             loss.backward()
             optimizer.step()
@@ -145,17 +134,21 @@ def train(
             optimizer.zero_grad()
             global_step += 1
 
-            wandb.log(
-                {
-                    "train/loss": loss.item(),
-                    "train/lr": scheduler.get_last_lr()[0],
-                },
-                step=global_step,
-            )
+            if wandb.run is not None:
+                wandb.log(
+                    {
+                        "train/loss": loss.item(),
+                        "train/lr": scheduler.get_last_lr()[0],
+                        "train/valid_answer_rate": valid_mask.float().mean().item(),
+                        "train/epoch": epoch,
+                    },
+                    step=global_step,
+                )
 
-            # periodic checkpoint: save LoRA weights only
-            # TODO: also save optimizer state for longer runs
             if global_step % t_config.checkpoint_every_n_steps == 0:
-                path = ckpt_dir / f"checkpoint_step_{global_step}.pt"
+                path = ckpt_dir / f"uncertainty_head_step_{global_step}.pt"
                 torch.save(model.heads[0].state_dict(), path)
-                print(f"saved checkpoint to {path}")
+
+    # final checkpoint
+    final_path = ckpt_dir / "checkpoint_final.pt"
+    torch.save(model.heads[0].state_dict(), final_path)
