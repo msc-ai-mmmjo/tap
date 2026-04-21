@@ -11,7 +11,12 @@ from transformers import TokenizersBackend
 
 from app.backend.bert_inference import load_bert
 from app.backend.claim_splitter import decompose_into_claims
-from app.backend.constants import HF_TOKEN, BERT_MCQ_DETECTION, MCQ_PROB_THRESHOLD
+from app.backend.constants import (
+    BERT_MCQ_DETECTION,
+    HF_FALLBACK_MODEL as HF_MODEL,
+    HF_TOKEN,
+    MCQ_PROB_THRESHOLD,
+)
 from app.backend.question_classifier import detect_mcq_bert
 from app.backend.hydra_inference import generate, load_hydra, MODEL_NAME
 from app.backend.mock_metrics import (
@@ -19,7 +24,6 @@ from app.backend.mock_metrics import (
     mock_robustness_status,
     mock_security_status,
 )
-from gradio_demo.constants import MODEL as HF_MODEL
 from olmo_tap.constants import MAX_NEW_TOKENS
 from olmo_tap.hydra import HydraTransformer
 
@@ -41,18 +45,25 @@ async def lifespan(app: FastAPI):
     _device = os.getenv("DEVICE", "cuda")
     logger.info("Starting up — device=%s", _device)
 
-    _models["hydra"], _tokenizers["hydra"] = load_hydra(device=_device)
-    if _models["hydra"] is None:
-        logger.warning("Hydra unavailable; requests will fall back to HF API")
-    if _tokenizers["hydra"] is not None:
+    # Modal's @modal.enter() may have already preloaded; skip to avoid a ~30s double-load.
+    if "hydra" not in _models:
+        _models["hydra"], _tokenizers["hydra"] = load_hydra(device=_device)
+        if _models["hydra"] is None:
+            logger.warning("Hydra unavailable; requests will fall back to HF API")
+    else:
+        logger.info("Hydra already preloaded; skipping lifespan load")
+    if _tokenizers.get("hydra") is not None:
         for token in ["A", "B", "C", "D"]:
             _important_tokens[token] = _tokenizers["hydra"].encode(
                 token, add_special_tokens=False
             )[0]
 
-    _models["bert"], _tokenizers["bert"] = load_bert(device=_device)
-    if _models["bert"] is None:
-        logger.warning("BERT unavailable; NLI-based metrics will be skipped")
+    if "bert" not in _models:
+        _models["bert"], _tokenizers["bert"] = load_bert(device=_device)
+        if _models["bert"] is None:
+            logger.warning("BERT unavailable; NLI-based metrics will be skipped")
+    else:
+        logger.info("BERT already preloaded; skipping lifespan load")
 
     yield
 

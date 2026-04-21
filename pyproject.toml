@@ -37,6 +37,14 @@ git-lfs = ">=3.7.1,<4"
 nltk = ">=3.9"
 
 # ---------------------------------------------
+# Top-level PyPI Dependencies
+# ---------------------------------------------
+# Kept at top level so the Modal CLI is available in the default env
+# (deploying doesn't require the cuda feature / GPU pip stack).
+[tool.pixi.pypi-dependencies]
+modal = ">=1.0"
+
+# ---------------------------------------------
 # CUDA Feature (for GPU users)
 # ---------------------------------------------
 [tool.pixi.feature.cuda.system-requirements]
@@ -90,6 +98,11 @@ typecheck = { cmd = "pyrefly check", default-environment = "cuda" }
 # Application
 serve = "python interface.py"
 app-api = "PYTHONPATH=. uvicorn app.backend.server:app --port 8000 --ws none"
+
+# Modal deployment
+# deploy: stable URL, persists until redeployed. serve: ephemeral dev URL with live reload, tears down on exit.
+modal-deploy = "modal deploy app/backend/modal_app.py"
+modal-serve = "modal serve app/backend/modal_app.py"
 
 # Kernel Language Entropy (CUDA only)
 kle = { cmd = "python examples/kle.py", default-environment = "cuda" }

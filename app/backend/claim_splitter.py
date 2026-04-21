@@ -15,8 +15,7 @@ import nltk
 from huggingface_hub import InferenceClient
 from nltk.tokenize import sent_tokenize
 
-from app.backend.constants import HF_TOKEN
-from gradio_demo.constants import MODEL
+from app.backend.constants import HF_FALLBACK_MODEL as MODEL, HF_TOKEN
 
 _SYSTEM_PROMPT = """\
 You decompose text responses into atomic, self-contained factual claims,
