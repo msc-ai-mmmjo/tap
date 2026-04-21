@@ -67,6 +67,12 @@ def parse_args() -> argparse.Namespace:
         default=str(ATTACK_BANK_DIR),
         help="directory containing bank.json + metadata.json",
     )
+    parser.add_argument(
+        "--dump-decisions",
+        type=str,
+        default=None,
+        help="if set, write per-pair (clean_pred, poison_pred, flipped) to this JSON path",
+    )
     return parser.parse_args()
 
 
@@ -190,6 +196,7 @@ def evaluate(model, bank: dict, val_rows: dict, tokenizer, args) -> dict:
     ]
     device = "cuda"
     per_attack: list[dict] = []
+    decisions: list[dict] = []
 
     for attack in bank["attacks"]:
         pairs = attack["pairs"]
@@ -252,6 +259,17 @@ def evaluate(model, bank: dict, val_rows: dict, tokenizer, args) -> dict:
 
         sec_flips = [p["flipped"] for p in pairs]
 
+        for j, p in enumerate(pairs):
+            decisions.append(
+                {
+                    "attack_id": attack["attack_id"],
+                    "val_idx": int(p["val_idx"]),
+                    "clean_pred": clean_preds[j],
+                    "poison_pred": poison_preds[j],
+                    "flipped": bool(clean_preds[j] != poison_preds[j]),
+                }
+            )
+
         per_attack.append(
             {
                 "attack_id": attack["attack_id"],
@@ -272,7 +290,7 @@ def evaluate(model, bank: dict, val_rows: dict, tokenizer, args) -> dict:
             f"sec_flip={per_attack[-1]['security_flip_rate']:.2f}"
         )
 
-    return {"per_attack": per_attack}
+    return {"per_attack": per_attack, "decisions": decisions}
 
 
 def _print_report(label: str, results: dict, bank: dict) -> None:
@@ -354,6 +372,24 @@ def main() -> None:
 
     results = evaluate(model, bank, val_rows, tokenizer, args)
     _print_report(label, results, bank)
+
+    if args.dump_decisions is not None:
+        out_path = Path(args.dump_decisions)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        decisions_sorted = sorted(
+            results["decisions"], key=lambda d: (d["attack_id"], d["val_idx"])
+        )
+        payload = {
+            "bench": str(args.bank_dir),
+            "model_label": label,
+            "pairs": decisions_sorted,
+        }
+        tmp_path = out_path.with_suffix(out_path.suffix + ".tmp")
+        with open(tmp_path, "w") as f:
+            json.dump(payload, f, indent=2)
+        import os
+        os.replace(tmp_path, out_path)
+        print(f"Wrote {len(decisions_sorted)} decisions -> {out_path}")
 
 
 if __name__ == "__main__":
