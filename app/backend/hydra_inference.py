@@ -48,13 +48,14 @@ def generate(
     messages: list[dict],
     is_mcq: bool,
     device: str = "cuda",
-) -> tuple[str, list[dict]]:
+) -> tuple[str, list[str], list[dict]]:
     """Generate a PoE response.
 
-    :returns: ``(raw_response, flagged_tokens)``. For MCQ, ``raw_response`` is a
-        single letter and ``flagged_tokens`` is empty. For NLP, ``raw_response``
-        is the PoE output and ``flagged_tokens`` is a list of
-        ``{start, end, original, replacement}`` dicts.
+    :returns: ``(raw_response, tokens, resampled)``. For MCQ, ``raw_response`` is
+        a single letter, ``tokens`` is a one-element list containing the letter,
+        and ``resampled`` is empty (no speculative verification on a single
+        prefill). For NLP, ``tokens`` is the full stripped token stream and
+        ``resampled`` lists PoE rejections with token-level indices.
     """
     chat_prompt = tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
@@ -74,41 +75,44 @@ def generate(
         logger.info(
             "MCQ PoE prediction: %s (%.2fs)", letter, time.perf_counter() - t0
         )
-        return letter, []
+        return letter, [letter], []
 
     output_parts, original_tokens, resampled_idxs = poe_generate_with_cache(
         model,
         tokenizer,
-        prompt_text="",  # ignored when messages is provided
+        prompt_text="",
         n_heads=n_heads,
         max_new_tokens=NLP_MAX_NEW_TOKENS,
         messages=messages,
     )
-    raw_response, flagged_tokens = _spans_from_poe_output(
+    raw_response, tokens, resampled = _tokens_and_resamples_from_poe_output(
         tokenizer, output_parts, original_tokens, resampled_idxs
     )
     logger.info(
-        "NLP PoE generation: %d chars, %d resamples (%.2fs)",
+        "NLP PoE generation: %d chars, %d/%d tokens resampled (%.2fs)",
         len(raw_response),
-        len(flagged_tokens),
+        len(resampled),
+        len(tokens),
         time.perf_counter() - t0,
     )
-    return raw_response, flagged_tokens
+    return raw_response, tokens, resampled
 
 
-def _spans_from_poe_output(
+def _tokens_and_resamples_from_poe_output(
     tokenizer: PreTrainedTokenizerBase,
     output_parts: list[str],
     original_tokens: list[str],
     resampled_idxs: list[int],
-) -> tuple[str, list[dict]]:
-    """Convert poe.py's token-indexed output into char-offset spans.
+) -> tuple[str, list[str], list[dict]]:
+    """Convert poe.py's token-indexed output into (raw_response, tokens, resampled).
 
-    ``output_parts[0]`` is the chat-templated input (stripped). Subsequent
-    entries are decoded single tokens from the generation. ``resampled_idxs``
-    indexes into ``output_parts``; ``original_tokens[j]`` is the rejected draft
-    token at ``resampled_idxs[j]``. Any trailing EOS is stripped from both
-    ``raw_response`` and any spans that would land on it.
+    ``output_parts[0]`` is the chat-templated input; subsequent entries are
+    decoded single tokens from the generation. ``resampled_idxs`` indexes into
+    ``output_parts``; ``original_tokens[j]`` is the rejected draft token at
+    ``resampled_idxs[j]``. Trailing EOS entries are trimmed from both the
+    emitted token stream and any resample records that would land on them.
+    Each token's outer whitespace is stripped so the frontend can join tokens
+    with a single space for display without double-spacing BPE continuations.
     """
     eos_id = tokenizer.eos_token_id
     eos_str = cast(str, tokenizer.decode([eos_id])) if eos_id is not None else ""
@@ -117,21 +121,21 @@ def _spans_from_poe_output(
     while parts and eos_str and parts[-1] == eos_str:
         parts.pop()
 
-    spans: list[dict] = []
-    offset = 0
-    for i, part in enumerate(parts):
-        orig_idx = i + 1  # index in the original output_parts
-        if orig_idx in resampled_idxs:
-            j = resampled_idxs.index(orig_idx)
-            spans.append(
-                {
-                    "start": offset,
-                    "end": offset + len(part),
-                    "original": original_tokens[j],
-                    "replacement": part,
-                }
-            )
-        offset += len(part)
-
     raw_response = "".join(parts)
-    return raw_response, spans
+    tokens = [p.strip() for p in parts]
+
+    resampled: list[dict] = []
+    for j, orig_idx in enumerate(resampled_idxs):
+        token_idx = orig_idx - 1
+        if token_idx >= len(parts):
+            continue
+        resampled.append(
+            {
+                "index": token_idx,
+                "old_token": original_tokens[j].strip(),
+                "new_token": parts[token_idx].strip(),
+                "severity": 1.0,
+            }
+        )
+
+    return raw_response, tokens, resampled

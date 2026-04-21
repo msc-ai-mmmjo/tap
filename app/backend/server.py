@@ -93,26 +93,11 @@ def _classify_mcq(last_user_msg: str) -> bool | None:
 
 
 def _fallback_security() -> dict:
-    return {
-        "certified": None,
-        "flagged_tokens": [],
-        "detail": "Fallback: served by HF Llama, no PoE guarantee",
-    }
+    return {"certified": None, "tokens": [], "resampled": []}
 
 
-def _poe_security(flagged_tokens: list[dict]) -> dict:
-    n = len(flagged_tokens)
-    if n == 0:
-        detail = "No tokens resampled by PoE verification"
-    elif n == 1:
-        detail = "1 token resampled by PoE verification"
-    else:
-        detail = f"{n} tokens resampled by PoE verification"
-    return {
-        "certified": True,
-        "flagged_tokens": flagged_tokens,
-        "detail": detail,
-    }
+def _poe_security(tokens: list[str], resampled: list[dict]) -> dict:
+    return {"certified": True, "tokens": tokens, "resampled": resampled}
 
 
 @app.post("/api/analyse")
@@ -135,14 +120,14 @@ async def analyse(request: ChatRequest, hf: bool = False):
         security = _fallback_security()
     else:
         model_name = MODEL_NAME
-        raw_response, flagged_tokens = generate(
+        raw_response, tokens, resampled = generate(
             hydra,
             hydra_tokenizer,
             messages,
             is_mcq=bool(is_mcq),
             device=_device,
         )
-        security = _poe_security(flagged_tokens)
+        security = _poe_security(tokens, resampled)
 
     logger.info("Generation complete (%d chars)", len(raw_response))
 
