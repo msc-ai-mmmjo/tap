@@ -195,18 +195,21 @@ def _build_target_model(shard_id: int) -> tuple[object, dict]:
     return model, info
 
 
-def _encode_prompt(
-    tokenizer, formatted: str, max_seq_len: int
+def _encode_batch(
+    tokenizer, formatted_list: list[str], max_seq_len: int
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Chat-template tokenise, pad to max_seq_len. Returns (input_ids, attention_mask)."""
-    chat = tokenizer.apply_chat_template(
-        [{"role": "user", "content": formatted}],
-        tokenize=False,
-        add_generation_prompt=True,
-    )
+    """Chat-template + tokenise a batch, pad only to longest-in-batch."""
+    chats = [
+        tokenizer.apply_chat_template(
+            [{"role": "user", "content": f}],
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+        for f in formatted_list
+    ]
     enc = tokenizer(
-        chat,
-        padding="max_length",
+        chats,
+        padding=True,
         truncation=True,
         max_length=max_seq_len,
         return_tensors="pt",
@@ -297,17 +300,14 @@ def phase_3_score_transfer(
         print(f"Phase 3: computing {len(missing)} clean argmaxes")
         for start in range(0, len(missing), batch_size):
             batch_vals = missing[start : start + batch_size]
-            input_ids_list = []
-            attn_mask_list = []
+            formatted_list = []
             for v in batch_vals:
                 ex = ds[v]
                 opts = [str(ex["opa"]), str(ex["opb"]), str(ex["opc"]), str(ex["opd"])]
-                formatted = format_example(str(ex["question"]), opts)
-                ids, mask = _encode_prompt(tokenizer, formatted, max_seq_len)
-                input_ids_list.append(ids)
-                attn_mask_list.append(mask)
-            input_ids = torch.cat(input_ids_list, dim=0)
-            attention_mask = torch.cat(attn_mask_list, dim=0)
+                formatted_list.append(format_example(str(ex["question"]), opts))
+            input_ids, attention_mask = _encode_batch(
+                tokenizer, formatted_list, max_seq_len
+            )
             preds = _predict_letter_batch(
                 model, input_ids, attention_mask, mcq_token_ids, device
             )
@@ -325,17 +325,14 @@ def phase_3_score_transfer(
         flips: list[dict] = []
         for batch_start in range(0, len(val_indices), batch_size):
             batch_vals = val_indices[batch_start : batch_start + batch_size]
-            input_ids_list = []
-            attn_mask_list = []
+            formatted_list = []
             for v in batch_vals:
                 ex = ds[v]
                 opts = [str(ex["opa"]), str(ex["opb"]), str(ex["opc"]), str(ex["opd"])]
-                formatted = format_example(str(ex["question"]), opts) + suffix
-                ids, mask = _encode_prompt(tokenizer, formatted, max_seq_len)
-                input_ids_list.append(ids)
-                attn_mask_list.append(mask)
-            input_ids = torch.cat(input_ids_list, dim=0)
-            attention_mask = torch.cat(attn_mask_list, dim=0)
+                formatted_list.append(format_example(str(ex["question"]), opts) + suffix)
+            input_ids, attention_mask = _encode_batch(
+                tokenizer, formatted_list, max_seq_len
+            )
             poisoned_preds = _predict_letter_batch(
                 model, input_ids, attention_mask, mcq_token_ids, device
             )

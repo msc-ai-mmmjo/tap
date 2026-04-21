@@ -149,18 +149,21 @@ def _load_checkpoint_model(checkpoint_path: str, shard_id: int, lora_r: int):
     return model
 
 
-def _encode_prompt(
-    tokenizer, formatted: str, max_seq_len: int
+def _encode_batch(
+    tokenizer, formatted_list: list[str], max_seq_len: int
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Chat-template tokenise, pad to max_seq_len. Returns (input_ids, attention_mask)."""
-    chat = tokenizer.apply_chat_template(
-        [{"role": "user", "content": formatted}],
-        tokenize=False,
-        add_generation_prompt=True,
-    )
+    """Chat-template + tokenise a batch, pad only to longest-in-batch."""
+    chats = [
+        tokenizer.apply_chat_template(
+            [{"role": "user", "content": f}],
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+        for f in formatted_list
+    ]
     enc = tokenizer(
-        chat,
-        padding="max_length",
+        chats,
+        padding=True,
         truncation=True,
         max_length=max_seq_len,
         return_tensors="pt",
@@ -206,10 +209,8 @@ def evaluate(model, bank: dict, val_rows: dict, tokenizer, args) -> dict:
 
         for batch_start in range(0, len(pairs), args.batch_size):
             batch_pairs = pairs[batch_start : batch_start + args.batch_size]
-            clean_ids_list: list[torch.Tensor] = []
-            clean_mask_list: list[torch.Tensor] = []
-            poison_ids_list: list[torch.Tensor] = []
-            poison_mask_list: list[torch.Tensor] = []
+            clean_formatted: list[str] = []
+            poison_formatted: list[str] = []
             for p in batch_pairs:
                 row = val_rows[p["val_idx"]]
                 opts = [
@@ -219,22 +220,16 @@ def evaluate(model, bank: dict, val_rows: dict, tokenizer, args) -> dict:
                     str(row["opd"]),
                 ]
                 formatted = format_example(str(row["question"]), opts)
-                c_ids, c_mask = _encode_prompt(
-                    tokenizer, formatted, args.max_seq_len
-                )
-                p_ids, p_mask = _encode_prompt(
-                    tokenizer, formatted + attack["suffix"], args.max_seq_len
-                )
-                clean_ids_list.append(c_ids)
-                clean_mask_list.append(c_mask)
-                poison_ids_list.append(p_ids)
-                poison_mask_list.append(p_mask)
+                clean_formatted.append(formatted)
+                poison_formatted.append(formatted + attack["suffix"])
                 labels.append(int(row["cop"]))
 
-            clean_ids = torch.cat(clean_ids_list, dim=0)
-            clean_mask = torch.cat(clean_mask_list, dim=0)
-            poison_ids = torch.cat(poison_ids_list, dim=0)
-            poison_mask = torch.cat(poison_mask_list, dim=0)
+            clean_ids, clean_mask = _encode_batch(
+                tokenizer, clean_formatted, args.max_seq_len
+            )
+            poison_ids, poison_mask = _encode_batch(
+                tokenizer, poison_formatted, args.max_seq_len
+            )
             clean_preds.extend(
                 _predict_letter_batch(
                     model, clean_ids, clean_mask, mcq_token_ids, device
