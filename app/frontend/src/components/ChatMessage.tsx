@@ -68,29 +68,32 @@ export function ChatMessage({ message }: Props) {
         <Markdown>{message.content}</Markdown>
       </div>
 
-      {analysis && (
-        <div className="mt-6">
-          <button
-            onClick={() => setExpanded(!expanded)}
-            aria-expanded={expanded}
-            className="font-mono text-[10.5px] uppercase tracking-[0.16em] inline-flex items-center gap-2 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
-            style={{ color: 'var(--color-ink-muted)' }}
-          >
-            <span
-              aria-hidden
-              className="inline-block w-3"
-              style={{ borderTop: '1px solid var(--color-ink-muted)' }}
-            />
-            {expanded ? 'Hide' : 'Inspect'} {analysis.claims.length} claims
-            <span
-              aria-hidden
-              className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
+      {analysis &&
+        (analysis.claims.length > 0 ||
+          analysis.security.resampled.length > 0 ||
+          analysis.robustness.attacked_response.length > 0) && (
+          <div className="mt-6">
+            <button
+              onClick={() => setExpanded(!expanded)}
+              aria-expanded={expanded}
+              className="font-mono text-[10.5px] uppercase tracking-[0.16em] inline-flex items-center gap-2 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]"
+              style={{ color: 'var(--color-ink-muted)' }}
             >
-              ›
-            </span>
-          </button>
-        </div>
-      )}
+              <span
+                aria-hidden
+                className="inline-block w-3"
+                style={{ borderTop: '1px solid var(--color-ink-muted)' }}
+              />
+              {expanded ? 'Hide' : 'Inspect'} details
+              <span
+                aria-hidden
+                className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
+              >
+                ›
+              </span>
+            </button>
+          </div>
+        )}
 
       {analysis && expanded && <TrustAnalysis data={analysis} />}
     </div>
