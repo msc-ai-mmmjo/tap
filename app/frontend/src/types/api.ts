@@ -5,26 +5,45 @@ export interface Claim {
   guidance: string;
 }
 
-export interface SecurityStatus {
-  certified: boolean;
-  tpa_budget: number | null;
-  detail: string;
+export interface Uncertainty {
+  overall: number;
 }
 
-export interface RobustnessStatus {
-  passed: boolean;
-  detail: string;
-  flagged_tokens: string[];
+export interface SecurityResample {
+  index: number;
+  old_token: string;
+  new_token: string;
+  severity: number;
 }
+
+export interface Security {
+  tokens: string[];
+  resampled: SecurityResample[];
+}
+
+export type RobustnessStatus =
+  | {
+      type: 'nlp';
+      bidirectional_score: 0 | 0.5 | 1 | 1.5 | 2;
+      attacked_response: string;
+    }
+  | {
+      type: 'mcq';
+      flipped: boolean;
+      original_choice: string;
+      attacked_choice: string;
+      attacked_response: string;
+    };
 
 export interface AnalysisResponse {
-  claims: Claim[];
-  overall_confidence: number;
-  security: SecurityStatus;
-  robustness: RobustnessStatus;
   raw_response: string;
   model: string;
   is_mcq: boolean | null;
+  uncertainty: Uncertainty;
+  security: Security;
+  robustness: RobustnessStatus;
+  claims: Claim[];
+  overall_confidence: number;
 }
 
 export interface ChatMessage {

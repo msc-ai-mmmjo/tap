@@ -1,6 +1,12 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { AnalysisResponse } from '../types/api';
+import type { AnalysisResponse, RobustnessStatus } from '../types/api';
+import { getConfidenceStyle } from '../lib/confidence';
+import {
+  ROBUSTNESS_NLP_LABELS,
+  getRobustnessNlpStyle,
+  type NlpRobustnessScore,
+} from '../lib/constants';
 
 interface Props {
   data: AnalysisResponse;
@@ -14,21 +20,21 @@ interface MetricInfo {
 const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> = {
   certainty: {
     definition:
-      "How likely each claim in the answer is to be factually correct. Scores near 100% mean high confidence; low scores flag claims worth double-checking before acting on them.",
+      "How likely the response is to be correct overall. For multiple-choice queries this comes from a calibrated uncertainty head; for open-ended queries it comes from Kernel Language Entropy over resampled responses.",
     paper:
-      'Method: Kapoor et al., "Large Language Models Must Be Taught to Know What They Don\'t Know" (NeurIPS 2024).',
+      'Methods: Kapoor et al., "Large Language Models Must Be Taught to Know What They Don\'t Know" (NeurIPS 2024); Nikitin et al., "Kernel Language Entropy" (2024).',
   },
   security: {
     definition:
-      "How many tampered training examples an attacker would need to plant to change this answer to a harmful one. Higher means the answer is provably harder to manipulate.",
+      "During PoE speculative verification, tokens where the draft head disagrees with the rest are resampled from the product-of-experts distribution. Resampled tokens are highlighted; a higher swap count suggests the draft head had weaker consensus with its peers.",
     paper:
-      'Method: Ghitu & Wicker, "Towards Poisoning Robustness Certification for Natural Language Generation".',
+      'Method: Product-of-Experts speculative verification; softer variant of Wicker et al. stability radius.',
   },
   robustness: {
     definition:
-      "Whether the answer holds up against jailbreak attempts — short gibberish strings appended to the prompt that try to flip the response. 'Passed' means no attempt succeeded.",
+      "Compares the response to the same prompt extended with an AmpleGCG adversarial suffix. MCQ: binary flip of the chosen letter. NLP: bidirectional NLI agreement between clean and attacked responses, bucketed into five levels.",
     paper:
-      'Method: Kumar et al., "AmpleGCG-Plus: A Strong Generative Model of Adversarial Suffixes to Jailbreak LLMs with Higher Success Rates in Fewer Attempts".',
+      'Methods: Kumar et al., "AmpleGCG-Plus" (2024); bidirectional NLI scoring.',
   },
 };
 
@@ -183,9 +189,35 @@ function MetricCell({ index, label, info, value, valueColour, caption, isFirst }
   );
 }
 
+function robustnessCellProps(robustness: RobustnessStatus): {
+  value: string;
+  valueColour: string;
+  caption: string;
+} {
+  if (robustness.type === 'mcq') {
+    return {
+      value: robustness.flipped ? 'Flipped' : 'Stable',
+      valueColour: robustness.flipped ? 'var(--color-bad)' : 'var(--color-ok)',
+      caption: `${robustness.original_choice} → ${robustness.attacked_choice}`,
+    };
+  }
+  const score = robustness.bidirectional_score as NlpRobustnessScore;
+  const style = getRobustnessNlpStyle(score);
+  return {
+    value: ROBUSTNESS_NLP_LABELS[score],
+    valueColour: style.pillText,
+    caption: 'Bidirectional NLI agreement vs adversarial suffix',
+  };
+}
+
 export function MetricCards({ data }: Props) {
-  const securityValue = data.security.certified ? 'Certified' : 'Caution';
-  const robustnessValue = data.robustness.passed ? 'Passed' : 'Failed';
+  const certaintyPct = Math.round(data.uncertainty.overall * 100);
+  const certaintyStyle = getConfidenceStyle(data.uncertainty.overall);
+
+  const securityCount = data.security.resampled.length;
+  const securityColour = securityCount === 0 ? 'var(--color-ok)' : 'var(--color-warn)';
+
+  const rob = robustnessCellProps(data.robustness);
 
   return (
     <div
@@ -200,24 +232,25 @@ export function MetricCards({ data }: Props) {
         index="01"
         label="Certainty"
         info={METRIC_INFO.certainty}
-        value={`${Math.round(data.overall_confidence * 100)}%`}
-        caption="Average likelihood each claim is correct"
+        value={`${certaintyPct}%`}
+        valueColour={certaintyStyle.pillText}
+        caption="Likelihood response is correct"
       />
       <MetricCell
         index="02"
         label="Security"
         info={METRIC_INFO.security}
-        value={securityValue}
-        valueColour={data.security.certified ? 'var(--color-ok)' : 'var(--color-warn)'}
-        caption={`Withstands up to ${data.security.tpa_budget ?? '—'} tampered training examples`}
+        value={`${securityCount} swap${securityCount === 1 ? '' : 's'}`}
+        valueColour={securityColour}
+        caption={`Out of ${data.security.tokens.length} tokens generated`}
       />
       <MetricCell
         index="03"
         label="Robustness"
         info={METRIC_INFO.robustness}
-        value={robustnessValue}
-        valueColour={data.robustness.passed ? 'var(--color-ok)' : 'var(--color-bad)'}
-        caption={data.robustness.detail}
+        value={rob.value}
+        valueColour={rob.valueColour}
+        caption={rob.caption}
       />
     </div>
   );
