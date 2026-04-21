@@ -14,6 +14,8 @@ def client():
 
     with patch(
         "app.backend.server.load_hydra", return_value=(mock_model, mock_tokenizer)
+    ), patch(
+        "app.backend.server.load_bert", return_value=(mock_model, mock_tokenizer)
     ):
         with TestClient(app) as c:
             yield c

@@ -32,7 +32,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-_models: dict[str, Any] = {}
+_models: dict[str, Any | None] = {}
 _tokenizers: dict[str, TokenizersBackend | None] = {}
 _device: str = "cuda"
 
@@ -96,10 +96,14 @@ def _classify_question(text: str) -> QuestionType:
 
     if QUESTION_CLASSIFIER == "hydra" and hydra is not None and hydra_tok is not None:
         return classify_question_hydra(hydra, hydra_tok, text, device=_device)
+    if QUESTION_CLASSIFIER == "hydra":
+        logger.warning("QUESTION_CLASSIFIER=hydra but Hydra unavailable; trying BERT")
     if bert is not None and bert_tok is not None:
         return classify_question_bert(bert, bert_tok, text, device=_device)
     if hydra is not None and hydra_tok is not None:
+        logger.warning("BERT unavailable; falling back to Hydra for classification")
         return classify_question_hydra(hydra, hydra_tok, text, device=_device)
+    logger.warning("No classifier available; defaulting question_type to 'open'")
     return "open"
 
 
