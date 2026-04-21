@@ -39,7 +39,7 @@ ROBUST_WEIGHTS_DIR = Path(
 )
 UNCERTAINTY_WEIGHTS_DIR = Path(
     os.getenv(
-        "ROBUST_WEIGHTS_DIR",
+        "UNCERTAINTY_WEIGHTS_DIR",
         str(Path(__file__).resolve().parent / "weights" / "uncertainty"),
     )
 )
