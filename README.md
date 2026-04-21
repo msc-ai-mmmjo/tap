@@ -170,3 +170,20 @@ Before pushing, run everything to avoid CI failures:
 ```bash
 pixi run check  # Runs lint, format-check, typecheck, test
 ```
+
+## Modal deployment
+
+The backend runs on Modal as a hosted FastAPI app on managed GPUs (A100-40GB / L40S fallback). Cloudflare Pages hosts the frontend and points at it via `VITE_API_BASE`. The image definition lives in `app/backend/modal_app.py` and installs the exact same `pixi install --environment cuda --locked` that runs locally, so there's one source of truth for deps.
+
+Deployment currently lives in the `m-crabb` personal Modal workspace (secrets and the weights Volume are scoped there), so redeploys go through him for now. Commands:
+
+```bash
+pixi run modal-serve     # Ephemeral dev URL with live logs, tears down on exit
+pixi run modal-deploy    # Update the stable prod URL (~20-30s with layer cache)
+```
+
+The weights Volume (`tap-olmo-weights`) holds the OLMo-2-7B-Instruct snapshot and the BERT HF cache. Re-populate only when the underlying weights or tokenizer files change:
+
+```bash
+pixi run modal run app/backend/modal_app.py::download_weights
+```
