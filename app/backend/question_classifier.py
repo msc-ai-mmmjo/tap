@@ -24,7 +24,8 @@ def detect_mcq_bert(
     text: str,
     device: str = "cuda",
 ) -> bool:
-    entailment_idx = model.config.label2id.get("entailment", 2)
+    # should be {'contradiction': 2, 'entailment': 0, 'neutral': 1}
+    entailment_idx = model.config.label2id.get("entailment", 0)
     scores: dict[QuestionType, float] = {}
 
     with torch.no_grad():
