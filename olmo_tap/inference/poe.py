@@ -246,7 +246,7 @@ class PoE:
         """
         second_pass_prompt = f"{prompt_text}Answer: {full_answer_text}\nTask: Reply A (correct) or B (wrong): "
 
-        enc = self.tokenizer.apply_chat_template(
+        enc: dict[str, torch.Tensor] = self.tokenizer.apply_chat_template(
             [{"role": "user", "content": second_pass_prompt}],
             tokenize=True,
             add_generation_prompt=True,
