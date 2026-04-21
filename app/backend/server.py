@@ -47,7 +47,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Trustworthy Answer Protocol — API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "https://tap-al9.pages.dev"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
