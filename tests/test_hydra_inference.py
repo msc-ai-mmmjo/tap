@@ -27,7 +27,8 @@ def test_generate_returns_decoded_tokens():
         device="cpu",
     )
 
-    assert result == "hello world"
+    text, is_mcq = result
+    assert text == "hello world"
     mock_tokenizer.decode.assert_called_once_with([7, 7, 7], skip_special_tokens=True)
 
 
