@@ -170,7 +170,8 @@ def _mock_robustness(response_text: str, is_mcq: bool | None) -> dict:
     }
 
 
-def build_analysis(response_text: str, is_mcq: bool | None) -> dict:
+def build_analysis(prompt: str, response_text: str, is_mcq: bool | None) -> dict:
+    del prompt
     return {
         "uncertainty": _mock_uncertainty(response_text, is_mcq),
         "security": _mock_security(response_text),

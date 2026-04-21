@@ -167,7 +167,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
 
     overall = round(sum(scores) / len(scores), 2) if scores else 0.0
 
-    analysis = build_analysis(raw_response, is_mcq)
+    analysis = build_analysis(last_user_msg, raw_response, is_mcq)
 
     return {
         "claims": claims,
