@@ -11,12 +11,8 @@ from transformers import TokenizersBackend
 
 from app.backend.bert_inference import load_bert
 from app.backend.claim_splitter import decompose_into_claims
-from app.backend.constants import HF_TOKEN, QUESTION_CLASSIFIER
-from app.backend.question_classifier import (
-    QuestionType,
-    classify_question_bert,
-    classify_question_hydra,
-)
+from app.backend.constants import HF_TOKEN, BERT_Q_CLASSIFIER
+from app.backend.question_classifier import detect_mcq_bert
 from app.backend.hydra_inference import generate, load_hydra, MODEL_NAME
 from app.backend.mock_metrics import (
     mock_claim_confidence,
@@ -36,6 +32,8 @@ _models: dict[str, Any | None] = {}
 _tokenizers: dict[str, TokenizersBackend | None] = {}
 _device: str = "cuda"
 
+_important_tokens: dict[str, int] = {}
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -46,6 +44,11 @@ async def lifespan(app: FastAPI):
     _models["hydra"], _tokenizers["hydra"] = load_hydra(device=_device)
     if _models["hydra"] is None:
         logger.warning("Hydra unavailable; requests will fall back to HF API")
+    if _tokenizers["hydra"] is not None:
+        for token in ["A", "B", "C", "D"]:
+            _important_tokens[token] = _tokenizers["hydra"].encode(
+                token, add_special_tokens=False
+            )[0]
 
     _models["bert"], _tokenizers["bert"] = load_bert(device=_device)
     if _models["bert"] is None:
@@ -88,25 +91,6 @@ def call_hf_model(messages: list[dict]) -> str:
     return response.choices[0].message.content or ""
 
 
-def _classify_question(text: str) -> QuestionType:
-    hydra = _models.get("hydra")
-    hydra_tok = _tokenizers.get("hydra")
-    bert = _models.get("bert")
-    bert_tok = _tokenizers.get("bert")
-
-    if QUESTION_CLASSIFIER == "hydra" and hydra is not None and hydra_tok is not None:
-        return classify_question_hydra(hydra, hydra_tok, text, device=_device)
-    if QUESTION_CLASSIFIER == "hydra":
-        logger.warning("QUESTION_CLASSIFIER=hydra but Hydra unavailable; trying BERT")
-    if bert is not None and bert_tok is not None:
-        return classify_question_bert(bert, bert_tok, text, device=_device)
-    if hydra is not None and hydra_tok is not None:
-        logger.warning("BERT unavailable; falling back to Hydra for classification")
-        return classify_question_hydra(hydra, hydra_tok, text, device=_device)
-    logger.warning("No classifier available; defaulting question_type to 'open'")
-    return "open"
-
-
 @app.post("/api/analyse")
 async def analyse(request: ChatRequest, hf: bool = False):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
@@ -116,20 +100,36 @@ async def analyse(request: ChatRequest, hf: bool = False):
     last_user_msg = next(
         (m["content"] for m in reversed(messages) if m["role"] == "user"), ""
     )
-    question_type = _classify_question(last_user_msg)
 
     hydra: HydraTransformer | None = _models.get("hydra")
     hydra_tokenizer: TokenizersBackend | None = _tokenizers.get("hydra")
 
+    is_mcq = None
     if hf or hydra is None or hydra_tokenizer is None:
         raw_response = call_hf_model(messages)
         model = HF_MODEL
     else:
-        raw_response = generate(
-            hydra, hydra_tokenizer, messages, MAX_NEW_TOKENS, device=_device
+        raw_response, is_mcq = generate(
+            hydra,
+            hydra_tokenizer,
+            messages,
+            MAX_NEW_TOKENS,
+            device=_device,
+            important_token_ids=_important_tokens,
         )
         model = MODEL_NAME
     logger.info("Generation complete (%d chars)", len(raw_response))
+
+    if not BERT_Q_CLASSIFIER:
+        logger.info("Hydra MCQ classification: %s", is_mcq)
+    else:
+        bert_model = _models.get("bert")
+        bert_tokenizer = _tokenizers.get("bert")
+        if bert_model is not None and bert_tokenizer is not None:
+            is_mcq = detect_mcq_bert(
+                bert_model, bert_tokenizer, last_user_msg, device=_device
+            )
+            logger.info("BERT MCQ classification: %s", is_mcq)
 
     claims_text = decompose_into_claims(raw_response)
     claims = []
@@ -155,7 +155,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
         "robustness": robustness,
         "raw_response": raw_response,
         "model": model,
-        "question_type": question_type,
+        "is_mcq": is_mcq,
     }
 
 
