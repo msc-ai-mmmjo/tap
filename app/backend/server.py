@@ -24,7 +24,7 @@ from app.backend.mock_metrics import (
     mock_robustness_status,
     mock_security_status,
 )
-from olmo_tap.constants import MAX_NEW_TOKENS
+from olmo_tap.constants import MAX_NEW_TOKENS, MCQ_LETTERS
 from olmo_tap.hydra import HydraTransformer
 
 logging.basicConfig(
@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("Hydra already preloaded; skipping lifespan load")
     if _tokenizers.get("hydra") is not None:
-        for token in ["A", "B", "C", "D"]:
+        for token in MCQ_LETTERS:
             _important_tokens[token] = _tokenizers["hydra"].encode(
                 token, add_special_tokens=False
             )[0]

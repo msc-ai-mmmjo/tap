@@ -16,9 +16,6 @@ from olmo_tap.constants import WEIGHTS_DIR
 from olmo_tap.hydra import HydraTransformer
 from olmo_tap.inference.loading_weights import load_ensemble
 
-LORA_TARGETS = ["w1", "w2", "w3"]
-LORA_ALPHA_RATIO = 2
-
 
 @torch.no_grad()
 def poe_generate_visual_diff(

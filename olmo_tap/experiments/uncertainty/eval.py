@@ -25,7 +25,13 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
-from olmo_tap.constants import PROD_WEIGHTS_DIR, ROBUST_WEIGHTS_DIR, WEIGHTS_DIR
+from olmo_tap.constants import (
+    LORA_ALPHA_RATIO,
+    MCQ_LETTERS,
+    PROD_WEIGHTS_DIR,
+    ROBUST_WEIGHTS_DIR,
+    WEIGHTS_DIR,
+)
 from olmo_tap.experiments.uncertainty.data import preprocess_example
 from olmo_tap.experiments.uncertainty.engine import get_calibration_prob
 from olmo_tap.experiments.uncertainty.weights_handler import FrozenHeadHandler
@@ -37,7 +43,6 @@ from olmo_tap.experiments.utils.config import (
 from olmo_tap.experiments.utils.model_builder import build_base_model, inject_lora
 from olmo_tap.hydra import HydraTransformer
 
-LORA_ALPHA_RATIO = 2
 N_SHARDS = 9
 SHARD_CHOICES = [str(i) for i in range(N_SHARDS)] + ["all"]
 LFS_POINTER_MARKER = b"version https://git-lfs"
@@ -93,7 +98,7 @@ def check_shard_weights() -> None:
 
 def get_letter_token_ids(tokenizer) -> list[int]:
     token_ids = []
-    for letter in ["A", "B", "C", "D"]:
+    for letter in MCQ_LETTERS:
         enc = tokenizer.encode(letter, add_special_tokens=False)
         assert len(enc) == 1, (
             f"Tokenizer encodes '{letter}' to {len(enc)} tokens ({enc}); "

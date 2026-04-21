@@ -19,7 +19,12 @@ import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 import wandb
 
-from olmo_tap.constants import GCG_CACHE_DIR, PROD_WEIGHTS_DIR
+from olmo_tap.constants import (
+    GCG_CACHE_DIR,
+    LORA_ALPHA_RATIO,
+    LORA_TARGETS,
+    PROD_WEIGHTS_DIR,
+)
 from olmo_tap.experiments.robustness.engine import train
 from olmo_tap.experiments.utils.config import (
     ExperimentConfig,
@@ -32,11 +37,6 @@ from olmo_tap.experiments.utils.model_builder import (
     load_and_merge_lora_weights,
 )
 from olmo_tap.experiments.utils.random_seed import set_seed
-
-LORA_TARGETS = ["w1", "w2", "w3"]
-# LoRA scaling factor = alpha / r; convention across this repo is alpha = 2 * r
-# Source: Owain told me so
-LORA_ALPHA_RATIO = 2
 
 
 def parse_args() -> argparse.Namespace:

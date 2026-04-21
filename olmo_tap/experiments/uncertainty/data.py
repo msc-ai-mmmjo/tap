@@ -4,6 +4,7 @@ from datasets.arrow_dataset import Dataset
 from transformers import AutoTokenizer, SentencePieceBackend, TokenizersBackend
 import torch
 
+from olmo_tap.constants import MCQ_LETTERS
 from olmo_tap.experiments.utils.config import ExperimentConfig
 
 
@@ -89,7 +90,7 @@ def preprocess_example(
     second_enc = torch.empty((4, max_seq_len), dtype=torch.long)
     second_enc_masks = torch.empty((4, max_seq_len), dtype=torch.long)
 
-    for ans_idx, ans in enumerate(["A", "B", "C", "D"]):
+    for ans_idx, ans in enumerate(MCQ_LETTERS):
         enc = encode_second_pass(tokenizer, first_prompt, ans, max_seq_len)
         second_enc[ans_idx] = enc["input_ids"].squeeze(0)
         second_enc_masks[ans_idx] = enc["attention_mask"].squeeze(0)

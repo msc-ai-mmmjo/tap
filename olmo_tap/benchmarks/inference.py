@@ -9,9 +9,8 @@ import torch
 from olmo_core.nn.attention import AttentionBackendName, Attention, KVCacheManager
 from olmo_core.nn.transformer import Transformer, TransformerBlock
 from olmo_core.nn.transformer.config import TransformerConfig
+from olmo_tap.constants import VOCAB_SIZE
 from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
-
-VOCAB_SIZE = 100352
 
 
 def build_hydra_model(n_heads=5, heads_depth=3, dtype=torch.bfloat16, device="cuda"):
