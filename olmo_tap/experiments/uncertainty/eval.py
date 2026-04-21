@@ -25,7 +25,12 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
-from olmo_tap.constants import PROD_WEIGHTS_DIR, ROBUST_WEIGHTS_DIR, WEIGHTS_DIR
+from olmo_tap.constants import (
+    MCQ_LETTERS,
+    PROD_WEIGHTS_DIR,
+    ROBUST_WEIGHTS_DIR,
+    WEIGHTS_DIR,
+)
 from olmo_tap.experiments.uncertainty.data import preprocess_example
 from olmo_tap.experiments.uncertainty.engine import get_calibration_prob
 from olmo_tap.experiments.uncertainty.weights_handler import FrozenHeadHandler
@@ -93,7 +98,7 @@ def check_shard_weights() -> None:
 
 def get_letter_token_ids(tokenizer) -> list[int]:
     token_ids = []
-    for letter in ["A", "B", "C", "D"]:
+    for letter in MCQ_LETTERS:
         enc = tokenizer.encode(letter, add_special_tokens=False)
         assert len(enc) == 1, (
             f"Tokenizer encodes '{letter}' to {len(enc)} tokens ({enc}); "

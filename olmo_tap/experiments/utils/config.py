@@ -10,7 +10,7 @@ We expect the final Hydra to look something like:
 """
 
 from dataclasses import dataclass, field
-from olmo_tap.constants import VOCAB_SIZE, WEIGHTS_DIR
+from olmo_tap.constants import LORA_TARGETS, VOCAB_SIZE, WEIGHTS_DIR
 
 
 @dataclass
@@ -26,7 +26,7 @@ class HydraLoRAConfig:
     # LoRA hyperparameters
     lora_r: int = 16
     lora_alpha: int = 32
-    target_modules: list[str] = field(default_factory=lambda: ["w1", "w2", "w3"])
+    target_modules: list[str] = field(default_factory=lambda: LORA_TARGETS)
     device: str = "cuda"
 
 

@@ -29,6 +29,10 @@ from transformers import AutoTokenizer
 
 from olmo_tap.constants import (
     ATTACK_BANK_DIR,
+    ATTACK_MAX_SEQ_LEN,
+    LORA_ALPHA_RATIO,
+    LORA_TARGETS,
+    MCQ_LETTERS,
     PROD_WEIGHTS_DIR,
     WEIGHTS_DIR,
 )
@@ -40,11 +44,6 @@ from olmo_tap.experiments.utils.model_builder import (
     load_and_merge_lora_weights,
 )
 
-LORA_TARGETS = ["w1", "w2", "w3"]
-LORA_ALPHA_RATIO = 2
-MAX_SEQ_LEN = 512
-MCQ_LETTERS = ["A", "B", "C", "D"]
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -54,7 +53,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--num-beams", type=int, default=50)
     parser.add_argument("--shard-id", type=int, default=0)
     parser.add_argument("--batch-size", type=int, default=32)
-    parser.add_argument("--max-seq-len", type=int, default=MAX_SEQ_LEN)
+    parser.add_argument("--max-seq-len", type=int, default=ATTACK_MAX_SEQ_LEN)
     return parser.parse_args()
 
 

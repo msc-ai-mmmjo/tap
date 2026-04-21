@@ -12,12 +12,18 @@ import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 import wandb
 
+from olmo_tap.constants import (
+    LORA_ALPHA_RATIO,
+    LORA_TARGETS,
+    MEDMCQA_SIZE,
+    PROD_WEIGHTS_DIR,
+    ROBUST_WEIGHTS_DIR,
+)
 from olmo_tap.experiments.utils.config import (
     ExperimentConfig,
     HydraLoRAConfig,
     TrainingConfig,
 )
-from olmo_tap.constants import PROD_WEIGHTS_DIR, ROBUST_WEIGHTS_DIR
 from olmo_tap.experiments.utils.model_builder import (
     build_base_model,
     inject_lora,
@@ -25,10 +31,6 @@ from olmo_tap.experiments.utils.model_builder import (
 from olmo_tap.experiments.utils.random_seed import set_seed
 from olmo_tap.experiments.uncertainty.engine import train
 from olmo_tap.experiments.uncertainty.weights_handler import FrozenHeadHandler
-
-MEDMCQA_SIZE = 193155
-LORA_TARGETS = ["w1", "w2", "w3"]
-LORA_ALPHA_RATIO = 2
 
 
 def compute_total_steps(num_shards: int, batch_size: int, num_epochs: int) -> int:

@@ -1,15 +1,17 @@
 import json
 import torch
-from olmo_tap.constants import PROD_WEIGHTS_DIR, ROBUST_WEIGHTS_DIR
+from olmo_tap.constants import (
+    LORA_ALPHA_RATIO,
+    LORA_TARGETS,
+    PROD_WEIGHTS_DIR,
+    ROBUST_WEIGHTS_DIR,
+)
 from olmo_tap.hydra import HydraTransformer
 from olmo_tap.experiments.utils.config import HydraLoRAConfig
 from olmo_tap.experiments.utils.model_builder import (
     build_base_model,
     load_and_merge_lora_weights,
 )
-
-LORA_TARGETS = ["w1", "w2", "w3"]
-LORA_ALPHA_RATIO = 2
 
 
 def load_ensemble() -> tuple[HydraTransformer, int]:

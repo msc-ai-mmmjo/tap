@@ -15,6 +15,7 @@ import torch
 import wandb
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
 
+from olmo_tap.constants import LORA_ALPHA_RATIO, LORA_TARGETS, MEDMCQA_SIZE
 from olmo_tap.experiments.utils.config import (
     ExperimentConfig,
     HydraLoRAConfig,
@@ -23,12 +24,6 @@ from olmo_tap.experiments.utils.config import (
 from olmo_tap.experiments.utils.model_builder import build_base_model, inject_lora
 from olmo_tap.experiments.utils.random_seed import set_seed
 from olmo_tap.experiments.security.engine import train
-
-MEDMCQA_SIZE = 193155
-LORA_TARGETS = ["w1", "w2", "w3"]
-# LoRA scaling factor = alpha / r; convention across this repo is alpha = 2 * r
-# Source: Owain told me so
-LORA_ALPHA_RATIO = 2
 
 
 def compute_total_steps(

@@ -26,6 +26,9 @@ from transformers import AutoTokenizer
 
 from olmo_tap.constants import (
     ATTACK_BANK_DIR,
+    LORA_ALPHA_RATIO,
+    LORA_TARGETS,
+    MCQ_LETTERS,
     PROD_WEIGHTS_DIR,
     WEIGHTS_DIR,
 )
@@ -36,10 +39,6 @@ from olmo_tap.experiments.utils.model_builder import (
     inject_lora,
     load_and_merge_lora_weights,
 )
-
-LORA_TARGETS = ["w1", "w2", "w3"]
-LORA_ALPHA_RATIO = 2
-MCQ_LETTERS = ["A", "B", "C", "D"]
 
 
 def parse_args() -> argparse.Namespace:

@@ -22,7 +22,7 @@ from safetensors.torch import load_file
 from transformers import AutoConfig, AutoTokenizer
 from tqdm import tqdm
 
-from olmo_tap.constants import WEIGHTS_DIR
+from olmo_tap.constants import VOCAB_SIZE, WEIGHTS_DIR
 from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
 from olmo_core.nn.hf.convert import convert_state_from_hf
 
@@ -167,7 +167,10 @@ def main():
         hf_config = AutoConfig.from_pretrained(WEIGHTS_DIR)
         olmo_state = convert_state_from_hf(hf_config, hf_state)
         HydraTransformer.load_olmo_state(
-            model, olmo_state, trunk_layers=hydra_config.trunk_layers, vocab_size=100352
+            model,
+            olmo_state,
+            trunk_layers=hydra_config.trunk_layers,
+            vocab_size=VOCAB_SIZE,
         )
         del hf_state, olmo_state
         model.to(device=device, dtype=torch.bfloat16)

@@ -5,7 +5,7 @@ from typing import cast
 import torch
 from transformers import AutoTokenizer, TokenizersBackend
 
-from olmo_tap.constants import MAX_SEQ_LEN, WEIGHTS_DIR
+from olmo_tap.constants import KV_CACHE_MAX_SEQ_LEN, WEIGHTS_DIR
 from olmo_tap.experiments.utils.config import HydraLoRAConfig
 from olmo_tap.experiments.utils.model_builder import build_base_model
 from olmo_tap.hydra import HydraTransformer
@@ -40,8 +40,8 @@ def load_hydra(
         logger.error("Error building model: %s", e)
         return None, None
 
-    logger.info("Allocating KV cache (max_seq_len=%d)", MAX_SEQ_LEN)
-    model.init_kv_cache(batch_size=1, max_seq_len=MAX_SEQ_LEN)
+    logger.info("Allocating KV cache (max_seq_len=%d)", KV_CACHE_MAX_SEQ_LEN)
+    model.init_kv_cache(batch_size=1, max_seq_len=KV_CACHE_MAX_SEQ_LEN)
 
     logger.info("Model ready -- setup took %.2fs", time.perf_counter() - t0)
     return model, tokenizer
