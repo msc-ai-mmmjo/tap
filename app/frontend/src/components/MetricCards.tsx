@@ -20,7 +20,7 @@ const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> =
   },
   security: {
     definition:
-      "How many tampered training examples an attacker would need to plant to change this answer to a harmful one. Higher means the answer is provably harder to manipulate.",
+      "How many tokens in this response were swapped during verification because the model's draft disagreed with its peers. Fewer swaps means stronger internal consensus and a more trustworthy answer.",
     paper:
       'Method: Ghitu & Wicker, "Towards Poisoning Robustness Certification for Natural Language Generation".',
   },
@@ -184,7 +184,15 @@ function MetricCell({ index, label, info, value, valueColour, caption, isFirst }
 }
 
 export function MetricCards({ data }: Props) {
-  const securityValue = data.security.certified ? 'Certified' : 'Caution';
+  const resampledCount = data.security.resampled.length;
+  const totalTokens = data.security.tokens.length;
+  const securityValue = `${resampledCount} swap${resampledCount !== 1 ? 's' : ''}`;
+  const securityColour =
+    resampledCount === 0
+      ? 'var(--color-ok)'
+      : resampledCount <= 3
+        ? 'var(--color-warn)'
+        : 'var(--color-bad)';
   const robustnessValue = data.robustness.passed ? 'Passed' : 'Failed';
 
   return (
@@ -208,8 +216,8 @@ export function MetricCards({ data }: Props) {
         label="Security"
         info={METRIC_INFO.security}
         value={securityValue}
-        valueColour={data.security.certified ? 'var(--color-ok)' : 'var(--color-warn)'}
-        caption={`Withstands up to ${data.security.tpa_budget ?? '—'} tampered training examples`}
+        valueColour={securityColour}
+        caption={`${resampledCount} of ${totalTokens} tokens resampled during verification`}
       />
       <MetricCell
         index="03"

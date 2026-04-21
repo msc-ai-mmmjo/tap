@@ -5,10 +5,17 @@ export interface Claim {
   guidance: string;
 }
 
+export interface SecurityResample {
+  index: number;
+  old_token: string;
+  new_token: string;
+  severity: number;
+}
+
 export interface SecurityStatus {
-  certified: boolean;
-  tpa_budget: number | null;
-  detail: string;
+  certified: boolean | null;
+  tokens: string[];
+  resampled: SecurityResample[];
 }
 
 export interface RobustnessStatus {
