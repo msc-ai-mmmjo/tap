@@ -20,9 +20,8 @@ from app.backend.constants import (
 from app.backend.question_classifier import detect_mcq_bert
 from app.backend.hydra_inference import generate, load_hydra, MODEL_NAME
 from app.backend.mock_metrics import (
+    build_analysis,
     mock_claim_confidence,
-    mock_robustness_status,
-    mock_security_status,
 )
 from olmo_tap.constants import MAX_NEW_TOKENS, MCQ_LETTERS
 from olmo_tap.hydra import HydraTransformer
@@ -105,7 +104,6 @@ def call_hf_model(messages: list[dict]) -> str:
 @app.post("/api/analyse")
 async def analyse(request: ChatRequest, hf: bool = False):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
-    robustness = mock_robustness_status(messages[-1]["content"])
     logger.info("Latest user message: %s", messages[-1]["content"])
 
     last_user_msg = next(
@@ -169,14 +167,15 @@ async def analyse(request: ChatRequest, hf: bool = False):
 
     overall = round(sum(scores) / len(scores), 2) if scores else 0.0
 
+    analysis = build_analysis(raw_response, is_mcq)
+
     return {
         "claims": claims,
         "overall_confidence": overall,
-        "security": mock_security_status(),
-        "robustness": robustness,
         "raw_response": raw_response,
         "model": model,
         "is_mcq": is_mcq,
+        **analysis,
     }
 
 
