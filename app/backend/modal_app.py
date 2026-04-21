@@ -94,3 +94,37 @@ def download_weights() -> None:
 
     weights_vol.commit()
     print("Volume committed")
+
+
+@app.cls(
+    gpu=["A100-40GB", "L40S"],
+    volumes={WEIGHTS_MOUNT: weights_vol},
+    secrets=[hf_secret],
+    scaledown_window=300,
+    max_containers=3,
+)
+class HydraBackend:
+    @modal.enter()
+    def preload(self) -> None:
+        # Set env before imports: olmo_tap.constants and app.backend.constants
+        # read WEIGHTS_DIR and HF_CACHE_DIR at module load time.
+        os.environ.setdefault("OLMO_WEIGHTS_DIR", MODEL_DIR)
+        os.environ.setdefault("HF_CACHE_DIR", HF_CACHE_DIR)
+        os.environ.setdefault("DEVICE", "cuda")
+
+        from app.backend import server
+        from app.backend.hydra_inference import load_hydra
+
+        model, tokenizer = load_hydra(device="cuda")
+        if model is None or tokenizer is None:
+            raise RuntimeError("Hydra preload failed; refusing to start container")
+        server._models["hydra"] = model
+        server._tokenizers["hydra"] = tokenizer
+        server._device = "cuda"
+
+    @modal.asgi_app()
+    def fastapi_app(self):
+        # Lifespan sees the preloaded hydra and skips it, then loads BERT from the Volume cache.
+        from app.backend.server import app as fastapi_app
+
+        return fastapi_app
