@@ -174,12 +174,12 @@ def poe_generate_with_cache(
 if __name__ == "__main__":
     from transformers import AutoTokenizer
     from olmo_tap.inference.loading_weights import load_ensemble
-    from olmo_tap.constants import WEIGHTS_DIR, PROD_WEIGHTS_DIR
+    from olmo_tap.constants import WEIGHTS_DIR
 
     tokenizer = cast(
         PreTrainedTokenizerBase, AutoTokenizer.from_pretrained(WEIGHTS_DIR)
     )
-    model, n_heads = load_ensemble(weights_dir=PROD_WEIGHTS_DIR)
+    model, n_heads = load_ensemble()
 
     q = "Atherosclerosis initiation by fibroblast plaque is mediated by injury to ?"
     print("\n--- POE SPECULATIVE ---")
