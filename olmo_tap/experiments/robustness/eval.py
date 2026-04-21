@@ -202,7 +202,9 @@ def evaluate(model, bank: dict, val_rows: dict, tokenizer, args) -> dict:
     decisions: list[dict] = []
 
     # Compute clean prediction per unique val_idx once. Used as the clean side of every attack.
-    unique_val_idxs = sorted({p["val_idx"] for a in bank["attacks"] for p in a["pairs"]})
+    unique_val_idxs = sorted(
+        {p["val_idx"] for a in bank["attacks"] for p in a["pairs"]}
+    )
     clean_cache: dict[int, str] = {}
     for batch_start in range(0, len(unique_val_idxs), args.batch_size):
         batch_vals = unique_val_idxs[batch_start : batch_start + args.batch_size]
@@ -393,6 +395,7 @@ def main() -> None:
         with open(tmp_path, "w") as f:
             json.dump(payload, f, indent=2)
         import os
+
         os.replace(tmp_path, out_path)
         print(f"Wrote {len(decisions_sorted)} decisions -> {out_path}")
 

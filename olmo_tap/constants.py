@@ -33,4 +33,3 @@ ATTACK_BANK_DIR = Path(
         str(Path(__file__).resolve().parent / "data" / "attack_bank"),
     )
 )
-

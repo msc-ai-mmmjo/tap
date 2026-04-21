@@ -329,7 +329,9 @@ def phase_3_score_transfer(
             for v in batch_vals:
                 ex = ds[v]
                 opts = [str(ex["opa"]), str(ex["opb"]), str(ex["opc"]), str(ex["opd"])]
-                formatted_list.append(format_example(str(ex["question"]), opts) + suffix)
+                formatted_list.append(
+                    format_example(str(ex["question"]), opts) + suffix
+                )
             input_ids, attention_mask = _encode_batch(
                 tokenizer, formatted_list, max_seq_len
             )
