@@ -1,12 +1,14 @@
 """
 HydraTransformer inference demo.
 
-Loads OLMo2 1B instruct weights into a HydraTransformer and runs
+Loads OLMo2 7B instruct weights into a HydraTransformer and runs
 greedy generation with averaged head logits.
 
 Usage:
     pixi run python experiments/hydra_demo.py
 """
+
+import glob
 
 from safetensors.torch import load_file
 import torch
@@ -20,12 +22,15 @@ from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
 
 def main():
     # Build model on meta device (zero memory until weights are loaded).
-    config = HydraTransformerConfig.from_olmo2_1B(n_heads=5, heads_depth=3)
+    config = HydraTransformerConfig.from_olmo2_7B(n_heads=5, heads_depth=3)
     model = config.build(init_device="meta")
 
-    # Load and convert HF weights to OLMo format.
+    # Load and convert HF weights to OLMo format (7B weights are sharded).
     hf_config = AutoConfig.from_pretrained(WEIGHTS_DIR)
-    hf_state = load_file(f"{WEIGHTS_DIR}/model.safetensors")
+    shard_files = sorted(glob.glob(f"{WEIGHTS_DIR}/model*.safetensors"))
+    hf_state = {}
+    for f in shard_files:
+        hf_state.update(load_file(f, device="cpu"))
     olmo_state = convert_state_from_hf(hf_config, hf_state)
     del hf_state, hf_config
 
