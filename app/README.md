@@ -12,6 +12,7 @@ The backend also runs on Modal as a hosted FastAPI app on managed GPUs, and Clou
 
 ## Quick start
 
+> [!TIP]
 > **Working on frontend only?** Set `VITE_API_BASE` in `app/frontend/.env` to the hosted Modal URL and skip the backend steps below.
 
 Ensure you have weights for an OLMo-7b model in your `/vol/bitbucket/$USER/`, and that `OLMO_WEIGHTS_DIR` in your `.env` reflects this
