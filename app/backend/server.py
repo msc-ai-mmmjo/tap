@@ -11,14 +11,13 @@ from transformers import TokenizersBackend
 
 from app.backend.bert_inference import load_bert
 from app.backend.claim_splitter import decompose_into_claims
-from app.backend.constants import HF_TOKEN
+from app.backend.constants import HF_FALLBACK_MODEL as HF_MODEL, HF_TOKEN
 from app.backend.hydra_inference import generate, load_hydra, MODEL_NAME
 from app.backend.mock_metrics import (
     mock_claim_confidence,
     mock_robustness_status,
     mock_security_status,
 )
-from gradio_demo.constants import MODEL as HF_MODEL
 from olmo_tap.constants import MAX_NEW_TOKENS
 from olmo_tap.hydra import HydraTransformer
 
