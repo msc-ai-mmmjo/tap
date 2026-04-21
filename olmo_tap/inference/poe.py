@@ -246,18 +246,22 @@ class PoE:
         """
         second_pass_prompt = f"{prompt_text}Answer: {full_answer_text}\nTask: Reply A (correct) or B (wrong): "
 
-        enc = cast(
-            dict[str, torch.Tensor],
-            self.tokenizer.apply_chat_template(
-                [{"role": "user", "content": second_pass_prompt}],
-                tokenize=True,
-                add_generation_prompt=True,
-                return_tensors="pt",
-            ),
+        enc: dict[str, torch.Tensor] = self.tokenizer.apply_chat_template(
+            [{"role": "user", "content": second_pass_prompt}],
+            tokenize=True,
+            add_generation_prompt=True,
+            return_tensors="pt",
         )
 
         input_ids = enc["input_ids"].to("cuda")
         seq_len = input_ids.size(1)
+
+        # we hide the pointers to the kv managers to avoid corrupting the existing cache
+        attentions = self.model._attentions()
+        saved_managers = [attn.kv_cache_manager for attn in attentions]
+
+        for attn in attentions:
+            attn.kv_cache_manager = None
 
         aligned_residual = torch.zeros(
             (1, seq_len, witness_hidden_state.size(-1)),
@@ -272,8 +276,12 @@ class PoE:
             residual=aligned_residual,
             head_indices=[self.uncertainty_head_idx],
             last_token_only=True,
-            use_cache=False,
+            use_cache=False,  # NOTE: don't overwrite existing cache
         )
+
+        # restore the pointers to the original cache
+        for attn, mgr in zip(attentions, saved_managers):
+            attn.kv_cache_manager = mgr
 
         token_logits = logits[0, 0, 0, :]
         prob = torch.sigmoid(token_logits[self.A_id] - token_logits[self.B_id])
