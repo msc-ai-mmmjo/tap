@@ -11,7 +11,7 @@ from transformers import TokenizersBackend
 
 from app.backend.bert_inference import load_bert
 from app.backend.claim_splitter import decompose_into_claims
-from app.backend.constants import HF_TOKEN, BERT_MCQ_DETECTION
+from app.backend.constants import HF_TOKEN, BERT_MCQ_DETECTION, MCQ_PROB_THRESHOLD
 from app.backend.question_classifier import detect_mcq_bert
 from app.backend.hydra_inference import generate, load_hydra, MODEL_NAME
 from app.backend.mock_metrics import (
@@ -106,10 +106,11 @@ async def analyse(request: ChatRequest, hf: bool = False):
 
     is_mcq = None
     if hf or hydra is None or hydra_tokenizer is None:
-        raw_response = call_hf_model(messages)
         model = HF_MODEL
+        raw_response = call_hf_model(messages)
     else:
-        raw_response, is_mcq = generate(
+        model = MODEL_NAME
+        raw_response, mcq_prob = generate(
             hydra,
             hydra_tokenizer,
             messages,
@@ -117,7 +118,9 @@ async def analyse(request: ChatRequest, hf: bool = False):
             device=_device,
             important_token_ids=_important_tokens,
         )
-        model = MODEL_NAME
+        if mcq_prob is not None:
+            is_mcq = mcq_prob > MCQ_PROB_THRESHOLD
+
     logger.info("Generation complete (%d chars)", len(raw_response))
 
     if not BERT_MCQ_DETECTION:
