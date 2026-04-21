@@ -162,7 +162,9 @@ def _mock_robustness(response_text: str, is_mcq: bool | None) -> dict:
             "bidirectional_score": 2.0,
             "attacked_response": "",
         }
-    score = random.choices(_ROBUSTNESS_SCORES, weights=_ROBUSTNESS_SCORE_WEIGHTS, k=1)[0]
+    score = random.choices(_ROBUSTNESS_SCORES, weights=_ROBUSTNESS_SCORE_WEIGHTS, k=1)[
+        0
+    ]
     return {
         "type": "nlp",
         "bidirectional_score": score,
