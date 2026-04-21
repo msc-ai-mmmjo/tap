@@ -57,8 +57,11 @@ def generate(
         prefill). For NLP, ``tokens`` is the full stripped token stream and
         ``resampled`` lists PoE rejections with token-level indices.
     """
-    chat_prompt = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
+    chat_prompt = cast(
+        str,
+        tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        ),
     )
     n_heads = len(model.heads)
 
