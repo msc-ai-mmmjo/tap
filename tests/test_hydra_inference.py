@@ -84,7 +84,7 @@ def test_generate_stops_at_eos():
 
 
 def test_load_model_returns_model_and_tokenizer():
-    from app.backend.hydra_inference import load_model
+    from app.backend.hydra_inference import load_hydra
 
     mock_model = MagicMock()
     mock_tokenizer = MagicMock(spec=TokenizersBackend)
@@ -95,7 +95,7 @@ def test_load_model_returns_model_and_tokenizer():
         patch("app.backend.hydra_inference.AutoTokenizer") as mock_auto,
     ):
         mock_auto.from_pretrained.return_value = mock_tokenizer
-        result = load_model(device="cpu")
+        result = load_hydra(device="cpu")
 
     assert len(result) == 2
     assert result[0] is mock_model

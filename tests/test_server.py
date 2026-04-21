@@ -13,7 +13,7 @@ def client():
     mock_tokenizer = MagicMock()
 
     with patch(
-        "app.backend.server.load_model", return_value=(mock_model, mock_tokenizer)
+        "app.backend.server.load_hydra", return_value=(mock_model, mock_tokenizer)
     ):
         with TestClient(app) as c:
             yield c
