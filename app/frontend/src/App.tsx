@@ -4,10 +4,10 @@ import { ChatMessage } from './components/ChatMessage';
 import { ChatInput } from './components/ChatInput';
 
 const SAMPLE_QUERIES = [
-  'What is the recommended treatment for community-acquired pneumonia in an adult with no allergies?',
-  'Explain the differential diagnosis for acute chest pain in a 55-year-old male.',
-  'What are the risks of combining metformin with ACE inhibitors?',
-  'Describe the management of type 2 diabetes in a patient with CKD stage 3.',
+  "I'm admitting a patient in diabetic ketoacidosis, where do I start?",
+  "My patient's been on a proton pump inhibitor for years, what long-term risks should I flag?",
+  'Starting empirical antibiotics for community-acquired pneumonia in an otherwise healthy adult, which is first-line? A) Amoxicillin B) Azithromycin C) Levofloxacin D) Doxycycline',
+  'Acute monoarticular knee pain, synovial fluid shows negatively birefringent needle-shaped crystals. Which fits? A) Gout B) Pseudogout C) Septic arthritis D) Rheumatoid arthritis',
 ];
 
 function App() {
@@ -97,10 +97,16 @@ function App() {
               </ul>
 
               <div
-                className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3"
+                className="font-mono text-[10px] uppercase tracking-[0.18em] mb-1"
                 style={{ color: 'var(--color-ink-muted)' }}
               >
                 — Sample queries
+              </div>
+              <div
+                className="font-mono text-[9.5px] uppercase tracking-[0.16em] mb-3"
+                style={{ color: 'var(--color-ink-soft)' }}
+              >
+                Tuned on medical exam-style questions. Free-text or multiple choice both work.
               </div>
               <div className="flex flex-col" style={{ borderTop: '1px solid var(--color-rule-soft)' }}>
                 {SAMPLE_QUERIES.map((q, i) => (
