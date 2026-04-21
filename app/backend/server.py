@@ -11,20 +11,13 @@ from transformers import TokenizersBackend
 
 from app.backend.bert_inference import load_bert
 from app.backend.claim_splitter import decompose_into_claims
-from app.backend.constants import (
-    BERT_MCQ_DETECTION,
-    HF_FALLBACK_MODEL as HF_MODEL,
-    HF_TOKEN,
-    MCQ_PROB_THRESHOLD,
-)
-from app.backend.question_classifier import detect_mcq_bert
+from app.backend.constants import HF_FALLBACK_MODEL as HF_MODEL, HF_TOKEN
 from app.backend.hydra_inference import generate, load_hydra, MODEL_NAME
 from app.backend.mock_metrics import (
     mock_claim_confidence,
     mock_robustness_status,
-    mock_security_status,
 )
-from olmo_tap.constants import MAX_NEW_TOKENS, MCQ_LETTERS
+from app.backend.question_classifier import detect_mcq_bert
 from olmo_tap.hydra import HydraTransformer
 
 logging.basicConfig(
@@ -36,32 +29,24 @@ _models: dict[str, Any | None] = {}
 _tokenizers: dict[str, TokenizersBackend | None] = {}
 _device: str = "cuda"
 
-_important_tokens: dict[str, int] = {}
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _device
     _device = os.getenv("DEVICE", "cuda")
-    logger.info("Starting up — device=%s", _device)
+    logger.info("Starting up -- device=%s", _device)
 
-    # Modal's @modal.enter() may have already preloaded; skip to avoid a ~30s double-load.
     if "hydra" not in _models:
         _models["hydra"], _tokenizers["hydra"] = load_hydra(device=_device)
         if _models["hydra"] is None:
             logger.warning("Hydra unavailable; requests will fall back to HF API")
     else:
         logger.info("Hydra already preloaded; skipping lifespan load")
-    if _tokenizers.get("hydra") is not None:
-        for token in MCQ_LETTERS:
-            _important_tokens[token] = _tokenizers["hydra"].encode(
-                token, add_special_tokens=False
-            )[0]
 
     if "bert" not in _models:
         _models["bert"], _tokenizers["bert"] = load_bert(device=_device)
         if _models["bert"] is None:
-            logger.warning("BERT unavailable; NLI-based metrics will be skipped")
+            logger.warning("BERT unavailable; MCQ classification disabled")
     else:
         logger.info("BERT already preloaded; skipping lifespan load")
 
@@ -72,11 +57,10 @@ async def lifespan(app: FastAPI):
     _tokenizers.clear()
 
 
-app = FastAPI(title="Trustworthy Answer Protocol — API", lifespan=lifespan)
+app = FastAPI(title="Trustworthy Answer Protocol -- API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "https://tap-al9.pages.dev"],
-    # Cloudflare Pages preview/PR deployments: <hash-or-branch>.tap-al9.pages.dev
     allow_origin_regex=r"^https://[a-z0-9-]+\.tap-al9\.pages\.dev$",
     allow_methods=["*"],
     allow_headers=["*"],
@@ -93,64 +77,74 @@ class ChatRequest(BaseModel):
 
 
 def call_hf_model(messages: list[dict]) -> str:
-    """Call the HF model using the same approach as the Gradio app."""
     if not HF_TOKEN:
         raise ValueError("HF_TOKEN environment variable not set")
-
     client = InferenceClient(HF_MODEL, token=HF_TOKEN)
     response = client.chat_completion(messages, max_tokens=500)
     return response.choices[0].message.content or ""
 
 
+def _classify_mcq(last_user_msg: str) -> bool | None:
+    bert_model = _models.get("bert")
+    bert_tokenizer = _tokenizers.get("bert")
+    if bert_model is None or bert_tokenizer is None:
+        return None
+    return detect_mcq_bert(bert_model, bert_tokenizer, last_user_msg, device=_device)
+
+
+def _fallback_security() -> dict:
+    return {
+        "certified": None,
+        "flagged_tokens": [],
+        "detail": "Fallback: served by HF Llama, no PoE guarantee",
+    }
+
+
+def _poe_security(flagged_tokens: list[dict]) -> dict:
+    n = len(flagged_tokens)
+    if n == 0:
+        detail = "No tokens resampled by PoE verification"
+    elif n == 1:
+        detail = "1 token resampled by PoE verification"
+    else:
+        detail = f"{n} tokens resampled by PoE verification"
+    return {
+        "certified": True,
+        "flagged_tokens": flagged_tokens,
+        "detail": detail,
+    }
+
+
 @app.post("/api/analyse")
 async def analyse(request: ChatRequest, hf: bool = False):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
-    robustness = mock_robustness_status(messages[-1]["content"])
     logger.info("Latest user message: %s", messages[-1]["content"])
 
     last_user_msg = next(
         (m["content"] for m in reversed(messages) if m["role"] == "user"), ""
     )
+    is_mcq = _classify_mcq(last_user_msg)
+    logger.info("BERT MCQ classification: %s", is_mcq)
 
     hydra: HydraTransformer | None = _models.get("hydra")
     hydra_tokenizer: TokenizersBackend | None = _tokenizers.get("hydra")
 
-    is_mcq = None
     if hf or hydra is None or hydra_tokenizer is None:
-        model = HF_MODEL
+        model_name = HF_MODEL
         raw_response = call_hf_model(messages)
+        security = _fallback_security()
     else:
-        model = MODEL_NAME
-        raw_response, mcq_prob = generate(
+        model_name = MODEL_NAME
+        raw_response, flagged_tokens = generate(
             hydra,
             hydra_tokenizer,
             messages,
-            MAX_NEW_TOKENS,
+            is_mcq=bool(is_mcq),
             device=_device,
-            important_token_ids=_important_tokens,
         )
-        if mcq_prob is not None:
-            is_mcq = mcq_prob > MCQ_PROB_THRESHOLD
+        security = _poe_security(flagged_tokens)
 
-    logger.info("Generation complete (%d chars): '%s'", len(raw_response), raw_response)
-
-    if not BERT_MCQ_DETECTION:
-        logger.info("Hydra MCQ classification: %s", is_mcq)
-    else:
-        bert_model = _models.get("bert")
-        bert_tokenizer = _tokenizers.get("bert")
-        if bert_model is not None and bert_tokenizer is not None:
-            is_mcq = detect_mcq_bert(
-                bert_model, bert_tokenizer, last_user_msg, device=_device
-            )
-            logger.info("BERT MCQ classification: %s", is_mcq)
-        else:
-            # BERT flag is on but it didn't load. Return None instead of
-            # the Hydra value so we don't pretend it's BERT output.
-            logger.warning(
-                "BERT_MCQ_DETECTION=True but BERT unavailable; returning is_mcq=None"
-            )
-            is_mcq = None
+    logger.info("Generation complete (%d chars)", len(raw_response))
 
     claims_text = decompose_into_claims(raw_response)
     claims = []
@@ -172,10 +166,10 @@ async def analyse(request: ChatRequest, hf: bool = False):
     return {
         "claims": claims,
         "overall_confidence": overall,
-        "security": mock_security_status(),
-        "robustness": robustness,
+        "security": security,
+        "robustness": mock_robustness_status(last_user_msg),
         "raw_response": raw_response,
-        "model": model,
+        "model": model_name,
         "is_mcq": is_mcq,
     }
 
