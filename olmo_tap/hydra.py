@@ -10,7 +10,7 @@ import logging
 from dataclasses import dataclass, replace
 from typing import cast
 
-from olmo_core.nn.attention import Attention
+from olmo_core.nn.attention import Attention, KVCacheManager
 from olmo_core.nn.config import ModelConfig
 from olmo_core.nn.transformer.block import TransformerBlock
 from olmo_core.nn.transformer.model import Transformer
@@ -179,55 +179,46 @@ class HydraTransformer(nn.Module):
     def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
 
-    def init_kv_cache(self, batch_size: int, max_seq_len: int):
-        """Initialize KV caches for all blocks in trunk and heads."""
+    def _attentions(self) -> list[Attention]:
+        attentions = []
         for block in self.trunk.blocks.values():
             attn = cast(TransformerBlock, block).attention
             if isinstance(attn, Attention):
-                attn.init_kv_cache_manager(batch_size, max_seq_len)
+                attentions.append(attn)
         for head in self.heads:
             for block in cast(Transformer, head).blocks.values():
                 attn = cast(TransformerBlock, block).attention
                 if isinstance(attn, Attention):
-                    attn.init_kv_cache_manager(batch_size, max_seq_len)
+                    attentions.append(attn)
+        return attentions
+
+    def _kv_managers(self) -> list[KVCacheManager]:
+        return [
+            attn.kv_cache_manager
+            for attn in self._attentions()
+            if attn.kv_cache_manager is not None
+        ]
+
+    def init_kv_cache(self, batch_size: int, max_seq_len: int):
+        """Initialize KV caches for all blocks in trunk and heads."""
+        for attn in self._attentions():
+            attn.init_kv_cache_manager(batch_size, max_seq_len)
 
     def reset_kv_cache(self):
         """Reset KV cache position counters to 0 before each generation."""
-        for block in self.trunk.blocks.values():
-            attn = cast(TransformerBlock, block).attention
-            if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
-                attn.kv_cache_manager.cache_seqlens.fill_(0)
-        for head in self.heads:
-            for block in cast(Transformer, head).blocks.values():
-                attn = cast(TransformerBlock, block).attention
-                if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
-                    attn.kv_cache_manager.cache_seqlens.fill_(0)
+        for m in self._kv_managers():
+            m.cache_seqlens.fill_(0)
 
     def rollback_kv_cache(self, n: int):
         """Roll back cache pointers on trunk and every head by n positions."""
-        for block in self.trunk.blocks.values():
-            attn = cast(TransformerBlock, block).attention
-            if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
-                attn.kv_cache_manager.cache_seqlens.sub_(n).clamp_(min=0)
-        for head in self.heads:
-            for block in cast(Transformer, head).blocks.values():
-                attn = cast(TransformerBlock, block).attention
-                if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
-                    attn.kv_cache_manager.cache_seqlens.sub_(n).clamp_(min=0)
+        for m in self._kv_managers():
+            m.cache_seqlens.sub_(n).clamp_(min=0)
 
     def sync_kv_cache(self, target_length: int):
         """Sync cache pointers on trunk and every head to specified position."""
-        for block in self.trunk.blocks.values():
-            attn = cast(TransformerBlock, block).attention
-            if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
-                attn.kv_cache_manager.cache_seqlens.fill_(target_length)
-                attn.kv_cache_manager.cache_leftpad.fill_(0)
-        for head in self.heads:
-            for block in cast(Transformer, head).blocks.values():
-                attn = cast(TransformerBlock, block).attention
-                if isinstance(attn, Attention) and attn.kv_cache_manager is not None:
-                    attn.kv_cache_manager.cache_seqlens.fill_(target_length)
-                    attn.kv_cache_manager.cache_leftpad.fill_(0)
+        for m in self._kv_managers():
+            m.cache_seqlens.fill_(target_length)
+            m.cache_leftpad.fill_(0)
 
     def forward_trunk(self, input_ids: torch.Tensor, **kwargs) -> torch.Tensor:
         """Run the shared trunk and return its hidden states."""
