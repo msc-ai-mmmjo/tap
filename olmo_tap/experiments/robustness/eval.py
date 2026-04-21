@@ -201,15 +201,34 @@ def evaluate(model, bank: dict, val_rows: dict, tokenizer, args) -> dict:
     per_attack: list[dict] = []
     decisions: list[dict] = []
 
+    # Compute clean prediction per unique val_idx once. Used as the clean side of every attack.
+    unique_val_idxs = sorted({p["val_idx"] for a in bank["attacks"] for p in a["pairs"]})
+    clean_cache: dict[int, str] = {}
+    for batch_start in range(0, len(unique_val_idxs), args.batch_size):
+        batch_vals = unique_val_idxs[batch_start : batch_start + args.batch_size]
+        formatted_list = []
+        for v in batch_vals:
+            row = val_rows[v]
+            opts = [
+                str(row["opa"]),
+                str(row["opb"]),
+                str(row["opc"]),
+                str(row["opd"]),
+            ]
+            formatted_list.append(format_example(str(row["question"]), opts))
+        ids, mask = _encode_batch(tokenizer, formatted_list, args.max_seq_len)
+        preds = _predict_letter_batch(model, ids, mask, mcq_token_ids, device)
+        for v, p in zip(batch_vals, preds):
+            clean_cache[v] = p
+
     for attack in bank["attacks"]:
         pairs = attack["pairs"]
-        clean_preds: list[str] = []
+        clean_preds: list[str] = [clean_cache[p["val_idx"]] for p in pairs]
         poison_preds: list[str] = []
         labels: list[int] = []
 
         for batch_start in range(0, len(pairs), args.batch_size):
             batch_pairs = pairs[batch_start : batch_start + args.batch_size]
-            clean_formatted: list[str] = []
             poison_formatted: list[str] = []
             for p in batch_pairs:
                 row = val_rows[p["val_idx"]]
@@ -220,20 +239,11 @@ def evaluate(model, bank: dict, val_rows: dict, tokenizer, args) -> dict:
                     str(row["opd"]),
                 ]
                 formatted = format_example(str(row["question"]), opts)
-                clean_formatted.append(formatted)
                 poison_formatted.append(formatted + attack["suffix"])
                 labels.append(int(row["cop"]))
 
-            clean_ids, clean_mask = _encode_batch(
-                tokenizer, clean_formatted, args.max_seq_len
-            )
             poison_ids, poison_mask = _encode_batch(
                 tokenizer, poison_formatted, args.max_seq_len
-            )
-            clean_preds.extend(
-                _predict_letter_batch(
-                    model, clean_ids, clean_mask, mcq_token_ids, device
-                )
             )
             poison_preds.extend(
                 _predict_letter_batch(
