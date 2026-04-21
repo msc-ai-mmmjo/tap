@@ -1,7 +1,7 @@
 # tests/test_question_classifier.py
 from unittest.mock import MagicMock
 import torch
-from app.backend.question_classifier import classify_question_bert
+from app.backend.question_classifier import classify_question_bert, classify_question_hydra
 
 
 def _make_bert_mocks(entailment_idx: int, winning_label_idx: int):
@@ -55,3 +55,50 @@ def test_bert_classifies_mcq_nonstandard_entailment_idx():
     # entailment mapped to column 0; verifies the function reads label2id rather than hardcoding 2
     model, tokenizer = _make_bert_mocks(entailment_idx=0, winning_label_idx=0)
     assert classify_question_bert(model, tokenizer, "Which is correct? A. X B. Y", device="cpu") == "mcq"
+
+
+def _make_hydra_mocks(winning: str):
+    """
+    winning: one of 'MCQ', 'OPEN', 'NONE'
+    Returns (model, tokenizer) mocks where the winning label token has the highest logit.
+    """
+    token_ids = {"MCQ": 100, "OPEN": 200, "NONE": 300}
+
+    tokenizer = MagicMock()
+    tokenizer.apply_chat_template.return_value = "fake prompt"
+    tokenizer.encode.side_effect = lambda text, **kwargs: (
+        [token_ids[text]] if text in token_ids else [1, 2, 3]
+    )
+
+    vocab_size = 400
+    logits_tensor = torch.full((1, 1, 1, vocab_size), -10.0)
+    logits_tensor[0, 0, 0, token_ids[winning]] = 10.0
+
+    model = MagicMock()
+    model.return_value = logits_tensor
+
+    return model, tokenizer
+
+
+def test_hydra_classifies_mcq():
+    model, tokenizer = _make_hydra_mocks("MCQ")
+    result = classify_question_hydra(model, tokenizer, "Which is correct? A. X B. Y", device="cpu")
+    assert result == "mcq"
+
+
+def test_hydra_classifies_open():
+    model, tokenizer = _make_hydra_mocks("OPEN")
+    result = classify_question_hydra(model, tokenizer, "What causes climate change?", device="cpu")
+    assert result == "open"
+
+
+def test_hydra_classifies_none():
+    model, tokenizer = _make_hydra_mocks("NONE")
+    result = classify_question_hydra(model, tokenizer, "Hello there.", device="cpu")
+    assert result == "none"
+
+
+def test_hydra_resets_kv_cache():
+    model, tokenizer = _make_hydra_mocks("OPEN")
+    classify_question_hydra(model, tokenizer, "any text", device="cpu")
+    model.reset_kv_cache.assert_called_once()
