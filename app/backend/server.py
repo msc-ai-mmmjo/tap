@@ -121,7 +121,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
         if mcq_prob is not None:
             is_mcq = mcq_prob > MCQ_PROB_THRESHOLD
 
-    logger.info("Generation complete (%d chars)", len(raw_response))
+    logger.info("Generation complete (%d chars): '%s'", len(raw_response), raw_response)
 
     if not BERT_MCQ_DETECTION:
         logger.info("Hydra MCQ classification: %s", is_mcq)
