@@ -1,5 +1,7 @@
 import type { AnalysisResponse } from '../types/api';
 import { ClaimCard } from './ClaimCard';
+import { SecurityTokensPanel } from './SecurityTokensPanel';
+import { AdversarialPreviewPanel } from './AdversarialPreviewPanel';
 
 interface Props {
   data: AnalysisResponse;
@@ -7,29 +9,37 @@ interface Props {
 
 export function TrustAnalysis({ data }: Props) {
   return (
-    <div className="mt-5 animate-fade-in">
-      <div
-        className="px-5 pt-4 pb-2"
-        style={{
-          background: 'var(--color-card)',
-          border: '1px solid var(--color-rule)',
-        }}
-      >
-        <div
-          className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center justify-between"
-          style={{ color: 'var(--color-ink-muted)' }}
-        >
-          <span>— Claim ledger</span>
-          <span style={{ color: 'var(--color-ink-soft)' }}>
-            {data.claims.length} {data.claims.length === 1 ? 'claim' : 'claims'}
-          </span>
+    <div className="animate-fade-in">
+      {data.claims.length > 0 && (
+        <div className="mt-5">
+          <div
+            className="px-5 pt-4 pb-2"
+            style={{
+              background: 'var(--color-card)',
+              border: '1px solid var(--color-rule)',
+            }}
+          >
+            <div
+              className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center justify-between"
+              style={{ color: 'var(--color-ink-muted)' }}
+            >
+              <span>— Claim ledger</span>
+              <span style={{ color: 'var(--color-ink-soft)' }}>
+                {data.claims.length} {data.claims.length === 1 ? 'claim' : 'claims'}
+              </span>
+            </div>
+            <ol>
+              {data.claims.map((claim, i) => (
+                <ClaimCard key={i} claim={claim} index={i + 1} />
+              ))}
+            </ol>
+          </div>
         </div>
-        <ol>
-          {data.claims.map((claim, i) => (
-            <ClaimCard key={i} claim={claim} index={i + 1} />
-          ))}
-        </ol>
-      </div>
+      )}
+
+      <SecurityTokensPanel data={data.security} />
+
+      <AdversarialPreviewPanel data={data.robustness} />
     </div>
   );
 }
