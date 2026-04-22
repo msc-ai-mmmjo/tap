@@ -169,8 +169,8 @@ def get_robustness(
     bert_model: Any,
     bert_tokenizer: Any,
     device: str = "cuda",
-) -> float | None:
-    """Return a robustness score by testing adversarial suffixes against the original response."""
+) -> dict:
+    """Return a robustness report by testing adversarial suffixes against the original response."""
     last_message = messages.pop()
 
     orig_prompt = messages + [last_message]
@@ -207,18 +207,14 @@ def get_robustness(
 
             scores.append(score)
 
-    if is_mcq:
-        logger.info(
-            "MCQ robustness: %d/%d successful adversarial suffixes",
-            len(successful_suffixes),
-            len(adv_suffix_bank),
-        )
-        return len(successful_suffixes) / len(adv_suffix_bank)
-    else:
-        avg_score = np.mean(scores) if scores else None
-        logger.info(
-            "NLP robustness: average entailment score %.4f over %d adversarial suffixes",
-            avg_score if avg_score is not None else float("nan"),
-            len(adv_suffix_bank),
-        )
-        return avg_score
+    logger.info(
+        "Robustness (%s): %d/%d flipped",
+        "mcq" if is_mcq else "nlp",
+        len(successful_suffixes),
+        len(adv_suffix_bank),
+    )
+    return {
+        "type": "mcq" if is_mcq else "nlp",
+        "attempts": len(adv_suffix_bank),
+        "flipped": len(successful_suffixes),
+    }
