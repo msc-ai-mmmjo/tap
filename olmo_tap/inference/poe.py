@@ -90,7 +90,7 @@ class PoE:
         # hidden state to residual stream inject for uncertainty
         hidden_unc_state: Optional[torch.Tensor] = None
 
-        while (generated_ids.shape[1] - input_ids.size(1)) < self.max_new_tokens:
+        while (generated_ids.size(1) - input_ids.size(1)) < self.max_new_tokens:
             L = generated_ids.size(1)
             # DRAFT
             draft_step_ids = []
@@ -259,11 +259,12 @@ class PoE:
         input_ids = enc["input_ids"].to("cuda")
         seq_len = input_ids.size(1)
 
-        # we hide the pointers to the kv managers to avoid corrupting the existing cache
+        # we wipe the existing kv-cache in trunk & llm heads to avoid corruption
         attentions = self.model._attentions()
         saved_managers = [attn.kv_cache_manager for attn in attentions]
 
         for attn in attentions:
+            attn.kv_cache_manager.zero_cache()
             attn.kv_cache_manager = None
 
         aligned_residual = torch.zeros(
@@ -279,7 +280,7 @@ class PoE:
             residual=aligned_residual,
             head_indices=[self.uncertainty_head_idx],
             last_token_only=True,
-            use_cache=False,  # NOTE: don't overwrite existing cache
+            use_cache=False,  # NOTE: don't overwrite cache in trunk
         )
 
         # restore the pointers to the original cache
@@ -303,9 +304,9 @@ if __name__ == "__main__":
 
     poe = PoE(model, tokenizer, n_llm_heads=n_heads - 1)
 
-    q = "Answer the following question with A or B: Does God exist? A: Yes, B: No"
+    q = "Is Donald Trump a good politician?"
     print("\n--- POE SPECULATIVE ---")
-    response, replaced_tokens, replaced_idxs, conf = poe.generate_with_cache(
+    response, original_tokens, replaced_idxs, conf = poe.generate_with_cache(
         q, is_mcq=True
     )
     print("".join(response))

@@ -179,13 +179,19 @@ class HydraTransformer(nn.Module):
     def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
 
-    def _attentions(self) -> list[Attention]:
+    def _attentions(self, omit_last: bool = True) -> list[Attention]:
+        """
+        By convention the uncertainty head is always loaded on the final index.
+        The uncertainty head only performs one token generation so kv-caching
+        (which is the only use of this method) is never desirable.
+        """
         attentions = []
         for block in self.trunk.blocks.values():
             attn = cast(TransformerBlock, block).attention
             if isinstance(attn, Attention):
                 attentions.append(attn)
-        for head in self.heads:
+        heads = self.heads[:-1] if omit_last else self.heads
+        for head in heads:
             for block in cast(Transformer, head).blocks.values():
                 attn = cast(TransformerBlock, block).attention
                 if isinstance(attn, Attention):
@@ -292,6 +298,7 @@ class HydraTransformer(nn.Module):
         input_ids: torch.Tensor,
         hidden_head_indices: list[int],
         head_indices: list[int] | None = None,
+        last_token_only: bool = False,
         **kwargs,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """
@@ -327,6 +334,9 @@ class HydraTransformer(nn.Module):
 
         head_hidden = [head(h, **kwargs) for head in selected]
         stacked = torch.stack(head_hidden, dim=0)  # (N, batch, seq, d_model)
+
+        if last_token_only:
+            stacked = stacked[:, :, -1:, :]
         hidden_heads = stacked[hidden_positions]  # (N_hid, batch, seq, d_model)
 
         all_logits: torch.Tensor = self.lm_head(stacked.flatten(0, 1))
