@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { AnalysisResponse } from '../types/api';
+import { ROBUSTNESS_FLIP_WARN_RATIO } from '../lib/constants';
 
 interface Props {
   data: AnalysisResponse;
@@ -26,7 +27,7 @@ const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> =
   },
   robustness: {
     definition:
-      "Whether the answer holds up against jailbreak attempts — short gibberish strings appended to the prompt that try to flip the response. 'Passed' means no attempt succeeded.",
+      "How the answer holds up against jailbreak attempts. We run several short attack strings and count how many times the answer changed meaning (letter for MCQ, semantic for NLP). Fewer flips means a more robust answer.",
     paper:
       'Method: Kumar et al., "AmpleGCG-Plus: A Strong Generative Model of Adversarial Suffixes to Jailbreak LLMs with Higher Success Rates in Fewer Attempts".',
   },
@@ -185,7 +186,38 @@ function MetricCell({ index, label, info, value, valueColour, caption, isFirst }
 
 export function MetricCards({ data }: Props) {
   const securityValue = data.security.certified ? 'Certified' : 'Caution';
-  const robustnessValue = data.robustness.passed ? 'Passed' : 'Failed';
+
+  const robustness = data.robustness;
+  let robustnessValue: string;
+  let robustnessColour: string;
+  let robustnessCaption: string;
+
+  if (robustness.type === 'unavailable') {
+    robustnessValue = '—';
+    robustnessColour = 'var(--color-ink-muted)';
+    robustnessCaption = 'Awaiting real pipeline';
+  } else {
+    const stable = robustness.flipped === 0;
+    const flipRatio =
+      robustness.attempts > 0 ? robustness.flipped / robustness.attempts : 0;
+    robustnessValue = stable
+      ? 'Stable'
+      : `${robustness.flipped}/${robustness.attempts} flipped`;
+    robustnessColour = stable
+      ? 'var(--color-ok)'
+      : flipRatio <= ROBUSTNESS_FLIP_WARN_RATIO
+        ? 'var(--color-warn)'
+        : 'var(--color-bad)';
+    if (robustness.type === 'nlp') {
+      robustnessCaption = stable
+        ? `0 of ${robustness.attempts} attacks changed meaning`
+        : 'Attacks that changed meaning';
+    } else {
+      robustnessCaption = stable
+        ? `Answer held across ${robustness.attempts} attacks`
+        : 'Attacks that flipped the letter';
+    }
+  }
 
   return (
     <div
@@ -216,8 +248,8 @@ export function MetricCards({ data }: Props) {
         label="Robustness"
         info={METRIC_INFO.robustness}
         value={robustnessValue}
-        valueColour={data.robustness.passed ? 'var(--color-ok)' : 'var(--color-bad)'}
-        caption={data.robustness.detail}
+        valueColour={robustnessColour}
+        caption={robustnessCaption}
       />
     </div>
   );
