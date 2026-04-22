@@ -179,44 +179,56 @@ class HydraTransformer(nn.Module):
     def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
 
-    def _attentions(self) -> list[Attention]:
+    def _attentions(self, omit_last: bool = False) -> list[Attention]:
+        """
+        By convention the uncertainty head is always loaded on the final index.
+        The uncertainty head only performs one token generation so kv-caching
+        (which is the only use of this method) is never desirable.
+
+        TODO: this convention can be confusing because we train with uncertainty head
+        at index 0. A refactor should be made to clean things up (SWE-157).
+
+        TODO: related to the above, we never want kv-cache on the uncertainty head. There
+        is definitely a cleaner solution rather than passing the `omit_last` flag everywhere
+        """
         attentions = []
         for block in self.trunk.blocks.values():
             attn = cast(TransformerBlock, block).attention
             if isinstance(attn, Attention):
                 attentions.append(attn)
-        for head in self.heads:
+        heads = self.heads[:-1] if omit_last else self.heads
+        for head in heads:
             for block in cast(Transformer, head).blocks.values():
                 attn = cast(TransformerBlock, block).attention
                 if isinstance(attn, Attention):
                     attentions.append(attn)
         return attentions
 
-    def _kv_managers(self) -> list[KVCacheManager]:
+    def _kv_managers(self, omit_last: bool = False) -> list[KVCacheManager]:
         return [
             attn.kv_cache_manager
-            for attn in self._attentions()
+            for attn in self._attentions(omit_last)
             if attn.kv_cache_manager is not None
         ]
 
-    def init_kv_cache(self, batch_size: int, max_seq_len: int):
+    def init_kv_cache(self, batch_size: int, max_seq_len: int, omit_last: bool = False):
         """Initialize KV caches for all blocks in trunk and heads."""
-        for attn in self._attentions():
+        for attn in self._attentions(omit_last):
             attn.init_kv_cache_manager(batch_size, max_seq_len)
 
-    def reset_kv_cache(self):
+    def reset_kv_cache(self, omit_last: bool = False):
         """Reset KV cache position counters to 0 before each generation."""
-        for m in self._kv_managers():
+        for m in self._kv_managers(omit_last):
             m.cache_seqlens.fill_(0)
 
-    def rollback_kv_cache(self, n: int):
+    def rollback_kv_cache(self, n: int, omit_last: bool = False):
         """Roll back cache pointers on trunk and every head by n positions."""
-        for m in self._kv_managers():
+        for m in self._kv_managers(omit_last):
             m.cache_seqlens.sub_(n).clamp_(min=0)
 
-    def sync_kv_cache(self, target_length: int):
+    def sync_kv_cache(self, target_length: int, omit_last: bool = False):
         """Sync cache pointers on trunk and every head to specified position."""
-        for m in self._kv_managers():
+        for m in self._kv_managers(omit_last):
             m.cache_seqlens.fill_(target_length)
             m.cache_leftpad.fill_(0)
 
@@ -290,15 +302,16 @@ class HydraTransformer(nn.Module):
     def residual_forward(
         self,
         input_ids: torch.Tensor,
-        hidden_head_idx: int,
+        hidden_head_indices: list[int],
         head_indices: list[int] | None = None,
+        last_token_only: bool = False,
         **kwargs,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Run the full model and return hidden state of specified head index.
 
         :param input_ids: Token IDs ``(batch, seq)``.
-        :param hidden_head_idx: Global index into ``self.heads``; must be in ``head_indices``.
+        :param hidden_head_indices: Global list of indices into ``self.heads``; must all be in ``head_indices``.
         :param head_indices: Optional subset of head indices to run. None means all heads.
         :returns: tuple[Logits tensor ``(n_selected, batch, seq, vocab)``,
                         hidden-state tensor ``(batch, seq, d_model)``].
@@ -318,18 +331,22 @@ class HydraTransformer(nn.Module):
             selected = list(self.heads)
             selected_idxs = list(range(len(self.heads)))
 
-        if hidden_head_idx not in selected_idxs:
-            raise ValueError(
-                f"hidden_head_idx {hidden_head_idx} must be one of selected heads {selected_idxs}"
-            )
-        hidden_pos = selected_idxs.index(hidden_head_idx)
+        for head_idx in hidden_head_indices:
+            if head_idx not in selected_idxs:
+                raise ValueError(
+                    f"hidden_head_idx {head_idx} must be one of selected heads {selected_idxs}"
+                )
+        hidden_positions = [selected_idxs.index(h_idx) for h_idx in hidden_head_indices]
 
         head_hidden = [head(h, **kwargs) for head in selected]
         stacked = torch.stack(head_hidden, dim=0)  # (N, batch, seq, d_model)
-        hidden_head = stacked[hidden_pos]  # (batch, seq, d_model)
+
+        if last_token_only:
+            stacked = stacked[:, :, -1:, :]
+        hidden_heads = stacked[hidden_positions]  # (N_hid, batch, seq, d_model)
 
         all_logits: torch.Tensor = self.lm_head(stacked.flatten(0, 1))
-        return all_logits.unflatten(0, (len(selected), -1)), hidden_head
+        return all_logits.unflatten(0, (len(selected), -1)), hidden_heads
 
     @staticmethod
     def load_olmo_state(

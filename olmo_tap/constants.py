@@ -45,3 +45,9 @@ ATTACK_BANK_DIR = Path(
         str(Path(__file__).resolve().parent / "data" / "attack_bank"),
     )
 )
+UNCERTAINTY_WEIGHTS_DIR = Path(
+    os.getenv(
+        "ROBUST_WEIGHTS_DIR",
+        str(Path(__file__).resolve().parent / "weights" / "uncertainty"),
+    )
+)
