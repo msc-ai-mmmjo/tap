@@ -7,8 +7,7 @@ from transformers import AutoTokenizer, PreTrainedTokenizerBase, TokenizersBacke
 from olmo_tap.constants import MCQ_LETTERS, NLP_MAX_NEW_TOKENS, WEIGHTS_DIR
 from olmo_tap.hydra import HydraTransformer
 from olmo_tap.inference.loading_weights import load_ensemble
-from olmo_tap.inference.mcq import poe_mcq_predict
-from olmo_tap.inference.poe import poe_generate_with_cache
+from olmo_tap.inference.poe import poe_generate_with_cache, poe_mcq_predict
 
 logger = logging.getLogger(__name__)
 
