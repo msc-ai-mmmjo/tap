@@ -94,7 +94,10 @@ class ModernBERTScorer:
 
         print(f"Loading ModernBERT NLI model from {model_id}...")
 
-        cls._tokenizer = AutoTokenizer.from_pretrained(model_id)
+        tokenizer = AutoTokenizer.from_pretrained(model_id)
+        if not isinstance(tokenizer, TokenizersBackend):
+            raise RuntimeError(f"Tokenizer for {model_id} is not a TokenizersBackend")
+        cls._tokenizer = tokenizer
         cls._model = (
             AutoModelForSequenceClassification.from_pretrained(model_id).cuda().eval()
         )

@@ -2,7 +2,6 @@ import logging
 import time
 from typing import Any, cast
 
-import numpy as np
 from transformers import AutoTokenizer, PreTrainedTokenizerBase, TokenizersBackend
 
 from kernel_entropy.nli import ModernBERTScorer
