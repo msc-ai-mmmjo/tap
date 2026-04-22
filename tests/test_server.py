@@ -37,6 +37,10 @@ def test_analyse_returns_expected_shape(client):
             return_value=("Paris is the capital of France.", ["Paris", "is"], [], None),
         ),
         patch("app.backend.server.detect_mcq_bert", return_value=False),
+        patch(
+            "app.backend.server.get_robustness",
+            return_value={"type": "nlp", "attempts": 0, "flipped": 0},
+        ),
     ):
         response = client.post(
             "/api/analyse",
@@ -77,6 +81,10 @@ def test_analyse_surfaces_resampled_tokens(client):
             return_value=("better answer", tokens, resampled, None),
         ),
         patch("app.backend.server.detect_mcq_bert", return_value=False),
+        patch(
+            "app.backend.server.get_robustness",
+            return_value={"type": "nlp", "attempts": 0, "flipped": 0},
+        ),
     ):
         response = client.post(
             "/api/analyse",
@@ -118,6 +126,10 @@ def test_analyse_passes_full_message_history(client):
             "app.backend.server.generate", return_value=("4.", ["4"], [], None)
         ) as mock_gen,
         patch("app.backend.server.detect_mcq_bert", return_value=False),
+        patch(
+            "app.backend.server.get_robustness",
+            return_value={"type": "nlp", "attempts": 0, "flipped": 0},
+        ),
     ):
         client.post("/api/analyse", json={"messages": messages})
 
@@ -132,6 +144,10 @@ def test_analyse_mcq_path_uses_bert_flag(client):
             "app.backend.server.generate", return_value=("B", ["B"], [], 0.77)
         ) as mock_gen,
         patch("app.backend.server.detect_mcq_bert", return_value=True),
+        patch(
+            "app.backend.server.get_robustness",
+            return_value={"type": "mcq", "attempts": 0, "flipped": 0},
+        ),
     ):
         response = client.post(
             "/api/analyse",
