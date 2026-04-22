@@ -79,6 +79,12 @@ class ChatRequest(BaseModel):
 
 
 def call_hf_model(messages: list[dict]) -> str:
+    """Call the HF Inference API as a fallback when Hydra is unavailable or bypassed.
+
+    Used when ``hf=true`` is passed to ``/api/analyse`` or when ``load_hydra``
+    failed at lifespan startup. No PoE verification is available in this path;
+    the security payload from the caller reflects that with ``certified=None``.
+    """
     if not HF_TOKEN:
         raise ValueError("HF_TOKEN environment variable not set")
     client = InferenceClient(HF_MODEL, token=HF_TOKEN)

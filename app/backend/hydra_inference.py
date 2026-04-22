@@ -78,6 +78,8 @@ def generate(
         logger.info("MCQ PoE prediction: %s (%.2fs)", letter, time.perf_counter() - t0)
         return letter, [letter], []
 
+    # TODO: poe_generate_with_cache hardcodes device="cuda"; the NLP path
+    # currently ignores the caller's device setting.
     output_parts, original_tokens, resampled_idxs = poe_generate_with_cache(
         model,
         tokenizer,
@@ -128,13 +130,14 @@ def _tokens_and_resamples_from_poe_output(
     resampled: list[dict] = []
     for j, orig_idx in enumerate(resampled_idxs):
         token_idx = orig_idx - 1
-        if token_idx >= len(parts):
+        if not 0 <= token_idx < len(parts):
             continue
         resampled.append(
             {
                 "index": token_idx,
                 "old_token": original_tokens[j].strip(),
                 "new_token": parts[token_idx].strip(),
+                # Placeholder until per-shard beta_h reliability weights land.
                 "severity": 1.0,
             }
         )

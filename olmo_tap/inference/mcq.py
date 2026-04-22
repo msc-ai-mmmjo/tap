@@ -40,6 +40,8 @@ def poe_mcq_predict(
     all_logits = model(input_ids, last_token_only=True)  # (n_heads, 1, 1, vocab)
     log_p = F.log_softmax(all_logits.float(), dim=-1)
     # beta = 1.0 flat over all heads. Partition constant drops out of argmax.
+    # TODO: slice out head 0 once it becomes the uncertainty head per
+    # olmo_tap/experiments/uncertainty/training.py.
     log_P = log_p.sum(dim=0).squeeze()  # (vocab,)
 
     letter_idx = int(log_P[abcd_token_ids].argmax().item())

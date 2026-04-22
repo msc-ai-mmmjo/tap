@@ -184,15 +184,28 @@ function MetricCell({ index, label, info, value, valueColour, caption, isFirst }
 }
 
 export function MetricCards({ data }: Props) {
-  const resampledCount = data.security.resampled.length;
-  const totalTokens = data.security.tokens.length;
-  const securityValue = `${resampledCount} swap${resampledCount !== 1 ? 's' : ''}`;
-  const securityColour =
-    resampledCount === 0
-      ? 'var(--color-ok)'
-      : resampledCount <= 3
-        ? 'var(--color-warn)'
-        : 'var(--color-bad)';
+  const { certified, resampled, tokens } = data.security;
+  const resampledCount = resampled.length;
+  const totalTokens = tokens.length;
+
+  let securityValue: string;
+  let securityColour: string;
+  let securityCaption: string;
+  if (certified === null) {
+    securityValue = '—';
+    securityColour = 'var(--color-ink-muted)';
+    securityCaption = 'Fallback: no PoE guarantee';
+  } else {
+    securityValue = `${resampledCount} swap${resampledCount !== 1 ? 's' : ''}`;
+    securityColour =
+      resampledCount === 0
+        ? 'var(--color-ok)'
+        : resampledCount <= 3
+          ? 'var(--color-warn)'
+          : 'var(--color-bad)';
+    securityCaption = `${resampledCount} of ${totalTokens} tokens resampled during verification`;
+  }
+
   const robustnessValue = data.robustness.passed ? 'Passed' : 'Failed';
 
   return (
@@ -217,7 +230,7 @@ export function MetricCards({ data }: Props) {
         info={METRIC_INFO.security}
         value={securityValue}
         valueColour={securityColour}
-        caption={`${resampledCount} of ${totalTokens} tokens resampled during verification`}
+        caption={securityCaption}
       />
       <MetricCell
         index="03"
