@@ -173,14 +173,14 @@ def get_robustness(
     """Return a robustness score by testing adversarial suffixes against the original response."""
     last_message = messages.pop()
 
+    orig_prompt = messages + [last_message]
+    orig_resp, _, _, _ = generate(model, tokenizer, orig_prompt, is_mcq, device)
+
     successful_suffixes = []
     scores = []
 
     for suffix in adv_suffix_bank:
         logger.info("Testing adversarial suffix: %s", suffix)
-
-        orig_prompt = messages + [last_message]
-        orig_resp, _, _, _ = generate(model, tokenizer, orig_prompt, is_mcq, device)
 
         attack_msg = {"role": "user", "content": last_message["content"] + suffix}
         adv_prompt = messages + [attack_msg]
