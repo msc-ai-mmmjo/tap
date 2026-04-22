@@ -1,7 +1,7 @@
 import torch
 from transformers import AutoTokenizer
 
-from olmo_tap.constants import MAX_NEW_TOKENS, WEIGHTS_DIR
+from olmo_tap.constants import DEMO_MAX_NEW_TOKENS, WEIGHTS_DIR
 from olmo_tap.experiments.uncertainty.loading import load_for_inference
 from olmo_tap.experiments.utils.config import (
     ExperimentConfig,
@@ -37,7 +37,7 @@ def main():
         )
 
         input_ids = torch.tensor([tokenizer.encode(chat_prompt)], device="cuda")
-        max_seq_len = input_ids.shape[1] + MAX_NEW_TOKENS
+        max_seq_len = input_ids.shape[1] + DEMO_MAX_NEW_TOKENS
 
         model.init_kv_cache(batch_size=1, max_seq_len=max_seq_len)
 
@@ -49,7 +49,7 @@ def main():
             generated = [next_token.item()]
 
             # decode: one token at a time using cached KVs
-            for _ in range(MAX_NEW_TOKENS - 1):
+            for _ in range(DEMO_MAX_NEW_TOKENS - 1):
                 all_logits = model(next_token, return_logits=True, last_token_only=True)
                 next_logits = all_logits[0, 0, 0, :]
                 next_token = next_logits.argmax(dim=-1, keepdim=True).unsqueeze(0)

@@ -2,22 +2,35 @@ import logging
 import time
 from typing import cast
 
-import torch
-from transformers import AutoTokenizer, TokenizersBackend
+from transformers import AutoTokenizer, PreTrainedTokenizerBase, TokenizersBackend
 
-from olmo_tap.constants import KV_CACHE_MAX_SEQ_LEN, WEIGHTS_DIR
-from olmo_tap.experiments.utils.config import HydraLoRAConfig
-from olmo_tap.experiments.utils.model_builder import build_base_model
+from olmo_tap.constants import MAX_NEW_TOKENS, MCQ_MAX_NEW_TOKENS, WEIGHTS_DIR
 from olmo_tap.hydra import HydraTransformer
+from olmo_tap.inference.loading_weights import load_ensemble
+from olmo_tap.inference.poe import PoE
 
 logger = logging.getLogger(__name__)
 
 MODEL_NAME = "Hydra"
 
+MCQ_SYSTEM_PROMPT = (
+    "Respond with only the letter of the correct option (e.g. A, B, C, or D). "
+    "Do not add any explanation."
+)
+
+NLP_SYSTEM_PROMPT = (
+    "You are a medical expert. "
+    "Answer directly in at most 2 short sentences. "
+    "No preamble, headers, lists, disclaimers, or restating the question. "
+    "Do not tell the user to consult a professional. "
+    "Put the final answer in the first sentence."
+)
+
 
 def load_hydra(
     device: str = "cuda",
 ) -> tuple[HydraTransformer, TokenizersBackend] | tuple[None, None]:
+    """Load the 10-head hydra (9 LLM + 1 uncertainty) with prod security + robustness LoRAs merged."""
     t0 = time.perf_counter()
 
     if not WEIGHTS_DIR:
@@ -30,18 +43,12 @@ def load_hydra(
         logger.error("Tokenizer is not a TokenizersBackend; aborting model load")
         return None, None
 
-    logger.info("Building model on device=%s", device)
-    config = HydraLoRAConfig(device=device)
-
+    logger.info("Building ensemble on device=%s", device)
     try:
-        model = build_base_model(config)
-        model.eval()
+        model, _n_heads = load_ensemble()
     except Exception as e:
-        logger.error("Error building model: %s", e)
+        logger.error("Error loading ensemble: %s", e)
         return None, None
-
-    logger.info("Allocating KV cache (max_seq_len=%d)", KV_CACHE_MAX_SEQ_LEN)
-    model.init_kv_cache(batch_size=1, max_seq_len=KV_CACHE_MAX_SEQ_LEN)
 
     logger.info("Model ready -- setup took %.2fs", time.perf_counter() - t0)
     return model, tokenizer
@@ -49,51 +56,101 @@ def load_hydra(
 
 def generate(
     model: HydraTransformer,
-    tokenizer: TokenizersBackend,
+    tokenizer: PreTrainedTokenizerBase,
     messages: list[dict],
-    max_new_tokens: int,
+    is_mcq: bool,
     device: str = "cuda",
-    important_token_ids: dict[str, int] | None = None,
-) -> tuple[str, float | None]:
-    chat_prompt = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
-    input_ids = torch.tensor([tokenizer.encode(chat_prompt)], device=device)
+) -> tuple[str, list[str], list[dict], float | None]:
+    """Generate a PoE response via speculative verification.
 
-    model.reset_kv_cache()
+    Both MCQ and NLP prompts run through ``PoE.generate_with_cache``. When
+    ``is_mcq`` is true, a short system nudge is prepended, the token budget is
+    capped at ``MCQ_MAX_NEW_TOKENS`` so the model emits a bare letter, and the
+    PoE class captures a witness hidden state on the first accepted/rejected
+    token and returns a ``p_correct`` scalar from a dedicated uncertainty head.
+
+    :returns: ``(raw_response, tokens, resampled, uncertainty)`` where
+        ``uncertainty`` is a float ``p_correct`` for MCQ and ``None`` for NLP.
+    """
+    n_heads = len(model.heads)
+
+    if is_mcq:
+        messages = [{"role": "system", "content": MCQ_SYSTEM_PROMPT}, *messages]
+        max_new_tokens = MCQ_MAX_NEW_TOKENS
+    else:
+        messages = [{"role": "system", "content": NLP_SYSTEM_PROMPT}, *messages]
+        max_new_tokens = MAX_NEW_TOKENS
 
     t0 = time.perf_counter()
-    mcq_prob = None
 
-    with torch.no_grad():
-        generated = []
-        ids = input_ids  # pre-fill with full prompt
-
-        for t in range(max_new_tokens):
-            logits: torch.Tensor = model(ids, return_logits=True)[0, 0, -1, :]
-
-            # Truthiness check (not `is not None`): an empty dict means lifespan
-            # failed to populate A/B/C/D IDs, so treat it as disabled rather than
-            # summing probs over an empty index and returning a confident 0.0.
-            if t == 0 and important_token_ids:
-                probs = torch.softmax(logits, dim=-1)
-                mcq_prob = probs[list(important_token_ids.values())].sum().item()
-                logger.info(
-                    "MCQ probability (looking for %s): %.4f",
-                    list(important_token_ids.keys()),
-                    mcq_prob,
-                )
-
-            next_token_id = int(logits.argmax().item())
-            generated.append(next_token_id)
-
-            if next_token_id == tokenizer.eos_token_id:
-                break
-
-            # for next step, input is just the last generated token
-            ids = torch.tensor([[next_token_id]], device=device)
-
-    logger.info(
-        "Generated %d tokens in %.2fs", len(generated), time.perf_counter() - t0
+    # TODO: PoE hardcodes device="cuda" internally; the ``device`` arg here is
+    # currently ignored.
+    poe = PoE(
+        model,
+        tokenizer,
+        n_llm_heads=n_heads - 1,
+        max_new_tokens=max_new_tokens,
     )
-    return cast(str, tokenizer.decode(generated, skip_special_tokens=True)), mcq_prob
+    output_parts, original_tokens, resampled_idxs, uncertainty = (
+        poe.generate_with_cache(
+            prompt_text="",
+            is_mcq=is_mcq,
+            messages=messages,
+        )
+    )
+    raw_response, tokens, resampled = _tokens_and_resamples_from_poe_output(
+        tokenizer, output_parts, original_tokens, resampled_idxs
+    )
+    logger.info(
+        "PoE generation: %d chars, %d/%d tokens resampled, uncertainty=%s (%.2fs)",
+        len(raw_response),
+        len(resampled),
+        len(tokens),
+        f"{uncertainty:.4f}" if uncertainty is not None else "n/a",
+        time.perf_counter() - t0,
+    )
+    return raw_response, tokens, resampled, uncertainty
+
+
+def _tokens_and_resamples_from_poe_output(
+    tokenizer: PreTrainedTokenizerBase,
+    output_parts: list[str],
+    original_tokens: list[str],
+    resampled_idxs: list[int],
+) -> tuple[str, list[str], list[dict]]:
+    """Convert poe.py's token-indexed output into (raw_response, tokens, resampled).
+
+    ``output_parts[0]`` is the chat-templated input; subsequent entries are
+    decoded single tokens from the generation. ``resampled_idxs`` indexes into
+    ``output_parts``; ``original_tokens[j]`` is the rejected draft token at
+    ``resampled_idxs[j]``. Trailing EOS entries are trimmed from both the
+    emitted token stream and any resample records that would land on them.
+    Each token's outer whitespace is stripped so the frontend can join tokens
+    with a single space for display without double-spacing BPE continuations.
+    """
+    eos_id = tokenizer.eos_token_id
+    eos_str = cast(str, tokenizer.decode([eos_id])) if eos_id is not None else ""
+
+    parts = list(output_parts[1:])
+    while parts and eos_str and parts[-1] == eos_str:
+        parts.pop()
+
+    raw_response = "".join(parts)
+    tokens = [p.strip() for p in parts]
+
+    resampled: list[dict] = []
+    for j, orig_idx in enumerate(resampled_idxs):
+        token_idx = orig_idx - 1
+        if not 0 <= token_idx < len(parts):
+            continue
+        resampled.append(
+            {
+                "index": token_idx,
+                "old_token": original_tokens[j].strip(),
+                "new_token": parts[token_idx].strip(),
+                # Placeholder until per-shard beta_h reliability weights land.
+                "severity": 1.0,
+            }
+        )
+
+    return raw_response, tokens, resampled
