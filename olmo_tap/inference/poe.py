@@ -60,6 +60,7 @@ class PoE:
         self.model.init_kv_cache(
             batch_size=1,
             max_seq_len=input_ids.size(1) + self.max_new_tokens + self.gamma,
+            omit_last=True,
         )
 
         # sample draft head
@@ -184,7 +185,7 @@ class PoE:
                     )
 
                     # store the old draft token which was resampled and its index
-                    original_tokens.append(cast(str, tokenizer.decode([token_id])))
+                    original_tokens.append(cast(str, self.tokenizer.decode([token_id])))
                     resampled_idxs.append(len(output_parts) - 1)
 
                     if is_mcq and hidden_unc_state is None:
@@ -197,11 +198,11 @@ class PoE:
                         hidden_unc_state = hidden_bank[global_idx, 0, -1, :].detach()
 
                     # sync cache back to having L + accepted_this_round tokens
-                    model.sync_kv_cache(L + accepted_this_round)
+                    self.model.sync_kv_cache(L + accepted_this_round)
 
                     # get logits for next round using explicit position
                     corr_idx = torch.tensor([[L + accepted_this_round]], device="cuda")
-                    next_step_logits = model(
+                    next_step_logits = self.model(
                         torch.tensor([[resampled_id]], device="cuda"),
                         indices=corr_idx,
                         last_token_only=True,
@@ -210,7 +211,7 @@ class PoE:
                     rejected = True
                     break
 
-            if token_id == self.tokenizer.eos_token_id or (
+            if (not rejected and token_id == self.tokenizer.eos_token_id) or (
                 rejected and resampled_id == self.tokenizer.eos_token_id
             ):
                 break

@@ -184,6 +184,12 @@ class HydraTransformer(nn.Module):
         By convention the uncertainty head is always loaded on the final index.
         The uncertainty head only performs one token generation so kv-caching
         (which is the only use of this method) is never desirable.
+
+        TODO: this convention can be confusing because we train with uncertainty head
+        at index 0. A refactor should be made to clean things up (SWE-157).
+
+        TODO: related to the above, we never want kv-cache on the uncertainty head. There
+        is definitely a cleaner solution rather than passing the `omit_last` flag everywhere
         """
         attentions = []
         for block in self.trunk.blocks.values():
@@ -198,31 +204,31 @@ class HydraTransformer(nn.Module):
                     attentions.append(attn)
         return attentions
 
-    def _kv_managers(self) -> list[KVCacheManager]:
+    def _kv_managers(self, omit_last: bool = False) -> list[KVCacheManager]:
         return [
             attn.kv_cache_manager
-            for attn in self._attentions()
+            for attn in self._attentions(omit_last)
             if attn.kv_cache_manager is not None
         ]
 
-    def init_kv_cache(self, batch_size: int, max_seq_len: int):
+    def init_kv_cache(self, batch_size: int, max_seq_len: int, omit_last: bool = False):
         """Initialize KV caches for all blocks in trunk and heads."""
-        for attn in self._attentions():
+        for attn in self._attentions(omit_last):
             attn.init_kv_cache_manager(batch_size, max_seq_len)
 
-    def reset_kv_cache(self):
+    def reset_kv_cache(self, omit_last: bool = False):
         """Reset KV cache position counters to 0 before each generation."""
-        for m in self._kv_managers():
+        for m in self._kv_managers(omit_last):
             m.cache_seqlens.fill_(0)
 
-    def rollback_kv_cache(self, n: int):
+    def rollback_kv_cache(self, n: int, omit_last: bool = False):
         """Roll back cache pointers on trunk and every head by n positions."""
-        for m in self._kv_managers():
+        for m in self._kv_managers(omit_last):
             m.cache_seqlens.sub_(n).clamp_(min=0)
 
-    def sync_kv_cache(self, target_length: int):
+    def sync_kv_cache(self, target_length: int, omit_last: bool = False):
         """Sync cache pointers on trunk and every head to specified position."""
-        for m in self._kv_managers():
+        for m in self._kv_managers(omit_last):
             m.cache_seqlens.fill_(target_length)
             m.cache_leftpad.fill_(0)
 
