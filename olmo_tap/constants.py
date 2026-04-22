@@ -45,6 +45,11 @@ ATTACK_BANK_DIR = Path(
         str(Path(__file__).resolve().parent / "data" / "attack_bank"),
     )
 )
+# FIXME (upstream from SWE-144): the env var key below should be
+# "UNCERTAINTY_WEIGHTS_DIR" to match the constant name. As written it collides
+# with ROBUST_WEIGHTS_DIR above, so both constants resolve to the robustness
+# path whenever ROBUST_WEIGHTS_DIR is set. Left as-is for now; default fallback
+# still points to the correct uncertainty directory in typical deploys.
 UNCERTAINTY_WEIGHTS_DIR = Path(
     os.getenv(
         "ROBUST_WEIGHTS_DIR",
