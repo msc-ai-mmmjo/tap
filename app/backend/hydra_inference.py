@@ -2,6 +2,7 @@ import logging
 import time
 from typing import cast
 
+import numpy as np
 from transformers import AutoTokenizer, PreTrainedTokenizerBase, TokenizersBackend
 
 from olmo_tap.constants import MAX_NEW_TOKENS, MCQ_MAX_NEW_TOKENS, WEIGHTS_DIR
@@ -154,3 +155,62 @@ def _tokens_and_resamples_from_poe_output(
         )
 
     return raw_response, tokens, resampled
+
+
+def get_robustness(
+    model: HydraTransformer,
+    tokenizer: PreTrainedTokenizerBase,
+    messages: list[dict],
+    is_mcq: bool,
+    adv_suffix_bank: list[str],
+    device: str = "cuda",
+) -> float | None:
+    """Return a placeholder robustness score until the actual LoRA weights are in place."""
+    last_message = messages.pop()
+
+    successful_suffixes = []
+    scores = []
+
+    for suffix in adv_suffix_bank:
+        logger.info("Testing adversarial suffix: %s", suffix)
+
+        orig_prompt = messages + [last_message]
+        orig_resp, _, _, _ = generate(model, tokenizer, orig_prompt, is_mcq, device)
+
+        attack_msg = {"role": "user", "content": last_message["content"] + suffix}
+        adv_prompt = messages + [attack_msg]
+        adv_resp, _, _, _ = generate(model, tokenizer, adv_prompt, is_mcq, device)
+
+        if is_mcq:
+            if orig_resp.strip().upper() != adv_resp.strip().upper():
+                logger.info("Adversarial suffix caused MCQ answer change!")
+                successful_suffixes.append(suffix)
+        else:
+            nli_output = entailment_score(orig_resp, adv_resp)
+            weight_vec = np.array([1, 0.5, 0])
+            score = nli_output.dot(weight_vec)
+            if score <= 1:
+                logger.info("Adversarial suffix caused significant NLP answer change!")
+                successful_suffixes.append(suffix)
+            scores.append(score)
+
+    if is_mcq:
+        logger.info(
+            "MCQ robustness: %d/%d successful adversarial suffixes",
+            len(successful_suffixes),
+            len(adv_suffix_bank),
+        )
+        return len(successful_suffixes) / len(adv_suffix_bank)
+    else:
+        avg_score = np.mean(scores) if scores else None
+        logger.info(
+            "NLP robustness: average entailment score %.4f over %d adversarial suffixes",
+            avg_score if avg_score is not None else float("nan"),
+            len(adv_suffix_bank),
+        )
+        return avg_score
+
+
+def entailment_score(orig_resp: str, adv_resp: str) -> np.ndarray:
+    """Placeholder for actual entailment scoring using the uncertainty head."""
+    return np.array([1, 0, 0])
