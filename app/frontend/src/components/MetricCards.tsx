@@ -14,13 +14,13 @@ interface MetricInfo {
 const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> = {
   certainty: {
     definition:
-      "How likely each claim in the answer is to be factually correct. Scores near 100% mean high confidence; low scores flag claims worth double-checking before acting on them.",
+      "The model's own estimate of how likely its answer is to be correct. Produced by a dedicated uncertainty head that inspects the model's internal state before committing to the answer. Currently available for MCQ questions only; a dash is shown when no estimate is produced.",
     paper:
       'Method: Kapoor et al., "Large Language Models Must Be Taught to Know What They Don\'t Know" (NeurIPS 2024).',
   },
   security: {
     definition:
-      "How many tampered training examples an attacker would need to plant to change this answer to a harmful one. Higher means the answer is provably harder to manipulate.",
+      "How many tokens in this response were swapped during verification because the model's draft disagreed with its peers. Fewer swaps means stronger internal consensus and a more trustworthy answer.",
     paper:
       'Method: Ghitu & Wicker, "Towards Poisoning Robustness Certification for Natural Language Generation".',
   },
@@ -184,7 +184,38 @@ function MetricCell({ index, label, info, value, valueColour, caption, isFirst }
 }
 
 export function MetricCards({ data }: Props) {
-  const securityValue = data.security.certified ? 'Certified' : 'Caution';
+  const { certified, resampled, tokens } = data.security;
+  const resampledCount = resampled.length;
+  const totalTokens = tokens.length;
+
+  let securityValue: string;
+  let securityColour: string;
+  let securityCaption: string;
+  if (certified === null) {
+    securityValue = '—';
+    securityColour = 'var(--color-ink-muted)';
+    securityCaption = 'Fallback: no PoE guarantee';
+  } else {
+    securityValue = `${resampledCount} swap${resampledCount !== 1 ? 's' : ''}`;
+    securityColour =
+      resampledCount === 0
+        ? 'var(--color-ok)'
+        : resampledCount <= 3
+          ? 'var(--color-warn)'
+          : 'var(--color-bad)';
+    securityCaption = `${resampledCount} of ${totalTokens} tokens resampled during verification`;
+  }
+
+  const { overall: certaintyOverall } = data.uncertainty;
+  const certaintyValue =
+    certaintyOverall === null ? '—' : `${Math.round(certaintyOverall * 100)}%`;
+  const certaintyColour =
+    certaintyOverall === null ? 'var(--color-ink-muted)' : undefined;
+  const certaintyCaption =
+    certaintyOverall === null
+      ? 'Fallback: no uncertainty estimate'
+      : 'Model-estimated probability this answer is correct';
+
   const robustnessValue = data.robustness.passed ? 'Passed' : 'Failed';
 
   return (
@@ -200,16 +231,17 @@ export function MetricCards({ data }: Props) {
         index="01"
         label="Certainty"
         info={METRIC_INFO.certainty}
-        value={`${Math.round(data.overall_confidence * 100)}%`}
-        caption="Average likelihood each claim is correct"
+        value={certaintyValue}
+        valueColour={certaintyColour}
+        caption={certaintyCaption}
       />
       <MetricCell
         index="02"
         label="Security"
         info={METRIC_INFO.security}
         value={securityValue}
-        valueColour={data.security.certified ? 'var(--color-ok)' : 'var(--color-warn)'}
-        caption={`Withstands up to ${data.security.tpa_budget ?? '—'} tampered training examples`}
+        valueColour={securityColour}
+        caption={securityCaption}
       />
       <MetricCell
         index="03"
