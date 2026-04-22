@@ -9,14 +9,17 @@ from huggingface_hub import InferenceClient
 from pydantic import BaseModel
 from transformers import TokenizersBackend
 
+from app.backend.adversarial_suffixes import DUMMY_ADV_SUFFIXES
 from app.backend.bert_inference import load_bert
 from app.backend.claim_splitter import decompose_into_claims
 from app.backend.constants import HF_FALLBACK_MODEL as HF_MODEL, HF_TOKEN
-from app.backend.hydra_inference import generate, load_hydra, MODEL_NAME
-from app.backend.mock_metrics import (
-    mock_claim_confidence,
-    mock_robustness_status,
+from app.backend.hydra_inference import (
+    generate,
+    get_robustness,
+    load_hydra,
+    MODEL_NAME,
 )
+from app.backend.mock_metrics import mock_claim_confidence
 from app.backend.question_classifier import detect_mcq_bert
 from olmo_tap.hydra import HydraTransformer
 
@@ -116,6 +119,10 @@ def _poe_uncertainty(p_correct: float | None) -> dict:
     return {"overall": p_correct}
 
 
+def _fallback_robustness() -> dict:
+    return {"type": "unavailable"}
+
+
 @app.post("/api/analyse")
 async def analyse(request: ChatRequest, hf: bool = False):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
@@ -135,6 +142,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
         raw_response = call_hf_model(messages)
         security = _fallback_security()
         uncertainty = _fallback_uncertainty()
+        robustness = _fallback_robustness()
     else:
         model_name = MODEL_NAME
         raw_response, tokens, resampled, p_correct = generate(
@@ -146,6 +154,18 @@ async def analyse(request: ChatRequest, hf: bool = False):
         )
         security = _poe_security(tokens, resampled)
         uncertainty = _poe_uncertainty(p_correct)
+        # TODO: reuse raw_response instead of letting get_robustness regenerate;
+        # also guard against bert being unavailable for NLP queries.
+        robustness = get_robustness(
+            hydra,
+            hydra_tokenizer,
+            list(messages),
+            is_mcq=bool(is_mcq),
+            adv_suffix_bank=DUMMY_ADV_SUFFIXES,
+            bert_model=_models.get("bert"),
+            bert_tokenizer=_tokenizers.get("bert"),
+            device=_device,
+        )
 
     logger.info("Generation complete (%d chars)", len(raw_response))
 
@@ -171,7 +191,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
         "overall_confidence": overall,
         "uncertainty": uncertainty,
         "security": security,
-        "robustness": mock_robustness_status(last_user_msg),
+        "robustness": robustness,
         "raw_response": raw_response,
         "model": model_name,
         "is_mcq": is_mcq,
