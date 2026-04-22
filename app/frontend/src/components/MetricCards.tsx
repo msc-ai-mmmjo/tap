@@ -14,13 +14,13 @@ interface MetricInfo {
 const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> = {
   certainty: {
     definition:
-      "The model's own estimate of how likely its answer is to be correct. Produced by a dedicated uncertainty head that inspects the model's internal state before committing to the answer. Currently available for MCQ questions only; a dash is shown when no estimate is produced.",
+      "How likely each claim in the answer is to be factually correct. Scores near 100% mean high confidence; low scores flag claims worth double-checking before acting on them. Currently available for MCQ questions only; a dash is shown when no estimate is produced.",
     paper:
       'Method: Kapoor et al., "Large Language Models Must Be Taught to Know What They Don\'t Know" (NeurIPS 2024).',
   },
   security: {
     definition:
-      "How many tokens in this response were swapped during verification because the model's draft disagreed with its peers. Fewer swaps means stronger internal consensus and a more trustworthy answer.",
+      "Each token is cross-checked by several independent heads in the model. Whenever they disagree with the draft, the token is rewritten. Fewer rewrites means stronger agreement across heads, and a more trustworthy answer.",
     paper:
       'Method: Ghitu & Wicker, "Towards Poisoning Robustness Certification for Natural Language Generation".',
   },
