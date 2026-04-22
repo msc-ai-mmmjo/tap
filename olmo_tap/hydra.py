@@ -179,7 +179,7 @@ class HydraTransformer(nn.Module):
     def num_params(self) -> int:
         return sum(p.numel() for p in self.parameters())
 
-    def _attentions(self, omit_last: bool = True) -> list[Attention]:
+    def _attentions(self, omit_last: bool = False) -> list[Attention]:
         """
         By convention the uncertainty head is always loaded on the final index.
         The uncertainty head only performs one token generation so kv-caching
