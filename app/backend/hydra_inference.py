@@ -4,7 +4,7 @@ from typing import cast
 
 from transformers import AutoTokenizer, PreTrainedTokenizerBase, TokenizersBackend
 
-from olmo_tap.constants import MAX_NEW_TOKENS, WEIGHTS_DIR
+from olmo_tap.constants import MAX_NEW_TOKENS, MCQ_MAX_NEW_TOKENS, WEIGHTS_DIR
 from olmo_tap.hydra import HydraTransformer
 from olmo_tap.inference.loading_weights import load_ensemble
 from olmo_tap.inference.poe import poe_generate_with_cache
@@ -12,6 +12,11 @@ from olmo_tap.inference.poe import poe_generate_with_cache
 logger = logging.getLogger(__name__)
 
 MODEL_NAME = "Hydra"
+
+MCQ_SYSTEM_PROMPT = (
+    "Respond with only the letter of the correct option (e.g. A, B, C, or D). "
+    "Do not add any explanation."
+)
 
 
 def load_hydra(
@@ -50,17 +55,22 @@ def generate(
 ) -> tuple[str, list[str], list[dict]]:
     """Generate a PoE response via speculative verification.
 
-    Single inference path for both MCQ and NLP prompts, per the response
-    aggregation doc ("always PoE"). ``is_mcq`` does not alter generation today;
-    it is kept as the routing flag for downstream robustness and uncertainty
-    metrics.
+    Both MCQ and NLP prompts run through ``poe_generate_with_cache``. When
+    ``is_mcq`` is true, a short system nudge is prepended and the token budget
+    is capped at ``MCQ_MAX_NEW_TOKENS`` so the model emits a bare letter
+    instead of a textbook-style explanation.
 
     :returns: ``(raw_response, tokens, resampled)`` where ``tokens`` is the
         stripped token stream and ``resampled`` lists PoE rejections with
         token-level indices.
     """
-    del is_mcq  # reserved for downstream metric routing; see docstring
     n_heads = len(model.heads)
+
+    if is_mcq:
+        messages = [{"role": "system", "content": MCQ_SYSTEM_PROMPT}, *messages]
+        max_new_tokens = MCQ_MAX_NEW_TOKENS
+    else:
+        max_new_tokens = MAX_NEW_TOKENS
 
     t0 = time.perf_counter()
 
@@ -71,7 +81,7 @@ def generate(
         tokenizer,
         prompt_text="",
         n_heads=n_heads,
-        max_new_tokens=MAX_NEW_TOKENS,
+        max_new_tokens=max_new_tokens,
         messages=messages,
     )
     raw_response, tokens, resampled = _tokens_and_resamples_from_poe_output(

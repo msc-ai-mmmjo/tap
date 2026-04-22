@@ -3,10 +3,12 @@ from unittest.mock import MagicMock, patch
 from transformers import TokenizersBackend
 
 from app.backend.hydra_inference import (
+    MCQ_SYSTEM_PROMPT,
     _tokens_and_resamples_from_poe_output,
     generate,
     load_hydra,
 )
+from olmo_tap.constants import MAX_NEW_TOKENS, MCQ_MAX_NEW_TOKENS
 
 
 def test_generate_emits_tokens_and_resamples():
@@ -24,7 +26,7 @@ def test_generate_emits_tokens_and_resamples():
     with patch(
         "app.backend.hydra_inference.poe_generate_with_cache",
         return_value=(output_parts, original_tokens, resampled_idxs),
-    ):
+    ) as mock_poe:
         raw, tokens, resampled = generate(
             mock_model,
             mock_tokenizer,
@@ -43,6 +45,41 @@ def test_generate_emits_tokens_and_resamples():
             "severity": 1.0,
         }
     ]
+    call_kwargs = mock_poe.call_args.kwargs
+    assert call_kwargs["max_new_tokens"] == MAX_NEW_TOKENS
+    assert call_kwargs["messages"] == [{"role": "user", "content": "say hi"}]
+
+
+def test_generate_mcq_injects_system_prompt_and_short_budget():
+    mock_model = MagicMock()
+    mock_model.heads = [MagicMock()] * 9
+    mock_tokenizer = MagicMock()
+    mock_tokenizer.eos_token_id = 7
+    mock_tokenizer.decode.return_value = "<eos>"
+
+    output_parts = ["<chat-prefix>", "A"]
+
+    with patch(
+        "app.backend.hydra_inference.poe_generate_with_cache",
+        return_value=(output_parts, [], []),
+    ) as mock_poe:
+        raw, tokens, _ = generate(
+            mock_model,
+            mock_tokenizer,
+            [{"role": "user", "content": "Which fits? A) Gout B) ..."}],
+            is_mcq=True,
+            device="cpu",
+        )
+
+    assert raw == "A"
+    assert tokens == ["A"]
+    call_kwargs = mock_poe.call_args.kwargs
+    assert call_kwargs["max_new_tokens"] == MCQ_MAX_NEW_TOKENS
+    assert call_kwargs["messages"][0] == {
+        "role": "system",
+        "content": MCQ_SYSTEM_PROMPT,
+    }
+    assert call_kwargs["messages"][1]["role"] == "user"
 
 
 def test_tokens_and_resamples_no_resamples():
