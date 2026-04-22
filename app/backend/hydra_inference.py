@@ -4,10 +4,10 @@ from typing import cast
 
 from transformers import AutoTokenizer, PreTrainedTokenizerBase, TokenizersBackend
 
-from olmo_tap.constants import MCQ_LETTERS, NLP_MAX_NEW_TOKENS, WEIGHTS_DIR
+from olmo_tap.constants import NLP_MAX_NEW_TOKENS, WEIGHTS_DIR
 from olmo_tap.hydra import HydraTransformer
 from olmo_tap.inference.loading_weights import load_ensemble
-from olmo_tap.inference.poe import poe_generate_with_cache, poe_mcq_predict
+from olmo_tap.inference.poe import poe_generate_with_cache
 
 logger = logging.getLogger(__name__)
 
@@ -48,37 +48,24 @@ def generate(
     is_mcq: bool,
     device: str = "cuda",
 ) -> tuple[str, list[str], list[dict]]:
-    """Generate a PoE response.
+    """Generate a PoE response via speculative verification.
 
-    :returns: ``(raw_response, tokens, resampled)``. For MCQ, ``raw_response`` is
-        a single letter, ``tokens`` is a one-element list containing the letter,
-        and ``resampled`` is empty (no speculative verification on a single
-        prefill). For NLP, ``tokens`` is the full stripped token stream and
-        ``resampled`` lists PoE rejections with token-level indices.
+    Single inference path for both MCQ and NLP prompts, per the response
+    aggregation doc ("always PoE"). ``is_mcq`` does not alter generation today;
+    it is kept as the routing flag for downstream robustness and uncertainty
+    metrics.
+
+    :returns: ``(raw_response, tokens, resampled)`` where ``tokens`` is the
+        stripped token stream and ``resampled`` lists PoE rejections with
+        token-level indices.
     """
-    chat_prompt = cast(
-        str,
-        tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        ),
-    )
+    del is_mcq  # reserved for downstream metric routing; see docstring
     n_heads = len(model.heads)
 
     t0 = time.perf_counter()
 
-    if is_mcq:
-        abcd_token_ids = [
-            tokenizer.encode(letter, add_special_tokens=False)[0]
-            for letter in MCQ_LETTERS
-        ]
-        letter = poe_mcq_predict(
-            model, tokenizer, chat_prompt, abcd_token_ids, device=device
-        )
-        logger.info("MCQ PoE prediction: %s (%.2fs)", letter, time.perf_counter() - t0)
-        return letter, [letter], []
-
-    # TODO: poe_generate_with_cache hardcodes device="cuda"; the NLP path
-    # currently ignores the caller's device setting.
+    # TODO: poe_generate_with_cache hardcodes device="cuda"; the ``device`` arg
+    # here is currently ignored.
     output_parts, original_tokens, resampled_idxs = poe_generate_with_cache(
         model,
         tokenizer,
@@ -91,7 +78,7 @@ def generate(
         tokenizer, output_parts, original_tokens, resampled_idxs
     )
     logger.info(
-        "NLP PoE generation: %d chars, %d/%d tokens resampled (%.2fs)",
+        "PoE generation: %d chars, %d/%d tokens resampled (%.2fs)",
         len(raw_response),
         len(resampled),
         len(tokens),

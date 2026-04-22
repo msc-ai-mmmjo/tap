@@ -9,36 +9,7 @@ from app.backend.hydra_inference import (
 )
 
 
-def test_generate_mcq_returns_letter_and_single_token():
-    mock_model = MagicMock()
-    mock_model.heads = [MagicMock()] * 9
-    mock_tokenizer = MagicMock()
-    mock_tokenizer.apply_chat_template.return_value = "<prompt>"
-    mock_tokenizer.encode.side_effect = lambda text, add_special_tokens=True: {
-        "A": [100],
-        "B": [101],
-        "C": [102],
-        "D": [103],
-    }.get(text, [0])
-
-    with patch(
-        "app.backend.hydra_inference.poe_mcq_predict", return_value="B"
-    ) as mock_mcq:
-        raw, tokens, resampled = generate(
-            mock_model,
-            mock_tokenizer,
-            [{"role": "user", "content": "A or B?"}],
-            is_mcq=True,
-            device="cpu",
-        )
-
-    assert raw == "B"
-    assert tokens == ["B"]
-    assert resampled == []
-    mock_mcq.assert_called_once()
-
-
-def test_generate_nlp_emits_tokens_and_resamples():
+def test_generate_emits_tokens_and_resamples():
     mock_model = MagicMock()
     mock_model.heads = [MagicMock()] * 9
     mock_tokenizer = MagicMock()
