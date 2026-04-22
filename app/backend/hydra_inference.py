@@ -1,14 +1,17 @@
 import logging
 import time
-from typing import cast
+from typing import Any, cast
 
 import numpy as np
 from transformers import AutoTokenizer, PreTrainedTokenizerBase, TokenizersBackend
 
+from kernel_entropy.nli import ModernBERTScorer
 from olmo_tap.constants import MAX_NEW_TOKENS, MCQ_MAX_NEW_TOKENS, WEIGHTS_DIR
 from olmo_tap.hydra import HydraTransformer
 from olmo_tap.inference.loading_weights import load_ensemble
 from olmo_tap.inference.poe import PoE
+
+NLP_ROBUSTNESS_THRESHOLD = 1.0
 
 logger = logging.getLogger(__name__)
 
@@ -163,9 +166,11 @@ def get_robustness(
     messages: list[dict],
     is_mcq: bool,
     adv_suffix_bank: list[str],
+    bert_model: Any,
+    bert_tokenizer: Any,
     device: str = "cuda",
 ) -> float | None:
-    """Return a placeholder robustness score until the actual LoRA weights are in place."""
+    """Return a robustness score by testing adversarial suffixes against the original response."""
     last_message = messages.pop()
 
     successful_suffixes = []
@@ -186,12 +191,20 @@ def get_robustness(
                 logger.info("Adversarial suffix caused MCQ answer change!")
                 successful_suffixes.append(suffix)
         else:
-            nli_output = entailment_score(orig_resp, adv_resp)
-            weight_vec = np.array([1, 0.5, 0])
-            score = nli_output.dot(weight_vec)
-            if score <= 1:
+            scorer = ModernBERTScorer(
+                [orig_resp, adv_resp],
+                model=bert_model,
+                tokenizer=bert_tokenizer,
+            )
+            similarity_mat, raw_probs = scorer.compute(verbose=True)
+            score = similarity_mat[0, 1].item()
+
+            # Perhaps we could use `raw_probs` contents directly as a more fine-grained
+            # measure of NLI change instead of the aggregated similarity score?
+            if score <= NLP_ROBUSTNESS_THRESHOLD:
                 logger.info("Adversarial suffix caused significant NLP answer change!")
                 successful_suffixes.append(suffix)
+
             scores.append(score)
 
     if is_mcq:
@@ -209,8 +222,3 @@ def get_robustness(
             len(adv_suffix_bank),
         )
         return avg_score
-
-
-def entailment_score(orig_resp: str, adv_resp: str) -> np.ndarray:
-    """Placeholder for actual entailment scoring using the uncertainty head."""
-    return np.array([1, 0, 0])
