@@ -4,7 +4,7 @@ from typing import cast
 
 from transformers import AutoTokenizer, PreTrainedTokenizerBase, TokenizersBackend
 
-from olmo_tap.constants import NLP_MAX_NEW_TOKENS, WEIGHTS_DIR
+from olmo_tap.constants import MAX_NEW_TOKENS, WEIGHTS_DIR
 from olmo_tap.hydra import HydraTransformer
 from olmo_tap.inference.loading_weights import load_ensemble
 from olmo_tap.inference.poe import poe_generate_with_cache
@@ -71,7 +71,7 @@ def generate(
         tokenizer,
         prompt_text="",
         n_heads=n_heads,
-        max_new_tokens=NLP_MAX_NEW_TOKENS,
+        max_new_tokens=MAX_NEW_TOKENS,
         messages=messages,
     )
     raw_response, tokens, resampled = _tokens_and_resamples_from_poe_output(
