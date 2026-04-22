@@ -24,9 +24,14 @@ export interface RobustnessStatus {
   flagged_tokens: string[];
 }
 
+export interface Uncertainty {
+  overall: number | null;
+}
+
 export interface AnalysisResponse {
   claims: Claim[];
   overall_confidence: number;
+  uncertainty: Uncertainty;
   security: SecurityStatus;
   robustness: RobustnessStatus;
   raw_response: string;

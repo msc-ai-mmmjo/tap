@@ -14,7 +14,7 @@ interface MetricInfo {
 const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> = {
   certainty: {
     definition:
-      "How likely each claim in the answer is to be factually correct. Scores near 100% mean high confidence; low scores flag claims worth double-checking before acting on them.",
+      "The model's own estimate of how likely its answer is to be correct. Produced by a dedicated uncertainty head that inspects the model's internal state before committing to the answer. Currently available for MCQ questions only; a dash is shown when no estimate is produced.",
     paper:
       'Method: Kapoor et al., "Large Language Models Must Be Taught to Know What They Don\'t Know" (NeurIPS 2024).',
   },
@@ -206,6 +206,16 @@ export function MetricCards({ data }: Props) {
     securityCaption = `${resampledCount} of ${totalTokens} tokens resampled during verification`;
   }
 
+  const { overall: certaintyOverall } = data.uncertainty;
+  const certaintyValue =
+    certaintyOverall === null ? '—' : `${Math.round(certaintyOverall * 100)}%`;
+  const certaintyColour =
+    certaintyOverall === null ? 'var(--color-ink-muted)' : undefined;
+  const certaintyCaption =
+    certaintyOverall === null
+      ? 'Fallback: no uncertainty estimate'
+      : 'Model-estimated probability this answer is correct';
+
   const robustnessValue = data.robustness.passed ? 'Passed' : 'Failed';
 
   return (
@@ -221,8 +231,9 @@ export function MetricCards({ data }: Props) {
         index="01"
         label="Certainty"
         info={METRIC_INFO.certainty}
-        value={`${Math.round(data.overall_confidence * 100)}%`}
-        caption="Average likelihood each claim is correct"
+        value={certaintyValue}
+        valueColour={certaintyColour}
+        caption={certaintyCaption}
       />
       <MetricCell
         index="02"
