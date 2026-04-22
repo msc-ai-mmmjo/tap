@@ -108,6 +108,14 @@ def _poe_security(tokens: list[str], resampled: list[dict]) -> dict:
     return {"certified": True, "tokens": tokens, "resampled": resampled}
 
 
+def _fallback_uncertainty() -> dict:
+    return {"overall": None}
+
+
+def _poe_uncertainty(p_correct: float | None) -> dict:
+    return {"overall": p_correct}
+
+
 @app.post("/api/analyse")
 async def analyse(request: ChatRequest, hf: bool = False):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
@@ -126,9 +134,10 @@ async def analyse(request: ChatRequest, hf: bool = False):
         model_name = HF_MODEL
         raw_response = call_hf_model(messages)
         security = _fallback_security()
+        uncertainty = _fallback_uncertainty()
     else:
         model_name = MODEL_NAME
-        raw_response, tokens, resampled = generate(
+        raw_response, tokens, resampled, p_correct = generate(
             hydra,
             hydra_tokenizer,
             messages,
@@ -136,6 +145,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
             device=_device,
         )
         security = _poe_security(tokens, resampled)
+        uncertainty = _poe_uncertainty(p_correct)
 
     logger.info("Generation complete (%d chars)", len(raw_response))
 
@@ -159,6 +169,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
     return {
         "claims": claims,
         "overall_confidence": overall,
+        "uncertainty": uncertainty,
         "security": security,
         "robustness": mock_robustness_status(last_user_msg),
         "raw_response": raw_response,
