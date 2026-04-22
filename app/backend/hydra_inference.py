@@ -7,7 +7,7 @@ from transformers import AutoTokenizer, PreTrainedTokenizerBase, TokenizersBacke
 from olmo_tap.constants import MAX_NEW_TOKENS, MCQ_MAX_NEW_TOKENS, WEIGHTS_DIR
 from olmo_tap.hydra import HydraTransformer
 from olmo_tap.inference.loading_weights import load_ensemble
-from olmo_tap.inference.poe import poe_generate_with_cache
+from olmo_tap.inference.poe import PoE
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ NLP_SYSTEM_PROMPT = (
 def load_hydra(
     device: str = "cuda",
 ) -> tuple[HydraTransformer, TokenizersBackend] | tuple[None, None]:
-    """Load the 9-head hydra with prod security + robustness LoRAs merged."""
+    """Load the 10-head hydra (9 LLM + 1 uncertainty) with prod security + robustness LoRAs merged."""
     t0 = time.perf_counter()
 
     if not WEIGHTS_DIR:
@@ -60,17 +60,17 @@ def generate(
     messages: list[dict],
     is_mcq: bool,
     device: str = "cuda",
-) -> tuple[str, list[str], list[dict]]:
+) -> tuple[str, list[str], list[dict], float | None]:
     """Generate a PoE response via speculative verification.
 
-    Both MCQ and NLP prompts run through ``poe_generate_with_cache``. When
-    ``is_mcq`` is true, a short system nudge is prepended and the token budget
-    is capped at ``MCQ_MAX_NEW_TOKENS`` so the model emits a bare letter
-    instead of a textbook-style explanation.
+    Both MCQ and NLP prompts run through ``PoE.generate_with_cache``. When
+    ``is_mcq`` is true, a short system nudge is prepended, the token budget is
+    capped at ``MCQ_MAX_NEW_TOKENS`` so the model emits a bare letter, and the
+    PoE class captures a witness hidden state on the first accepted/rejected
+    token and returns a ``p_correct`` scalar from a dedicated uncertainty head.
 
-    :returns: ``(raw_response, tokens, resampled)`` where ``tokens`` is the
-        stripped token stream and ``resampled`` lists PoE rejections with
-        token-level indices.
+    :returns: ``(raw_response, tokens, resampled, uncertainty)`` where
+        ``uncertainty`` is a float ``p_correct`` for MCQ and ``None`` for NLP.
     """
     n_heads = len(model.heads)
 
@@ -83,27 +83,31 @@ def generate(
 
     t0 = time.perf_counter()
 
-    # TODO: poe_generate_with_cache hardcodes device="cuda"; the ``device`` arg
-    # here is currently ignored.
-    output_parts, original_tokens, resampled_idxs = poe_generate_with_cache(
+    # TODO: PoE hardcodes device="cuda" internally; the ``device`` arg here is
+    # currently ignored.
+    poe = PoE(
         model,
         tokenizer,
-        prompt_text="",
-        n_heads=n_heads,
+        n_llm_heads=n_heads - 1,
         max_new_tokens=max_new_tokens,
+    )
+    output_parts, original_tokens, resampled_idxs, uncertainty = poe.generate_with_cache(
+        prompt_text="",
+        is_mcq=is_mcq,
         messages=messages,
     )
     raw_response, tokens, resampled = _tokens_and_resamples_from_poe_output(
         tokenizer, output_parts, original_tokens, resampled_idxs
     )
     logger.info(
-        "PoE generation: %d chars, %d/%d tokens resampled (%.2fs)",
+        "PoE generation: %d chars, %d/%d tokens resampled, uncertainty=%s (%.2fs)",
         len(raw_response),
         len(resampled),
         len(tokens),
+        f"{uncertainty:.4f}" if uncertainty is not None else "n/a",
         time.perf_counter() - t0,
     )
-    return raw_response, tokens, resampled
+    return raw_response, tokens, resampled, uncertainty
 
 
 def _tokens_and_resamples_from_poe_output(
