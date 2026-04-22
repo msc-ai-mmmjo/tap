@@ -11,11 +11,24 @@ export interface SecurityStatus {
   detail: string;
 }
 
-export interface RobustnessStatus {
-  passed: boolean;
-  detail: string;
-  flagged_tokens: string[];
-}
+export type RobustnessStatus =
+  | { type: 'unavailable' }
+  | {
+      type: 'nlp';
+      attempts: number;
+      flipped: number;
+      attacked_response: string;
+      attack_suffix: string;
+    }
+  | {
+      type: 'mcq';
+      attempts: number;
+      flipped: number;
+      original_choice: string;
+      attacked_choice: string;
+      attacked_response: string;
+      attack_suffix: string;
+    };
 
 export interface AnalysisResponse {
   claims: Claim[];
