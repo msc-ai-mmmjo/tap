@@ -91,10 +91,12 @@ def generate(
         n_llm_heads=n_heads - 1,
         max_new_tokens=max_new_tokens,
     )
-    output_parts, original_tokens, resampled_idxs, uncertainty = poe.generate_with_cache(
-        prompt_text="",
-        is_mcq=is_mcq,
-        messages=messages,
+    output_parts, original_tokens, resampled_idxs, uncertainty = (
+        poe.generate_with_cache(
+            prompt_text="",
+            is_mcq=is_mcq,
+            messages=messages,
+        )
     )
     raw_response, tokens, resampled = _tokens_and_resamples_from_poe_output(
         tokenizer, output_parts, original_tokens, resampled_idxs
