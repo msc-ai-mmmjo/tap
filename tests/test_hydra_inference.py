@@ -4,6 +4,7 @@ from transformers import TokenizersBackend
 
 from app.backend.hydra_inference import (
     MCQ_SYSTEM_PROMPT,
+    NLP_SYSTEM_PROMPT,
     _tokens_and_resamples_from_poe_output,
     generate,
     load_hydra,
@@ -47,7 +48,10 @@ def test_generate_emits_tokens_and_resamples():
     ]
     call_kwargs = mock_poe.call_args.kwargs
     assert call_kwargs["max_new_tokens"] == MAX_NEW_TOKENS
-    assert call_kwargs["messages"] == [{"role": "user", "content": "say hi"}]
+    assert call_kwargs["messages"] == [
+        {"role": "system", "content": NLP_SYSTEM_PROMPT},
+        {"role": "user", "content": "say hi"},
+    ]
 
 
 def test_generate_mcq_injects_system_prompt_and_short_budget():
