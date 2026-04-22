@@ -264,7 +264,9 @@ class PoE:
         saved_managers = [attn.kv_cache_manager for attn in attentions]
 
         for attn in attentions:
-            attn.kv_cache_manager.zero_cache()
+            mgr = attn.kv_cache_manager
+            if mgr is not None:
+                mgr.zero_cache()
             attn.kv_cache_manager = None
 
         aligned_residual = torch.zeros(
