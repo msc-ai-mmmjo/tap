@@ -47,7 +47,7 @@ async def lifespan(app: FastAPI):
     if "bert" not in _models:
         _models["bert"], _tokenizers["bert"] = load_bert(device=_device)
         if _models["bert"] is None:
-            logger.warning("BERT unavailable; MCQ classification disabled")
+            logger.warning("BERT unavailable; NLI-based metrics will be skipped")
     else:
         logger.info("BERT already preloaded; skipping lifespan load")
 
