@@ -18,6 +18,14 @@ MCQ_SYSTEM_PROMPT = (
     "Do not add any explanation."
 )
 
+NLP_SYSTEM_PROMPT = (
+    "You are a medical expert. "
+    "Answer directly in at most 2 short sentences. "
+    "No preamble, headers, lists, disclaimers, or restating the question. "
+    "Do not tell the user to consult a professional. "
+    "Put the final answer in the first sentence."
+)
+
 
 def load_hydra(
     device: str = "cuda",
@@ -70,6 +78,7 @@ def generate(
         messages = [{"role": "system", "content": MCQ_SYSTEM_PROMPT}, *messages]
         max_new_tokens = MCQ_MAX_NEW_TOKENS
     else:
+        messages = [{"role": "system", "content": NLP_SYSTEM_PROMPT}, *messages]
         max_new_tokens = MAX_NEW_TOKENS
 
     t0 = time.perf_counter()
