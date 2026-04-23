@@ -7,16 +7,17 @@ Natural Language Inference. Produces the similarity matrix W for KLE calculation
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import torch
+from transformers import TokenizersBackend
 
 # TYPE_CHECKING is False at runtime, True during static analysis.
 # This lets us import types for hints without requiring transformers
 # to be installed when the module is imported in non-CUDA environments.
 if TYPE_CHECKING:
-    from transformers.models.auto.modeling_auto import (
-        AutoModelForSequenceClassification as AutoModelType,
+    from transformers.models.modernbert.modeling_modernbert import (
+        ModernBertForSequenceClassification as AutoModelType,
     )
 
 # Type alias for raw probability data from NLI scoring
@@ -41,12 +42,14 @@ class ModernBERTScorer:
 
     # Class-level model singleton - loaded once, shared across instances
     _model: AutoModelType | None = None
-    _tokenizer: Any = None  # AutoTokenizer returns various backends
+    _tokenizer: TokenizersBackend | None = None
 
     def __init__(
         self,
         sentences: list[str],
         model_id: str = DEFAULT_MODEL_ID,
+        model: AutoModelType | None = None,
+        tokenizer: TokenizersBackend | None = None,
     ) -> None:
         """
         Prepare NLI scorer with sentences.
@@ -54,16 +57,24 @@ class ModernBERTScorer:
         Args:
             sentences: List of N sentences to compare
             model_id: HuggingFace repo id or local path (default: tasksource/ModernBERT-large-nli)
+            model: Pre-loaded ModernBertForSequenceClassification. When provided together with
+                   tokenizer, the class-level singleton is set directly and no HF download or
+                   CUDA check is performed.
+            tokenizer: Pre-loaded tokenizer paired with model.
 
         Raises:
-            RuntimeError: If CUDA not available
+            RuntimeError: If CUDA not available (only when model/tokenizer not injected)
         """
         self.sentences = sentences
         self._model_id = model_id
 
-        # Validate environment and load model
-        self._validate_environment()
-        self._ensure_model_loaded(model_id)
+        if model is not None and tokenizer is not None:
+            # TODO: does the job but ugly - might be better way
+            type(self)._model = model
+            type(self)._tokenizer = tokenizer
+        else:
+            self._validate_environment()
+            self._ensure_model_loaded(model_id)
 
     def _validate_environment(self) -> None:
         """Check CUDA availability. Raises on failure."""
@@ -83,7 +94,10 @@ class ModernBERTScorer:
 
         print(f"Loading ModernBERT NLI model from {model_id}...")
 
-        cls._tokenizer = AutoTokenizer.from_pretrained(model_id)
+        tokenizer = AutoTokenizer.from_pretrained(model_id)
+        if not isinstance(tokenizer, TokenizersBackend):
+            raise RuntimeError(f"Tokenizer for {model_id} is not a TokenizersBackend")
+        cls._tokenizer = tokenizer
         cls._model = (
             AutoModelForSequenceClassification.from_pretrained(model_id).cuda().eval()
         )

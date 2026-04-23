@@ -49,8 +49,12 @@ class PoE:
         prompt_text: str,
         is_mcq: bool = False,
         temperature: float | None = 0.98,
+        messages: list[dict] | None = None,
     ) -> tuple[list[str], list[str], list[int], Optional[float]]:
-        messages = [{"role": "user", "content": prompt_text}]
+        # messages wins when provided so the chat backend can pass full multi-turn
+        # history; prompt_text stays as the single-turn path for scripts/experiments.
+        if not messages:
+            messages = [{"role": "user", "content": prompt_text}]
         chat_prompt = self.tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
@@ -237,8 +241,10 @@ class PoE:
         uncertainty_score = None
         if is_mcq and hidden_unc_state is not None:
             full_answer = "".join(output_parts[1:])
+            # Use messages path so callers passing prompt_text="" still thread the question through.
+            question_text = messages[-1]["content"]
             uncertainty_score = self.get_uncertainty_score(
-                prompt_text, full_answer, hidden_unc_state
+                question_text, full_answer, hidden_unc_state
             )
 
         return output_parts, original_tokens, resampled_idxs, uncertainty_score
