@@ -163,6 +163,7 @@ def get_robustness(
     model: HydraTransformer,
     tokenizer: PreTrainedTokenizerBase,
     messages: list[dict],
+    clean_response: str,
     is_mcq: bool,
     adv_suffix_bank: list[str],
     bert_model: Any,
@@ -172,11 +173,12 @@ def get_robustness(
     """Return a robustness report by testing adversarial suffixes against the original response."""
     last_message = messages.pop()
 
-    orig_prompt = messages + [last_message]
-    orig_resp, _, _, _ = generate(model, tokenizer, orig_prompt, is_mcq, device)
+    # Reuse the caller's clean response instead of regenerating it here.
+    orig_resp = clean_response
 
     successful_suffixes = []
     scores = []
+    adv_responses = []
 
     for suffix in adv_suffix_bank:
         logger.info("Testing adversarial suffix: %s", suffix)
@@ -184,6 +186,7 @@ def get_robustness(
         attack_msg = {"role": "user", "content": last_message["content"] + suffix}
         adv_prompt = messages + [attack_msg]
         adv_resp, _, _, _ = generate(model, tokenizer, adv_prompt, is_mcq, device)
+        adv_responses.append(adv_resp)
 
         if is_mcq:
             if orig_resp.strip().upper() != adv_resp.strip().upper():
@@ -212,8 +215,33 @@ def get_robustness(
         len(successful_suffixes),
         len(adv_suffix_bank),
     )
+
+    # Worst-case entry for the adversarial preview panel:
+    # NLP -> lowest NLI similarity (always returned); MCQ -> first flipped suffix, else None.
+    worst_case: dict | None = None
+    if is_mcq:
+        if successful_suffixes:
+            idx = adv_suffix_bank.index(successful_suffixes[0])
+            worst_case = {
+                "suffix": adv_suffix_bank[idx],
+                "clean_response": orig_resp,
+                "adv_response": adv_responses[idx],
+                "flipped": True,
+                "score": None,
+            }
+    elif scores:
+        idx = scores.index(min(scores))
+        worst_case = {
+            "suffix": adv_suffix_bank[idx],
+            "clean_response": orig_resp,
+            "adv_response": adv_responses[idx],
+            "flipped": adv_suffix_bank[idx] in successful_suffixes,
+            "score": scores[idx],
+        }
+
     return {
         "type": "mcq" if is_mcq else "nlp",
         "attempts": len(adv_suffix_bank),
         "flipped": len(successful_suffixes),
+        "worst_case": worst_case,
     }
