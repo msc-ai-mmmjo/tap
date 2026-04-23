@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 MODEL_NAME = "Hydra"
 
 MCQ_SYSTEM_PROMPT = (
-    "Start your answer with the chosen option, nothing before it.\n"
-    "- If the question lists lettered options (A, B, C, D), output just the letter.\n"
-    "- If the question is yes/no, output just 'yes' or 'no'.\n"
-    "- Otherwise, output just the option text exactly as listed in the question.\n"
+    "Start your answer with the chosen option, nothing before it."
+    "- If the question lists lettered options (A, B, C, D), output just the letter."
+    "- If the question is yes/no, output just 'yes' or 'no'."
+    "- Otherwise, output just the option text exactly as listed in the question."
     "You may then add a short explanation if it helps."
 )
 
