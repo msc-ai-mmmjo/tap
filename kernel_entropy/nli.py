@@ -216,3 +216,65 @@ class ModernBERTScorer:
         if verbose:
             return W, raw_probabilities
         return W
+
+    def compute_with_baseline(self, baseline_idx: int = 0) -> "torch.Tensor":
+        """Compute KLE similarity between sentences[baseline_idx] and every other sentence.
+
+        Runs exactly 2*(N-1) NLI inferences in one forward pass — only the pairs
+        involving the baseline, not the full C(N,2) pairwise matrix.
+
+        Returns:
+            1-D tensor of length N where result[j] is the bidirectional KLE score
+            between sentences[baseline_idx] and sentences[j], and result[baseline_idx] = 0.
+        """
+        n = len(self.sentences)
+        result = torch.zeros(n, device="cuda", dtype=torch.float32)
+
+        if n <= 1:
+            return result
+
+        baseline = self.sentences[baseline_idx]
+        other_indices = [j for j in range(n) if j != baseline_idx]
+
+        nli_inputs: list[tuple[str, str]] = []
+        for j in other_indices:
+            other = self.sentences[j]
+            if baseline == other:
+                result[j] = 2.0
+            else:
+                nli_inputs.append((baseline, other))   # baseline -> j
+                nli_inputs.append((other, baseline))   # j -> baseline
+
+        if not nli_inputs:
+            return result
+
+        assert self._tokenizer is not None
+        assert self._model is not None
+
+        encoded = self._tokenizer(
+            [p[0] for p in nli_inputs],
+            [p[1] for p in nli_inputs],
+            padding=True,
+            truncation=True,
+            max_length=512,
+            return_tensors="pt",
+        )
+        input_ids = encoded["input_ids"].cuda()
+        attention_mask = encoded["attention_mask"].cuda()
+
+        with torch.no_grad():
+            outputs = self._model(input_ids=input_ids, attention_mask=attention_mask)
+            probs = torch.softmax(outputs.logits, dim=-1)
+
+        pair_pos = 0
+        for j in other_indices:
+            if self.sentences[j] == baseline:
+                continue
+            score = (
+                1.0 * probs[pair_pos,     LABEL_ENTAILMENT] + 0.5 * probs[pair_pos,     LABEL_NEUTRAL]
+                + 1.0 * probs[pair_pos + 1, LABEL_ENTAILMENT] + 0.5 * probs[pair_pos + 1, LABEL_NEUTRAL]
+            )
+            result[j] = score
+            pair_pos += 2
+
+        return result
