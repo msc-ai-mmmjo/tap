@@ -123,8 +123,14 @@ kle = { cmd = "python examples/kle.py", default-environment = "cuda" }
 nli = { cmd = "python examples/nli.py", default-environment = "cuda" }
 olmo = { cmd = "python examples/olmo.py", default-environment = "cuda" }
 
+# Documentation
+# -W promotes warnings to errors so broken cross-references fail the build.
+docs = { cmd = "sphinx-build -W -b html docs/source docs/build/html", default-environment = "docs" }
+docs-serve = { cmd = "sphinx-autobuild docs/source docs/build/html --host 0.0.0.0 --port 8765", default-environment = "docs" }
+docs-clean = { cmd = "rm -rf docs/build docs/source/api/_generated", default-environment = "docs" }
+
 # CI (runs all checks)
-check = { depends-on = ["lint", "format-check", "typecheck", "test"] }
+check = { depends-on = ["lint", "format-check", "typecheck", "test", "docs"] }
 
 [tool.pyrefly]
 project-includes = [
