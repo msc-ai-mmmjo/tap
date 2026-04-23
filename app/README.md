@@ -6,6 +6,8 @@ expandable per-claim trust analysis. Serves a local OLMo 2 7B Hydra model when w
 are available, and falls back to the Llama 3 8B HF Inference API otherwise. The landing page introduces the problem with definition cards and example queries. Metric scores are currently 
 mocked and will be replaced with our fine-tuned OLMo Hydra as they become ready.
 
+<!-- sphinx-start -->
+
 ## Hosted architecture
 
 The backend also runs on Modal as a hosted FastAPI app on managed GPUs, and Cloudflare Pages hosts the frontend. The frontend decides which backend to hit via `VITE_API_BASE`, so frontend-only work doesn't need a local GPU or a running backend. See the top-level README for the Modal tasks; URLs are shared out-of-band.

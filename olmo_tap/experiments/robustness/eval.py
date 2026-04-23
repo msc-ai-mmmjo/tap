@@ -1,7 +1,8 @@
 """Evaluate robustness: replay the attack bank against a model and compare to
 the security baseline recorded at bank-construction time.
 
-Usage:
+Usage::
+
     # raw OLMo-7B, no LoRA (sanity only -- base is an always-A classifier)
     pixi run -e cuda python -m olmo_tap.experiments.robustness.eval --base
 
