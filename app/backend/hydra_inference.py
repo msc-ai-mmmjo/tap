@@ -16,6 +16,11 @@ logger = logging.getLogger(__name__)
 
 MODEL_NAME = "Hydra"
 
+# TODO Per Michele's comment, we should play with this to see if we can get option +
+# some short explanation and refactor relevant inference pipeline e.g. robustness
+# to reflect that. From some tests I performed if it was left to free flow it would
+# just give dictionary definitions of each option.
+# I also wonder what happens if it gets an MCQ with no letter? Unsure what would happen
 MCQ_SYSTEM_PROMPT = (
     "Respond with only the letter of the correct option (e.g. A, B, C, or D). "
     "Do not add any explanation."
@@ -23,7 +28,7 @@ MCQ_SYSTEM_PROMPT = (
 
 NLP_SYSTEM_PROMPT = (
     "You are a medical expert. "
-    "Answer directly in at most 2 short sentences. "
+    "Answer directly in at most 5 short sentences. "
     "No preamble, headers, lists, disclaimers, or restating the question. "
     "Do not tell the user to consult a professional. "
     "Put the final answer in the first sentence."
