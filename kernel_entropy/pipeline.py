@@ -31,7 +31,7 @@ def compute_kle(
         n_generations: Number of responses to generate (default: 10)
         temperature: Generation temperature (default: 0.98)
         lengthscale_t: Heat kernel lengthscale (default: 1.0)
-        verbose: Print responses as they stream (default: False)
+        verbose: Print each response after generation (default: False)
 
     Returns:
         Von Neumann Entropy (float). Higher = more semantic uncertainty.

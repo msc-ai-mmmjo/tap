@@ -64,6 +64,7 @@ class HydraGenerator:
 
         Seeds the torch RNG before each PoE call so the draft-head pick and
         multinomial draws inside ``generate_with_cache`` are reproducible.
+        Forks the RNG so per-seed seeding does not leak into caller state.
         """
         if not seeds:
             return []
@@ -75,19 +76,20 @@ class HydraGenerator:
         eos_surface = self._poe.tokenizer.eos_token or ""
 
         responses: list[str] = []
-        for seed in tqdm(seeds, desc="PoE generations"):
-            torch.manual_seed(seed)
-            parts, *_ = self._poe.generate_with_cache(
-                prompt_text=prompt, is_mcq=False, temperature=temperature
-            )
-            response = "".join(parts[1:])
-            if eos_surface and response.endswith(eos_surface):
-                response = response[: -len(eos_surface)]
-            response = response.strip()
+        with torch.random.fork_rng(devices=[torch.cuda.current_device()]):
+            for seed in tqdm(seeds, desc="PoE generations"):
+                torch.manual_seed(seed)
+                parts, *_ = self._poe.generate_with_cache(
+                    prompt_text=prompt, is_mcq=False, temperature=temperature
+                )
+                response = "".join(parts[1:])
+                if eos_surface and response.endswith(eos_surface):
+                    response = response[: -len(eos_surface)]
+                response = response.strip()
 
-            if verbose:
-                print(f"\n--- Response {len(responses) + 1} (seed={seed}) ---")
-                print(response)
-            responses.append(response)
+                if verbose:
+                    print(f"\n--- Response {len(responses) + 1} (seed={seed}) ---")
+                    print(response)
+                responses.append(response)
 
         return responses
