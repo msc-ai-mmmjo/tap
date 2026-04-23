@@ -242,11 +242,13 @@ class ModernBERTScorer:
             if baseline == other:
                 result[j] = 2.0
             else:
-                nli_inputs.append((baseline, other))   # baseline -> j
-                nli_inputs.append((other, baseline))   # j -> baseline
+                nli_inputs.append((baseline, other))  # baseline -> j
+                nli_inputs.append((other, baseline))  # j -> baseline
 
         if not nli_inputs:
             return result
+
+        print(f"Computing baseline similarities ({len(nli_inputs)} inferences)...")
 
         assert self._tokenizer is not None
         assert self._model is not None
@@ -270,11 +272,15 @@ class ModernBERTScorer:
         for j in other_indices:
             if self.sentences[j] == baseline:
                 continue
-            score = (
-                1.0 * probs[pair_pos,     LABEL_ENTAILMENT] + 0.5 * probs[pair_pos,     LABEL_NEUTRAL]
-                + 1.0 * probs[pair_pos + 1, LABEL_ENTAILMENT] + 0.5 * probs[pair_pos + 1, LABEL_NEUTRAL]
+            score_forward = (
+                1.0 * probs[pair_pos, LABEL_ENTAILMENT]
+                + 0.5 * probs[pair_pos, LABEL_NEUTRAL]
             )
-            result[j] = score
+            score_backward = (
+                1.0 * probs[pair_pos + 1, LABEL_ENTAILMENT]
+                + 0.5 * probs[pair_pos + 1, LABEL_NEUTRAL]
+            )
+            result[j] = score_forward + score_backward
             pair_pos += 2
 
         return result
