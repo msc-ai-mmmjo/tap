@@ -6,6 +6,14 @@ metrics to users at response time.
 This site is the internal reference for the TAP repo.
 
 ```{toctree}
+:maxdepth: 1
+:caption: Start here
+
+getting-started
+guides/architecture
+```
+
+```{toctree}
 :maxdepth: 2
 :caption: Guides
 

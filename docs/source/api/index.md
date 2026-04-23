@@ -1,6 +1,7 @@
 # API reference
 
-Auto-generated from docstrings.
+Auto-generated from docstrings. See {doc}`../guides/architecture` for
+how these packages fit together.
 
 ```{toctree}
 :maxdepth: 2
