@@ -215,6 +215,7 @@ def test_get_robustness_nlp_worst_case(monkeypatch):
         tokenizer=MagicMock(),
         messages=[{"role": "user", "content": "What is the capital of France?"}],
         original_resp="Paris is the capital.",
+        original_tokens=[],
         is_mcq=False,
         adv_suffix_bank=suffix_bank,
         bert_model=MagicMock(),
