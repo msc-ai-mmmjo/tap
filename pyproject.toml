@@ -72,9 +72,10 @@ msc-ai-group-project = { path = ".", editable = true }
 # ---------------------------------------------
 # Docs Feature (Sphinx site)
 # ---------------------------------------------
-# Kept separate from `cuda` so docs build on a CPU runner. autodoc uses
-# autodoc_mock_imports (see docs/source/conf.py) to avoid needing torch/
-# transformers/ai2-olmo-core etc. at build time.
+# Docs env composes the `cuda` feature so autodoc can import the real
+# torch/transformers/ai2-olmo-core at build time. This is the mainstream
+# pattern (PyTorch, HuggingFace, scikit-learn, JAX all do this) and
+# avoids the fragility of autodoc_mock_imports with PEP 604 annotations.
 [tool.pixi.feature.docs.pypi-dependencies]
 sphinx = ">=8"
 furo = "*"
@@ -88,7 +89,7 @@ sphinx-autobuild = "*"
 [tool.pixi.environments]
 default = { solve-group = "default" }
 cuda = { features = ["cuda"], solve-group = "cuda" }
-docs = { features = ["docs"], solve-group = "docs" }
+docs = { features = ["docs", "cuda"], solve-group = "cuda" }
 
 # ---------------------------------------------
 # Tasks
@@ -130,7 +131,9 @@ docs-serve = { cmd = "sphinx-autobuild docs/source docs/build/html --host 0.0.0.
 docs-clean = { cmd = "rm -rf docs/build docs/source/api/_generated", default-environment = "docs" }
 
 # CI (runs all checks)
-check = { depends-on = ["lint", "format-check", "typecheck", "test", "docs"] }
+# `docs` is intentionally excluded — it needs the heavy cuda deps and
+# CI runs on a CPU-only runner. Build docs locally with `pixi run docs`.
+check = { depends-on = ["lint", "format-check", "typecheck", "test"] }
 
 [tool.pyrefly]
 project-includes = [
