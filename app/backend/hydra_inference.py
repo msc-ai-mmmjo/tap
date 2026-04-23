@@ -1,13 +1,16 @@
 import logging
 import time
-from typing import cast
+from typing import Any, cast
 
 from transformers import AutoTokenizer, PreTrainedTokenizerBase, TokenizersBackend
 
+from kernel_entropy.nli import ModernBERTScorer
 from olmo_tap.constants import MAX_NEW_TOKENS, MCQ_MAX_NEW_TOKENS, WEIGHTS_DIR
 from olmo_tap.hydra import HydraTransformer
 from olmo_tap.inference.loading_weights import load_ensemble
 from olmo_tap.inference.poe import PoE
+
+NLP_ROBUSTNESS_THRESHOLD = 1.0
 
 logger = logging.getLogger(__name__)
 
@@ -154,3 +157,91 @@ def _tokens_and_resamples_from_poe_output(
         )
 
     return raw_response, tokens, resampled
+
+
+def get_robustness(
+    model: HydraTransformer,
+    tokenizer: PreTrainedTokenizerBase,
+    messages: list[dict],
+    clean_response: str,
+    is_mcq: bool,
+    adv_suffix_bank: list[str],
+    bert_model: Any,
+    bert_tokenizer: Any,
+    device: str = "cuda",
+) -> dict:
+    """Return a robustness report by testing adversarial suffixes against the original response."""
+    last_message = messages.pop()
+
+    # Reuse the caller's clean response instead of regenerating it here.
+    orig_resp = clean_response
+
+    successful_suffixes = []
+    scores = []
+    adv_responses = []
+
+    for suffix in adv_suffix_bank:
+        logger.info("Testing adversarial suffix: %s", suffix)
+
+        attack_msg = {"role": "user", "content": last_message["content"] + suffix}
+        adv_prompt = messages + [attack_msg]
+        adv_resp, _, _, _ = generate(model, tokenizer, adv_prompt, is_mcq, device)
+        adv_responses.append(adv_resp)
+
+        if is_mcq:
+            if orig_resp.strip().upper() != adv_resp.strip().upper():
+                logger.info("Adversarial suffix caused MCQ answer change!")
+                successful_suffixes.append(suffix)
+        else:
+            scorer = ModernBERTScorer(
+                [orig_resp, adv_resp],
+                model=bert_model,
+                tokenizer=bert_tokenizer,
+            )
+            similarity_mat, raw_probs = scorer.compute(verbose=True)
+            score = similarity_mat[0, 1].item()
+
+            # Perhaps we could use `raw_probs` contents directly as a more fine-grained
+            # measure of NLI change instead of the aggregated similarity score?
+            if score <= NLP_ROBUSTNESS_THRESHOLD:
+                logger.info("Adversarial suffix caused significant NLP answer change!")
+                successful_suffixes.append(suffix)
+
+            scores.append(score)
+
+    logger.info(
+        "Robustness (%s): %d/%d flipped",
+        "mcq" if is_mcq else "nlp",
+        len(successful_suffixes),
+        len(adv_suffix_bank),
+    )
+
+    # Worst-case entry for the adversarial preview panel:
+    # NLP -> lowest NLI similarity (always returned); MCQ -> first flipped suffix, else None.
+    worst_case: dict | None = None
+    if is_mcq:
+        if successful_suffixes:
+            idx = adv_suffix_bank.index(successful_suffixes[0])
+            worst_case = {
+                "suffix": adv_suffix_bank[idx],
+                "clean_response": orig_resp,
+                "adv_response": adv_responses[idx],
+                "flipped": True,
+                "score": None,
+            }
+    elif scores:
+        idx = scores.index(min(scores))
+        worst_case = {
+            "suffix": adv_suffix_bank[idx],
+            "clean_response": orig_resp,
+            "adv_response": adv_responses[idx],
+            "flipped": adv_suffix_bank[idx] in successful_suffixes,
+            "score": scores[idx],
+        }
+
+    return {
+        "type": "mcq" if is_mcq else "nlp",
+        "attempts": len(adv_suffix_bank),
+        "flipped": len(successful_suffixes),
+        "worst_case": worst_case,
+    }

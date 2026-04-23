@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
 from transformers import TokenizersBackend
 
 from app.backend.hydra_inference import (
@@ -170,6 +171,64 @@ def test_load_hydra_returns_model_and_tokenizer():
     assert len(result) == 2
     assert result[0] is mock_model
     assert result[1] is mock_tokenizer
+
+
+def test_get_robustness_nlp_worst_case(monkeypatch):
+    """NLP path: worst_case is the suffix with the lowest NLI similarity."""
+    import torch
+
+    from app.backend.hydra_inference import get_robustness
+
+    suffix_bank = ["suffixA", "suffixB", "suffixC"]
+    adv_responses = {
+        "suffixA": "response A",
+        "suffixB": "response B",  # lowest score -> worst case
+        "suffixC": "response C",
+    }
+    scripted_scores = {
+        "response A": 1.8,
+        "response B": 0.3,
+        "response C": 1.2,
+    }
+
+    def fake_generate(model, tokenizer, messages, is_mcq, device):
+        last = messages[-1]["content"]
+        for suffix, resp in adv_responses.items():
+            if last.endswith(suffix):
+                return (resp, [], [], None)
+        raise AssertionError(f"unexpected adv prompt: {last}")
+
+    class FakeScorer:
+        def __init__(self, sentences, model, tokenizer):
+            self._sentences = sentences
+
+        def compute(self, verbose=False):
+            score = scripted_scores[self._sentences[1]]
+            W = torch.tensor([[0.0, score], [score, 0.0]])
+            return W, {}
+
+    monkeypatch.setattr("app.backend.hydra_inference.generate", fake_generate)
+    monkeypatch.setattr("app.backend.hydra_inference.ModernBERTScorer", FakeScorer)
+
+    result = get_robustness(
+        model=MagicMock(),
+        tokenizer=MagicMock(),
+        messages=[{"role": "user", "content": "What is the capital of France?"}],
+        clean_response="Paris is the capital.",
+        is_mcq=False,
+        adv_suffix_bank=suffix_bank,
+        bert_model=MagicMock(),
+        bert_tokenizer=MagicMock(),
+        device="cpu",
+    )
+
+    assert result["type"] == "nlp"
+    assert result["attempts"] == 3
+    assert result["worst_case"] is not None
+    assert result["worst_case"]["suffix"] == "suffixB"
+    assert result["worst_case"]["adv_response"] == "response B"
+    assert result["worst_case"]["clean_response"] == "Paris is the capital."
+    assert result["worst_case"]["score"] == pytest.approx(0.3)
 
 
 def test_load_hydra_returns_none_when_ensemble_load_fails():
