@@ -39,7 +39,12 @@ def test_analyse_returns_expected_shape(client):
         patch("app.backend.server.detect_mcq_bert", return_value=False),
         patch(
             "app.backend.server.get_robustness",
-            return_value={"type": "nlp", "attempts": 0, "flipped": 0},
+            return_value={
+                "type": "nlp",
+                "attempts": 0,
+                "flipped": 0,
+                "worst_case": None,
+            },
         ),
     ):
         response = client.post(
@@ -64,6 +69,7 @@ def test_analyse_returns_expected_shape(client):
     assert "flagged_tokens" not in data["security"]
     assert "detail" not in data["security"]
     assert "robustness" in data
+    assert "worst_case" in data["robustness"]
     assert "model" in data
     assert "is_mcq" in data
     assert isinstance(data["is_mcq"], bool) or data["is_mcq"] is None
@@ -83,7 +89,12 @@ def test_analyse_surfaces_resampled_tokens(client):
         patch("app.backend.server.detect_mcq_bert", return_value=False),
         patch(
             "app.backend.server.get_robustness",
-            return_value={"type": "nlp", "attempts": 0, "flipped": 0},
+            return_value={
+                "type": "nlp",
+                "attempts": 0,
+                "flipped": 0,
+                "worst_case": None,
+            },
         ),
     ):
         response = client.post(
@@ -128,7 +139,12 @@ def test_analyse_passes_full_message_history(client):
         patch("app.backend.server.detect_mcq_bert", return_value=False),
         patch(
             "app.backend.server.get_robustness",
-            return_value={"type": "nlp", "attempts": 0, "flipped": 0},
+            return_value={
+                "type": "nlp",
+                "attempts": 0,
+                "flipped": 0,
+                "worst_case": None,
+            },
         ),
     ):
         client.post("/api/analyse", json={"messages": messages})
@@ -146,7 +162,12 @@ def test_analyse_mcq_path_uses_bert_flag(client):
         patch("app.backend.server.detect_mcq_bert", return_value=True),
         patch(
             "app.backend.server.get_robustness",
-            return_value={"type": "mcq", "attempts": 0, "flipped": 0},
+            return_value={
+                "type": "mcq",
+                "attempts": 0,
+                "flipped": 0,
+                "worst_case": None,
+            },
         ),
     ):
         response = client.post(
