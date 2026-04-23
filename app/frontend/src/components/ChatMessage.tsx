@@ -55,18 +55,18 @@ export function ChatMessage({ message }: Props) {
         )}
       </div>
 
-      {analysis && (
-        <div className="mb-5">
-          <MetricCards data={analysis} />
-        </div>
-      )}
-
       <div
         className="text-[15px] leading-[1.7] prose max-w-none prose-p:my-2.5 prose-li:my-1 prose-headings:font-display prose-headings:font-normal prose-strong:font-semibold"
         style={{ color: 'var(--color-ink-2)' }}
       >
         <Markdown>{message.content}</Markdown>
       </div>
+
+      {analysis && (
+        <div className="mt-6">
+          <MetricCards data={analysis} />
+        </div>
+      )}
 
       {analysis && (
         <div className="mt-6">
