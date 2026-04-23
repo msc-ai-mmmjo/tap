@@ -11,23 +11,21 @@ export interface SecurityStatus {
   detail: string;
 }
 
+export interface AdversarialWorstCase {
+  suffix: string;
+  clean_response: string;
+  adv_response: string;
+  flipped: boolean;
+  score: number | null;
+}
+
 export type RobustnessStatus =
   | { type: 'unavailable' }
   | {
-      type: 'nlp';
+      type: 'nlp' | 'mcq';
       attempts: number;
       flipped: number;
-      attacked_response: string;
-      attack_suffix: string;
-    }
-  | {
-      type: 'mcq';
-      attempts: number;
-      flipped: number;
-      original_choice: string;
-      attacked_choice: string;
-      attacked_response: string;
-      attack_suffix: string;
+      worst_case: AdversarialWorstCase | null;
     };
 
 export interface AnalysisResponse {
