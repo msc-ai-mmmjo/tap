@@ -154,18 +154,23 @@ async def analyse(request: ChatRequest, hf: bool = False):
         )
         security = _poe_security(tokens, resampled)
         uncertainty = _poe_uncertainty(p_correct)
-        # TODO: reuse raw_response instead of letting get_robustness regenerate;
-        # also guard against bert being unavailable for NLP queries.
-        robustness = get_robustness(
-            hydra,
-            hydra_tokenizer,
-            list(messages),
-            is_mcq=bool(is_mcq),
-            adv_suffix_bank=DUMMY_ADV_SUFFIXES,
-            bert_model=_models.get("bert"),
-            bert_tokenizer=_tokenizers.get("bert"),
-            device=_device,
-        )
+
+        bert_model = _models.get("bert")
+        bert_tokenizer = _tokenizers.get("bert")
+        if not is_mcq and (bert_model is None or bert_tokenizer is None):
+            robustness = _fallback_robustness()
+        else:
+            robustness = get_robustness(
+                hydra,
+                hydra_tokenizer,
+                list(messages),
+                clean_response=raw_response,
+                is_mcq=bool(is_mcq),
+                adv_suffix_bank=DUMMY_ADV_SUFFIXES,
+                bert_model=bert_model,
+                bert_tokenizer=bert_tokenizer,
+                device=_device,
+            )
 
     logger.info("Generation complete (%d chars)", len(raw_response))
 
