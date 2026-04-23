@@ -25,6 +25,7 @@ from olmo_tap.constants import (
 )
 from olmo_tap.experiments.robustness.data import format_example
 from olmo_tap.experiments.utils.config import HydraLoRAConfig
+from olmo_tap.hydra import HydraTransformer
 from olmo_tap.experiments.robustness.amplegcg import AmpleGCG
 from olmo_tap.experiments.utils.model_builder import (
     build_base_model,
@@ -74,7 +75,9 @@ def precompute_attacks():
     print(f"Bank saved to {output_file}")
 
 
-def load_custom_poe(rob_dir: Path, checkpoint: int) -> tuple[any, int]:
+def load_custom_poe(
+    rob_dir: Path, checkpoint: int | None
+) -> tuple[HydraTransformer, int]:
     with open(PROD_WEIGHTS_DIR / "manifest.json") as f:
         manifest = json.load(f)
     prod_lora_r = manifest["config"]["lora_r"]
@@ -129,6 +132,7 @@ def main():
     rob_dir = Path("experiments/robustness/outputs")
     bank_path = Path("experiments/robustness/poe_eval_attack_bank.json")
     tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)
+    assert tokenizer is not None
 
     with open(bank_path, "r") as f:
         attack_bank = json.load(f)
@@ -153,7 +157,9 @@ def main():
 
             with torch.no_grad():
                 # clean inference (accuracy)
-                out_clean, _, _, _ = poe.generate_with_cache(clean_prompt, is_mcq=False, temperature=None)
+                out_clean, _, _, _ = poe.generate_with_cache(
+                    clean_prompt, is_mcq=False, temperature=None
+                )
                 poe.model.reset_kv_cache(omit_last=True)
                 clean_ans = out_clean[1].strip()
 
