@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { AnalysisResponse } from '../types/api';
+import { ROBUSTNESS_FLIP_WARN_RATIO } from '../lib/constants';
 
 interface Props {
   data: AnalysisResponse;
@@ -14,19 +15,19 @@ interface MetricInfo {
 const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> = {
   certainty: {
     definition:
-      "How likely each claim in the answer is to be factually correct. Scores near 100% mean high confidence; low scores flag claims worth double-checking before acting on them.",
+      "How likely each claim in the answer is to be factually correct. Scores near 100% mean high confidence; low scores flag claims worth double-checking before acting on them. Currently available for MCQ questions only; a dash is shown when no estimate is produced.",
     paper:
       'Method: Kapoor et al., "Large Language Models Must Be Taught to Know What They Don\'t Know" (NeurIPS 2024).',
   },
   security: {
     definition:
-      "How many tampered training examples an attacker would need to plant to change this answer to a harmful one. Higher means the answer is provably harder to manipulate.",
+      "Each token is cross-checked by several independent heads in the model. Whenever they disagree with the draft, the token is rewritten. Fewer rewrites means stronger agreement across heads, and a more trustworthy answer.",
     paper:
       'Method: Ghitu & Wicker, "Towards Poisoning Robustness Certification for Natural Language Generation".',
   },
   robustness: {
     definition:
-      "Whether the answer holds up against jailbreak attempts — short gibberish strings appended to the prompt that try to flip the response. 'Passed' means no attempt succeeded.",
+      "How the answer holds up against jailbreak attempts. We run several short attack strings and count how many times the answer changed meaning (letter for MCQ, semantic for NLP). Fewer flips means a more robust answer.",
     paper:
       'Method: Kumar et al., "AmpleGCG-Plus: A Strong Generative Model of Adversarial Suffixes to Jailbreak LLMs with Higher Success Rates in Fewer Attempts".',
   },
@@ -184,8 +185,69 @@ function MetricCell({ index, label, info, value, valueColour, caption, isFirst }
 }
 
 export function MetricCards({ data }: Props) {
-  const securityValue = data.security.certified ? 'Certified' : 'Caution';
-  const robustnessValue = data.robustness.passed ? 'Passed' : 'Failed';
+  const { overall: certaintyOverall } = data.uncertainty;
+  const certaintyValue =
+    certaintyOverall === null ? '—' : `${Math.round(certaintyOverall * 100)}%`;
+  const certaintyColour =
+    certaintyOverall === null ? 'var(--color-ink-muted)' : undefined;
+  const certaintyCaption =
+    certaintyOverall === null
+      ? 'Fallback: no uncertainty estimate'
+      : 'Model-estimated probability this answer is correct';
+
+  const { certified, resampled, tokens } = data.security;
+  const resampledCount = resampled.length;
+  const totalTokens = tokens.length;
+
+  let securityValue: string;
+  let securityColour: string;
+  let securityCaption: string;
+  if (certified === null) {
+    securityValue = '—';
+    securityColour = 'var(--color-ink-muted)';
+    securityCaption = 'Fallback: no PoE guarantee';
+  } else {
+    securityValue = `${resampledCount} swap${resampledCount !== 1 ? 's' : ''}`;
+    securityColour =
+      resampledCount === 0
+        ? 'var(--color-ok)'
+        : resampledCount <= 3
+          ? 'var(--color-warn)'
+          : 'var(--color-bad)';
+    securityCaption = `${resampledCount} of ${totalTokens} tokens resampled during verification`;
+  }
+
+  const robustness = data.robustness;
+  let robustnessValue: string;
+  let robustnessColour: string;
+  let robustnessCaption: string;
+
+  if (robustness.type === 'unavailable') {
+    robustnessValue = '—';
+    robustnessColour = 'var(--color-ink-muted)';
+    robustnessCaption = 'Awaiting real pipeline';
+  } else {
+    const stable = robustness.flipped === 0;
+    const flipRatio =
+      robustness.attempts > 0 ? robustness.flipped / robustness.attempts : 0;
+    robustnessValue = stable
+      ? 'Stable'
+      : `${robustness.flipped}/${robustness.attempts} flipped`;
+    robustnessColour = stable
+      ? 'var(--color-ok)'
+      : flipRatio <= ROBUSTNESS_FLIP_WARN_RATIO
+        ? 'var(--color-warn)'
+        : 'var(--color-bad)';
+    if (robustness.type === 'nlp') {
+      robustnessCaption = stable
+        ? `0 of ${robustness.attempts} attacks changed meaning`
+        : 'Attacks that changed meaning';
+    } else {
+      robustnessCaption = stable
+        ? `Answer held across ${robustness.attempts} attacks`
+        : 'Attacks that flipped the letter';
+    }
+  }
 
   return (
     <div
@@ -200,24 +262,25 @@ export function MetricCards({ data }: Props) {
         index="01"
         label="Certainty"
         info={METRIC_INFO.certainty}
-        value={`${Math.round(data.overall_confidence * 100)}%`}
-        caption="Average likelihood each claim is correct"
+        value={certaintyValue}
+        valueColour={certaintyColour}
+        caption={certaintyCaption}
       />
       <MetricCell
         index="02"
         label="Security"
         info={METRIC_INFO.security}
         value={securityValue}
-        valueColour={data.security.certified ? 'var(--color-ok)' : 'var(--color-warn)'}
-        caption={`Withstands up to ${data.security.tpa_budget ?? '—'} tampered training examples`}
+        valueColour={securityColour}
+        caption={securityCaption}
       />
       <MetricCell
         index="03"
         label="Robustness"
         info={METRIC_INFO.robustness}
         value={robustnessValue}
-        valueColour={data.robustness.passed ? 'var(--color-ok)' : 'var(--color-bad)'}
-        caption={data.robustness.detail}
+        valueColour={robustnessColour}
+        caption={robustnessCaption}
       />
     </div>
   );

@@ -81,7 +81,12 @@ export function ChatMessage({ message }: Props) {
               className="inline-block w-3"
               style={{ borderTop: '1px solid var(--color-ink-muted)' }}
             />
-            {expanded ? 'Hide' : 'Inspect'} {analysis.claims.length} claims
+            {expanded ? 'Hide' : 'Inspect'} details
+            {analysis.security.resampled.length > 0 && (
+              <span style={{ color: 'var(--color-warn)' }}>
+                · {analysis.security.resampled.length} swap{analysis.security.resampled.length !== 1 ? 's' : ''}
+              </span>
+            )}
             <span
               aria-hidden
               className={`transition-transform ${expanded ? 'rotate-90' : ''}`}

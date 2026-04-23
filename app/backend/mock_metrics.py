@@ -52,19 +52,3 @@ def mock_claim_confidence(claim_text: str) -> dict:
             "level": "low",
             "guidance": "Cross-check with authoritative source before acting",
         }
-
-
-def mock_security_status() -> dict:
-    return {
-        "certified": True,
-        "tpa_budget": random.randint(30, 80),
-        "detail": "Certified radius against targeted poisoning",
-    }
-
-
-def mock_robustness_status(prompt: str) -> dict:
-    return {
-        "passed": True,
-        "detail": "No generated suffix flipped the response",
-        "flagged_tokens": [],
-    }

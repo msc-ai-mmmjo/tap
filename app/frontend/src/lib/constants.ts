@@ -7,6 +7,8 @@ export const CONFIDENCE_THRESHOLDS = {
   moderate: 0.65,
 } as const;
 
+export const ROBUSTNESS_FLIP_WARN_RATIO = 1 / 3;
+
 export const COLOURS = {
   success: {
     primary: '#1f6f4f',
