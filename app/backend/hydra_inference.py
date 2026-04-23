@@ -198,7 +198,7 @@ def get_robustness(
                     mcq_first_flip = (suffix, adv_resp)
 
     ### 2. Score all NLP responses in a single batched NLI forward pass ###
-    # compute_with_baseline scores original_resp against each adv response only,
+    # compute_against_baseline scores original_resp against each adv response only,
     # running 2*(N-1) inferences instead of the full C(N,2) pairwise matrix.
 
     # For NLP, store all (score, suffix, adv_resp) to later identify the worst-case example

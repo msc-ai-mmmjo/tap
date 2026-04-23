@@ -202,7 +202,7 @@ def test_get_robustness_nlp_worst_case(monkeypatch):
         def __init__(self, sentences, model, tokenizer):
             self._sentences = sentences
 
-        def compute_with_baseline(self, baseline_idx=0):
+        def compute_against_baseline(self, baseline_idx=0):
             n = len(self._sentences)
             result = torch.zeros(n)
             for j in range(n):

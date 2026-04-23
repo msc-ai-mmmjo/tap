@@ -104,6 +104,11 @@ class ModernBERTScorer:
 
         print("ModernBERT NLI model loaded!")
 
+    @staticmethod
+    def _kle_score(probs: torch.Tensor, idx: int) -> torch.Tensor:
+        """KLE weighting for one NLI direction: entailment=1.0, neutral=0.5, contradiction=0.0."""
+        return 1.0 * probs[idx, LABEL_ENTAILMENT] + 0.5 * probs[idx, LABEL_NEUTRAL]
+
     def get_nli_probabilities(self, nli_inputs: list[tuple[str, str]]) -> torch.Tensor:
         """Get raw NLI probabilities for given (premise, hypothesis) pairs."""
         assert self._tokenizer is not None
@@ -192,15 +197,8 @@ class ModernBERTScorer:
             idx_ij = pair_idx * 2  # i -> j
             idx_ji = pair_idx * 2 + 1  # j -> i
 
-            # KLE weighting: entailment=1.0, neutral=0.5, contradiction=0.0
-            score_ij = (
-                1.0 * probs[idx_ij, LABEL_ENTAILMENT]
-                + 0.5 * probs[idx_ij, LABEL_NEUTRAL]
-            )
-            score_ji = (
-                1.0 * probs[idx_ji, LABEL_ENTAILMENT]
-                + 0.5 * probs[idx_ji, LABEL_NEUTRAL]
-            )
+            score_ij = self._kle_score(probs, idx_ij)
+            score_ji = self._kle_score(probs, idx_ji)
 
             # W[i,j] = score(i->j) + score(j->i), symmetric
             W[i, j] = score_ij + score_ji
@@ -263,14 +261,8 @@ class ModernBERTScorer:
         for j in other_indices:
             if self.sentences[j] == baseline_sentence:
                 continue
-            score_forward = (
-                1.0 * probs[pair_pos, LABEL_ENTAILMENT]
-                + 0.5 * probs[pair_pos, LABEL_NEUTRAL]
-            )
-            score_backward = (
-                1.0 * probs[pair_pos + 1, LABEL_ENTAILMENT]
-                + 0.5 * probs[pair_pos + 1, LABEL_NEUTRAL]
-            )
+            score_forward = self._kle_score(probs, pair_pos)
+            score_backward = self._kle_score(probs, pair_pos + 1)
             result[j] = score_forward + score_backward
             pair_pos += 2
 
