@@ -70,11 +70,25 @@ matplotlib = "*"
 msc-ai-group-project = { path = ".", editable = true }
 
 # ---------------------------------------------
+# Docs Feature (Sphinx site)
+# ---------------------------------------------
+# Kept separate from `cuda` so docs build on a CPU runner. autodoc uses
+# autodoc_mock_imports (see docs/source/conf.py) to avoid needing torch/
+# transformers/ai2-olmo-core etc. at build time.
+[tool.pixi.feature.docs.pypi-dependencies]
+sphinx = ">=8"
+furo = "*"
+myst-parser = "*"
+sphinx-copybutton = "*"
+sphinx-autobuild = "*"
+
+# ---------------------------------------------
 # Environments
 # ---------------------------------------------
 [tool.pixi.environments]
 default = { solve-group = "default" }
 cuda = { features = ["cuda"], solve-group = "cuda" }
+docs = { features = ["docs"], solve-group = "docs" }
 
 # ---------------------------------------------
 # Tasks
