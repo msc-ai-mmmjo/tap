@@ -40,6 +40,8 @@ image = (
             ".env",
             ".env.*",
             "docs/**",
+            "olmo_tap/data/**",
+            "olmo_tap/weights/prod_outdated/**",
         ],
     )
     # The build container has no GPU, so pixi's __cuda virtual package check
