@@ -13,6 +13,7 @@ from olmo_tap.inference.poe import PoE
 
 def main():
     tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)
+    assert tokenizer is not None
     model, n_heads = load_ensemble()
     poe = PoE(model, tokenizer, n_llm_heads=n_heads - 1, max_new_tokens=1)
 
@@ -36,6 +37,8 @@ def main():
 
         # PoE gives us the uncertainty score (p_correct) on is_mcq=True
         output, _, _, conf_score = poe.generate_with_cache(prompt_text, is_mcq=True)
+
+        assert conf_score is not None  # optional return, pyrefly...
 
         generated_answer = output[1]
         is_correct = 1 if generated_answer == label else 0
