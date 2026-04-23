@@ -48,7 +48,7 @@ class PoE:
         self,
         prompt_text: str,
         is_mcq: bool = False,
-        temperature: float = 0.98,
+        temperature: float | None = 0.98,
     ) -> tuple[list[str], list[str], list[int], Optional[float]]:
         messages = [{"role": "user", "content": prompt_text}]
         chat_prompt = self.tokenizer.apply_chat_template(
@@ -62,6 +62,9 @@ class PoE:
             max_seq_len=input_ids.size(1) + self.max_new_tokens + self.gamma,
             omit_last=True,
         )
+
+        # if temperature is None we take argmax
+        T = temperature if temperature is not None else 1
 
         # sample draft head
         draft_idx = int(torch.randint(0, self.n_llm_heads, (1,)).item())
@@ -99,9 +102,12 @@ class PoE:
 
             d_logits = next_step_logits[draft_idx, 0, 0, :]
             # apply temperature
-            d_probs = F.softmax(d_logits.float() / temperature, dim=-1)
+            d_probs = F.softmax(d_logits.float() / T, dim=-1)
             # use multinomial for sampling instead of argmax when temperature is involved
-            d_token = torch.multinomial(d_probs, 1).item()
+            if temperature is not None:
+                d_token = torch.multinomial(d_probs, 1).item()
+            else:
+                d_token = torch.argmax(d_probs).item()
 
             draft_step_ids.append(d_token)
             draft_probs.append(d_probs)
@@ -114,10 +120,12 @@ class PoE:
                 logits = self.model.forward_heads(h, head_indices=[draft_idx])
                 if step < self.gamma - 1:
                     # apply temperature
-                    step_probs = F.softmax(
-                        logits[0, 0, 0, :].float() / temperature, dim=-1
-                    )
+                    step_probs = F.softmax(logits[0, 0, 0, :].float() / T, dim=-1)
                     step_token = torch.multinomial(step_probs, 1).item()
+                    if temperature is not None:
+                        step_token = torch.multinomial(d_probs, 1).item()
+                    else:
+                        step_token = torch.argmax(d_probs).item()
 
                     draft_step_ids.append(step_token)
                     draft_probs.append(step_probs)
@@ -140,9 +148,9 @@ class PoE:
                 )
 
                 # apply temperature before log_softmax for ensemble
-                log_P = (
-                    self.beta * F.log_softmax(v_logits.float() / temperature, dim=-1)
-                ).sum(dim=0)
+                log_P = (self.beta * F.log_softmax(v_logits.float() / T, dim=-1)).sum(
+                    dim=0
+                )
                 P_dist = torch.exp(log_P)
                 P_dist /= P_dist.sum() + 1e-10
 
