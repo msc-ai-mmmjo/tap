@@ -3,7 +3,7 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="olmo_tap.experiments.utils.config" href="olmo_tap.experiments.utils.config.html"><link rel="prev" title="olmo_tap.experiments.uncertainty.data" href="olmo_tap.experiments.uncertainty.data.html">
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="olmo_tap.experiments.utils.config" href="olmo_tap.experiments.utils.config.html"><link rel="prev" title="olmo_tap.experiments.uncertainty.weights_handler" href="olmo_tap.experiments.uncertainty.weights_handler.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
         <title>olmo_tap.experiments.utils - Weight, what?</title>
@@ -229,17 +229,27 @@
 <li class="toctree-l5"><a class="reference internal" href="olmo_tap.experiments.hydra_demo.html">olmo_tap.experiments.hydra_demo</a></li>
 <li class="toctree-l5 has-children"><a class="reference internal" href="olmo_tap.experiments.robustness.html">olmo_tap.experiments.robustness</a><input aria-label="Toggle navigation of olmo_tap.experiments.robustness" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.robustness.amplegcg.html">olmo_tap.experiments.robustness.amplegcg</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.robustness.build_attack_bank.html">olmo_tap.experiments.robustness.build_attack_bank</a></li>
 <li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.robustness.data.html">olmo_tap.experiments.robustness.data</a></li>
 <li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.robustness.engine.html">olmo_tap.experiments.robustness.engine</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.robustness.eval.html">olmo_tap.experiments.robustness.eval</a></li>
 <li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.robustness.precompute_gcg.html">olmo_tap.experiments.robustness.precompute_gcg</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.robustness.training.html">olmo_tap.experiments.robustness.training</a></li>
 </ul>
 </li>
 <li class="toctree-l5 has-children"><a class="reference internal" href="olmo_tap.experiments.uncertainty.html">olmo_tap.experiments.uncertainty</a><input aria-label="Toggle navigation of olmo_tap.experiments.uncertainty" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.uncertainty.data.html">olmo_tap.experiments.uncertainty.data</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.uncertainty.engine.html">olmo_tap.experiments.uncertainty.engine</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.uncertainty.eval.html">olmo_tap.experiments.uncertainty.eval</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.uncertainty.inference.html">olmo_tap.experiments.uncertainty.inference</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.uncertainty.loading.html">olmo_tap.experiments.uncertainty.loading</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.uncertainty.training.html">olmo_tap.experiments.uncertainty.training</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.uncertainty.weights_handler.html">olmo_tap.experiments.uncertainty.weights_handler</a></li>
 </ul>
 </li>
 <li class="toctree-l5 current has-children current-page"><a class="current reference internal" href="#">olmo_tap.experiments.utils</a><input aria-label="Toggle navigation of olmo_tap.experiments.utils" checked="" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
 <li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.utils.config.html">olmo_tap.experiments.utils.config</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.utils.model_builder.html">olmo_tap.experiments.utils.model_builder</a></li>
 <li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.utils.random_seed.html">olmo_tap.experiments.utils.random_seed</a></li>
 <li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.utils.weights.html">olmo_tap.experiments.utils.weights</a></li>
 </ul>
@@ -300,10 +310,13 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="olmo_tap.experiments.utils.config.html#module-olmo_tap.experiments.utils.config" title="olmo_tap.experiments.utils.config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">config</span></code></a></p></td>
 <td><p>Config classes for finetuning (robustness or uncertainty)</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="olmo_tap.experiments.utils.random_seed.html#module-olmo_tap.experiments.utils.random_seed" title="olmo_tap.experiments.utils.random_seed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">random_seed</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="olmo_tap.experiments.utils.model_builder.html#module-olmo_tap.experiments.utils.model_builder" title="olmo_tap.experiments.utils.model_builder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">model_builder</span></code></a></p></td>
+<td><p>Builds a HydraOLMo model with: - config.heads_depth worth of layers in each Hydra head - LoRA params are only allowed in the truncated head - NOTE: by convention the 0th head is finetuned, any other instantiated head is frozen</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="olmo_tap.experiments.utils.random_seed.html#module-olmo_tap.experiments.utils.random_seed" title="olmo_tap.experiments.utils.random_seed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">random_seed</span></code></a></p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="olmo_tap.experiments.utils.weights.html#module-olmo_tap.experiments.utils.weights" title="olmo_tap.experiments.utils.weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">weights</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="olmo_tap.experiments.utils.weights.html#module-olmo_tap.experiments.utils.weights" title="olmo_tap.experiments.utils.weights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">weights</span></code></a></p></td>
 <td><p>Helpers for exporting slim LoRA-only state dicts from fat training checkpoints.</p></td>
 </tr>
 </tbody>
@@ -325,14 +338,14 @@
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="olmo_tap.experiments.uncertainty.data.html">
+          <a class="prev-page" href="olmo_tap.experiments.uncertainty.weights_handler.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">olmo_tap.experiments.uncertainty.data</div>
+                <div class="title">olmo_tap.experiments.uncertainty.weights_handler</div>
                 
               </div>
             </a>

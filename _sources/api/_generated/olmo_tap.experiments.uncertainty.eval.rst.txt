@@ -1,0 +1,19 @@
+olmo\_tap.experiments.uncertainty.eval
+======================================
+
+.. automodule:: olmo_tap.experiments.uncertainty.eval
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      check_checkpoint
+      check_shard_weights
+      collect_predictions_for_shard
+      get_letter_token_ids
+      load_validation_set
+      main
+      parse_args
+      plot_reliability
+   

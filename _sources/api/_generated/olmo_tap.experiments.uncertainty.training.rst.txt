@@ -1,0 +1,14 @@
+olmo\_tap.experiments.uncertainty.training
+==========================================
+
+.. automodule:: olmo_tap.experiments.uncertainty.training
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      compute_total_steps
+      main
+      parse_args
+   

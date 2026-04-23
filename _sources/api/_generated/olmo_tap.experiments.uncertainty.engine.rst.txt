@@ -1,0 +1,13 @@
+olmo\_tap.experiments.uncertainty.engine
+========================================
+
+.. automodule:: olmo_tap.experiments.uncertainty.engine
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      get_calibration_prob
+      train
+   

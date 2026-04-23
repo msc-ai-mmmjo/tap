@@ -1,0 +1,14 @@
+olmo\_tap.experiments.utils.model\_builder
+==========================================
+
+.. automodule:: olmo_tap.experiments.utils.model_builder
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      build_base_model
+      inject_lora
+      load_and_merge_lora_weights
+   

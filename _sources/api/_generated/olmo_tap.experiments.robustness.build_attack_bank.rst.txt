@@ -1,0 +1,17 @@
+olmo\_tap.experiments.robustness.build\_attack\_bank
+====================================================
+
+.. automodule:: olmo_tap.experiments.robustness.build_attack_bank
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      filter_and_save_bank
+      main
+      parse_args
+      phase_1_select_seeds
+      phase_2_generate_suffixes
+      phase_3_score_transfer
+   

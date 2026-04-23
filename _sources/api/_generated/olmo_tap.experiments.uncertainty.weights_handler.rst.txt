@@ -1,0 +1,12 @@
+olmo\_tap.experiments.uncertainty.weights\_handler
+==================================================
+
+.. automodule:: olmo_tap.experiments.uncertainty.weights_handler
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      FrozenHeadHandler
+   

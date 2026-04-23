@@ -1,0 +1,12 @@
+olmo\_tap.experiments.uncertainty.loading
+=========================================
+
+.. automodule:: olmo_tap.experiments.uncertainty.loading
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      load_for_inference
+   
