@@ -153,7 +153,7 @@ def main():
 
             with torch.no_grad():
                 # clean inference (accuracy)
-                out_clean, _, _, _ = poe.generate_with_cache(clean_prompt, is_mcq=False)
+                out_clean, _, _, _ = poe.generate_with_cache(clean_prompt, is_mcq=False, temperature=None)
                 poe.model.reset_kv_cache(omit_last=True)
                 clean_ans = out_clean[1].strip()
 
@@ -163,7 +163,7 @@ def main():
                 # poisoned inference (flip rate robustness)
                 poison_prompt = clean_prompt + " " + adv_suffix
                 out_poison, _, _, _ = poe.generate_with_cache(
-                    poison_prompt, is_mcq=False
+                    poison_prompt, is_mcq=False, temperature=None
                 )
                 poe.model.reset_kv_cache(omit_last=True)
                 poison_ans = out_poison[1].strip()
@@ -190,5 +190,5 @@ def main():
 
 
 if __name__ == "__main__":
-    precompute_attacks()
+    # precompute_attacks()
     main()
