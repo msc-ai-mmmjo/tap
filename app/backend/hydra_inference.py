@@ -210,7 +210,7 @@ def get_robustness(
             [original_resp] + adv_responses, model=bert_model, tokenizer=bert_tokenizer
         )
         # TODO - could expose per-direction raw probs as finer-grained NLI change measure
-        baseline_scores = scorer.compute_with_baseline(baseline_idx=0)
+        baseline_scores = scorer.compute_against_baseline(baseline_idx=0)
         for j, (suffix, adv_resp) in enumerate(adv_results):
             score = baseline_scores[j + 1].item()
             if score <= NLP_ROBUSTNESS_THRESHOLD:

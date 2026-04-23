@@ -224,7 +224,7 @@ class ModernBERTScorer:
             return W, raw_probabilities
         return W
 
-    def compute_with_baseline(self, baseline_idx: int = 0) -> "torch.Tensor":
+    def compute_against_baseline(self, baseline_idx: int = 0) -> "torch.Tensor":
         """Compute KLE similarity between sentences[baseline_idx] and every other sentence.
 
         Runs exactly 2*(N-1) NLI inferences in one forward pass - only the pairs
