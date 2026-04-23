@@ -202,10 +202,13 @@ def test_get_robustness_nlp_worst_case(monkeypatch):
         def __init__(self, sentences, model, tokenizer):
             self._sentences = sentences
 
-        def compute(self, verbose=False):
-            score = scripted_scores[self._sentences[1]]
-            W = torch.tensor([[0.0, score], [score, 0.0]])
-            return W, {}
+        def compute_with_baseline(self, baseline_idx=0):
+            n = len(self._sentences)
+            result = torch.zeros(n)
+            for j in range(n):
+                if j != baseline_idx:
+                    result[j] = scripted_scores[self._sentences[j]]
+            return result
 
     monkeypatch.setattr("app.backend.hydra_inference.generate", fake_generate)
     monkeypatch.setattr("app.backend.hydra_inference.ModernBERTScorer", FakeScorer)
@@ -224,10 +227,12 @@ def test_get_robustness_nlp_worst_case(monkeypatch):
 
     assert result["type"] == "nlp"
     assert result["attempts"] == 3
+    assert result["flipped"] == 1
     assert result["worst_case"] is not None
     assert result["worst_case"]["suffix"] == "suffixB"
     assert result["worst_case"]["adv_response"] == "response B"
     assert result["worst_case"]["clean_response"] == "Paris is the capital."
+    assert result["worst_case"]["flipped"] is True
     assert result["worst_case"]["score"] == pytest.approx(0.3)
 
 
