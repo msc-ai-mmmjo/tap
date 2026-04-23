@@ -193,7 +193,7 @@ export function MetricCards({ data }: Props) {
   const certaintyCaption =
     certaintyOverall === null
       ? 'Fallback: no uncertainty estimate'
-      : 'Model-estimated probability this answer is correct';
+      : 'Estimated confidence this answer is correct';
 
   const { certified, resampled, tokens } = data.security;
   const resampledCount = resampled.length;
