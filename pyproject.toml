@@ -78,7 +78,7 @@ msc-ai-group-project = { path = ".", editable = true }
 [tool.pixi.feature.docs.pypi-dependencies]
 sphinx = ">=8"
 furo = "*"
-myst-parser = "*"
+myst-parser = { version = "*", extras = ["linkify"] }
 sphinx-copybutton = "*"
 sphinx-autobuild = "*"
 
