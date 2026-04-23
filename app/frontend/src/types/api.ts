@@ -18,11 +18,22 @@ export interface SecurityStatus {
   resampled: SecurityResample[];
 }
 
-export interface RobustnessStatus {
-  passed: boolean;
-  detail: string;
-  flagged_tokens: string[];
+export interface AdversarialWorstCase {
+  suffix: string;
+  clean_response: string;
+  adv_response: string;
+  flipped: boolean;
+  score: number | null;
 }
+
+export type RobustnessStatus =
+  | { type: 'unavailable' }
+  | {
+      type: 'nlp' | 'mcq';
+      attempts: number;
+      flipped: number;
+      worst_case: AdversarialWorstCase | null;
+    };
 
 export interface Uncertainty {
   overall: number | null;
