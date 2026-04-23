@@ -82,6 +82,7 @@ furo = "*"
 myst-parser = { version = "*", extras = ["linkify"] }
 sphinx-copybutton = "*"
 sphinx-autobuild = "*"
+ghp-import = "*"
 
 # ---------------------------------------------
 # Environments
@@ -126,9 +127,14 @@ olmo = { cmd = "python examples/olmo.py", default-environment = "cuda" }
 
 # Documentation
 # -W promotes warnings to errors so broken cross-references fail the build.
-docs = { cmd = "sphinx-build -W -b html docs/source docs/build/html", default-environment = "docs" }
-docs-serve = { cmd = "sphinx-autobuild docs/source docs/build/html --host 0.0.0.0 --port 8765", default-environment = "docs" }
+docs = { cmd = "sphinx-build -W -b html -d docs/build/doctrees docs/source docs/build/html", default-environment = "docs" }
+docs-serve = { cmd = "sphinx-autobuild -d docs/build/doctrees docs/source docs/build/html --host 0.0.0.0 --port 8765", default-environment = "docs" }
 docs-clean = { cmd = "rm -rf docs/build docs/source/api/_generated", default-environment = "docs" }
+# Publish to GitHub Pages by force-pushing the built HTML to the
+# `gh-pages` branch. `ghp-import -n` adds `.nojekyll` so GH Pages
+# serves `_static/` directories. Enable Pages in repo settings
+# (Settings → Pages → Deploy from branch → gh-pages /root) once.
+docs-publish = { cmd = "ghp-import -n -p -f -m 'docs: deploy' docs/build/html", default-environment = "docs", depends-on = ["docs-clean", "docs"] }
 
 # CI (runs all checks)
 # `docs` is intentionally excluded — it needs the heavy cuda deps and
