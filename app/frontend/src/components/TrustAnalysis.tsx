@@ -1,5 +1,6 @@
 import type { AnalysisResponse } from '../types/api';
 import { ClaimCard } from './ClaimCard';
+import { SecurityTokensPanel } from './SecurityTokensPanel';
 
 interface Props {
   data: AnalysisResponse;
@@ -30,6 +31,10 @@ export function TrustAnalysis({ data }: Props) {
           ))}
         </ol>
       </div>
+
+      {data.security.tokens.length > 0 && (
+        <SecurityTokensPanel data={data.security} />
+      )}
     </div>
   );
 }
