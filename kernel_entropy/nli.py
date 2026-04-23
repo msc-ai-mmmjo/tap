@@ -104,6 +104,30 @@ class ModernBERTScorer:
 
         print("ModernBERT NLI model loaded!")
 
+    def get_nli_probabilities(self, nli_inputs: list[tuple[str, str]]) -> torch.Tensor:
+        """Get raw NLI probabilities for given (premise, hypothesis) pairs."""
+        assert self._tokenizer is not None
+        assert self._model is not None
+
+        encoded = self._tokenizer(
+            [p[0] for p in nli_inputs],  # premises
+            [p[1] for p in nli_inputs],  # hypotheses
+            padding=True,
+            truncation=True,
+            max_length=512,
+            return_tensors="pt",
+        )
+
+        input_ids = encoded["input_ids"].cuda()
+        # Padding is added to make all sequences the same length in a batch.
+        attention_mask = encoded["attention_mask"].cuda()
+
+        with torch.no_grad():
+            outputs = self._model(input_ids=input_ids, attention_mask=attention_mask)
+            probs = torch.softmax(outputs.logits, dim=-1)
+
+        return probs
+
     def compute(
         self, verbose: bool = False
     ) -> "torch.Tensor | tuple[torch.Tensor, RawProbabilities]":
@@ -153,65 +177,48 @@ class ModernBERTScorer:
 
         raw_probabilities: RawProbabilities = {}
 
+        if not nli_inputs:
+            # No non-identical pairs, return W (or W, raw_probabilities if verbose)
+            if verbose:
+                return W, raw_probabilities
+            return W
+
         # Batch inference for non-identical pairs
-        if nli_inputs:
-            print(f"Computing pairwise similarities ({len(nli_inputs)} inferences)...")
+        print(f"Computing pairwise similarities ({len(nli_inputs)} inferences)...")
+        probs = self.get_nli_probabilities(nli_inputs)
 
-            assert self._tokenizer is not None
-            assert self._model is not None
+        # Each pair has 2 consecutive NLI results: [i->j, j->i]
+        for pair_idx, (i, j) in enumerate(pair_indices):
+            idx_ij = pair_idx * 2  # i -> j
+            idx_ji = pair_idx * 2 + 1  # j -> i
 
-            encoded = self._tokenizer(
-                [p[0] for p in nli_inputs],  # premises
-                [p[1] for p in nli_inputs],  # hypotheses
-                padding=True,
-                truncation=True,
-                max_length=512,
-                return_tensors="pt",
+            # KLE weighting: entailment=1.0, neutral=0.5, contradiction=0.0
+            score_ij = (
+                1.0 * probs[idx_ij, LABEL_ENTAILMENT]
+                + 0.5 * probs[idx_ij, LABEL_NEUTRAL]
+            )
+            score_ji = (
+                1.0 * probs[idx_ji, LABEL_ENTAILMENT]
+                + 0.5 * probs[idx_ji, LABEL_NEUTRAL]
             )
 
-            input_ids = encoded["input_ids"].cuda()
-            # Padding is added to make all sequences the same length in a batch.
-            attention_mask = encoded["attention_mask"].cuda()
+            # W[i,j] = score(i->j) + score(j->i), symmetric
+            W[i, j] = score_ij + score_ji
+            W[j, i] = W[i, j]
 
-            with torch.no_grad():
-                outputs = self._model(
-                    input_ids=input_ids, attention_mask=attention_mask
-                )
-                logits = outputs.logits
-                probs = torch.softmax(logits, dim=-1)
-
-            # Each pair has 2 consecutive NLI results: [i->j, j->i]
-            for pair_idx, (i, j) in enumerate(pair_indices):
-                idx_ij = pair_idx * 2  # i -> j
-                idx_ji = pair_idx * 2 + 1  # j -> i
-
-                # KLE weighting: entailment=1.0, neutral=0.5, contradiction=0.0
-                score_ij = (
-                    1.0 * probs[idx_ij, LABEL_ENTAILMENT]
-                    + 0.5 * probs[idx_ij, LABEL_NEUTRAL]
-                )
-                score_ji = (
-                    1.0 * probs[idx_ji, LABEL_ENTAILMENT]
-                    + 0.5 * probs[idx_ji, LABEL_NEUTRAL]
-                )
-
-                # W[i,j] = score(i->j) + score(j->i), symmetric
-                W[i, j] = score_ij + score_ji
-                W[j, i] = W[i, j]
-
-                if verbose:
-                    raw_probabilities[(i, j)] = {
-                        "i_to_j": {
-                            "entailment": probs[idx_ij, LABEL_ENTAILMENT].item(),
-                            "neutral": probs[idx_ij, LABEL_NEUTRAL].item(),
-                            "contradiction": probs[idx_ij, LABEL_CONTRADICTION].item(),
-                        },
-                        "j_to_i": {
-                            "entailment": probs[idx_ji, LABEL_ENTAILMENT].item(),
-                            "neutral": probs[idx_ji, LABEL_NEUTRAL].item(),
-                            "contradiction": probs[idx_ji, LABEL_CONTRADICTION].item(),
-                        },
-                    }
+            if verbose:
+                raw_probabilities[(i, j)] = {
+                    "i_to_j": {
+                        "entailment": probs[idx_ij, LABEL_ENTAILMENT].item(),
+                        "neutral": probs[idx_ij, LABEL_NEUTRAL].item(),
+                        "contradiction": probs[idx_ij, LABEL_CONTRADICTION].item(),
+                    },
+                    "j_to_i": {
+                        "entailment": probs[idx_ji, LABEL_ENTAILMENT].item(),
+                        "neutral": probs[idx_ji, LABEL_NEUTRAL].item(),
+                        "contradiction": probs[idx_ji, LABEL_CONTRADICTION].item(),
+                    },
+                }
 
         if verbose:
             return W, raw_probabilities
@@ -220,8 +227,8 @@ class ModernBERTScorer:
     def compute_with_baseline(self, baseline_idx: int = 0) -> "torch.Tensor":
         """Compute KLE similarity between sentences[baseline_idx] and every other sentence.
 
-        Runs exactly 2*(N-1) NLI inferences in one forward pass — only the pairs
-        involving the baseline, not the full C(N,2) pairwise matrix.
+        Runs exactly 2*(N-1) NLI inferences in one forward pass - only the pairs
+        involving the baseline, not the full pairwise matrix.
 
         Returns:
             1-D tensor of length N where result[j] is the bidirectional KLE score
@@ -233,44 +240,28 @@ class ModernBERTScorer:
         if n <= 1:
             return result
 
-        baseline = self.sentences[baseline_idx]
+        baseline_sentence = self.sentences[baseline_idx]
         other_indices = [j for j in range(n) if j != baseline_idx]
 
         nli_inputs: list[tuple[str, str]] = []
         for j in other_indices:
-            other = self.sentences[j]
-            if baseline == other:
+            other_sentence = self.sentences[j]
+            if baseline_sentence == other_sentence:
+                # Identical pairs get max similarity (1.0 + 1.0 = 2.0)
                 result[j] = 2.0
             else:
-                nli_inputs.append((baseline, other))  # baseline -> j
-                nli_inputs.append((other, baseline))  # j -> baseline
+                nli_inputs.append((baseline_sentence, other_sentence))  # baseline -> j
+                nli_inputs.append((other_sentence, baseline_sentence))  # j -> baseline
 
         if not nli_inputs:
             return result
 
         print(f"Computing baseline similarities ({len(nli_inputs)} inferences)...")
-
-        assert self._tokenizer is not None
-        assert self._model is not None
-
-        encoded = self._tokenizer(
-            [p[0] for p in nli_inputs],
-            [p[1] for p in nli_inputs],
-            padding=True,
-            truncation=True,
-            max_length=512,
-            return_tensors="pt",
-        )
-        input_ids = encoded["input_ids"].cuda()
-        attention_mask = encoded["attention_mask"].cuda()
-
-        with torch.no_grad():
-            outputs = self._model(input_ids=input_ids, attention_mask=attention_mask)
-            probs = torch.softmax(outputs.logits, dim=-1)
+        probs = self.get_nli_probabilities(nli_inputs)
 
         pair_pos = 0
         for j in other_indices:
-            if self.sentences[j] == baseline:
+            if self.sentences[j] == baseline_sentence:
                 continue
             score_forward = (
                 1.0 * probs[pair_pos, LABEL_ENTAILMENT]

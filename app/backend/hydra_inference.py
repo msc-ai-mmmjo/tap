@@ -186,9 +186,8 @@ def get_robustness(
         logger.info("Testing adversarial suffix: %s", suffix)
 
         attack_msg = {"role": "user", "content": last_message["content"] + suffix}
-        adv_resp, _, _, _ = generate(
-            model, tokenizer, messages + [attack_msg], is_mcq, device
-        )
+        adv_prompt = messages + [attack_msg]
+        adv_resp, _, _, _ = generate(model, tokenizer, adv_prompt, is_mcq, device)
         adv_results.append((suffix, adv_resp))
 
         if is_mcq:
