@@ -12,9 +12,8 @@ def main() -> None:
         "--n", type=int, default=5, help="Number of generations (default: 5)"
     )
     parser.add_argument(
-        "--temp", type=float, default=0.7, help="Temperature (default: 0.7)"
+        "--temp", type=float, default=0.98, help="Temperature (default: 0.98)"
     )
-    parser.add_argument("--top-p", type=float, default=0.9, help="Top-p (default: 0.9)")
     parser.add_argument(
         "--t", type=float, default=1.0, help="Heat kernel lengthscale (default: 1.0)"
     )
@@ -32,7 +31,7 @@ def main() -> None:
         sys.exit(1)
 
     print(f"Prompt: {args.prompt}")
-    print(f"Generations: {args.n}, Temperature: {args.temp}, Top-p: {args.top_p}")
+    print(f"Generations: {args.n}, Temperature: {args.temp}")
     print(f"Heat kernel lengthscale t: {args.t}")
     print()
 
@@ -41,7 +40,6 @@ def main() -> None:
         prompt=args.prompt,
         n_generations=args.n,
         temperature=args.temp,
-        top_p=args.top_p,
         lengthscale_t=args.t,
         verbose=args.verbose,
     )
