@@ -21,6 +21,13 @@ from app.backend.hydra_inference import (
 )
 from app.backend.mock_metrics import mock_claim_confidence
 from app.backend.question_classifier import detect_mcq_bert
+from app.backend.response_payloads import (
+    fallback_robustness,
+    fallback_security,
+    fallback_uncertainty,
+    poe_security,
+    poe_uncertainty,
+)
 from olmo_tap.hydra import HydraTransformer
 
 logging.basicConfig(
@@ -103,26 +110,6 @@ def _classify_mcq(last_user_msg: str) -> bool | None:
     return detect_mcq_bert(bert_model, bert_tokenizer, last_user_msg, device=_device)
 
 
-def _fallback_security() -> dict:
-    return {"certified": None, "tokens": [], "resampled": []}
-
-
-def _poe_security(tokens: list[str], resampled: list[dict]) -> dict:
-    return {"certified": True, "tokens": tokens, "resampled": resampled}
-
-
-def _fallback_uncertainty() -> dict:
-    return {"overall": None}
-
-
-def _poe_uncertainty(p_correct: float | None) -> dict:
-    return {"overall": p_correct}
-
-
-def _fallback_robustness() -> dict:
-    return {"type": "unavailable"}
-
-
 @app.post("/api/analyse")
 async def analyse(request: ChatRequest, hf: bool = False):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
@@ -140,9 +127,9 @@ async def analyse(request: ChatRequest, hf: bool = False):
     if hf or hydra is None or hydra_tokenizer is None:
         model_name = HF_MODEL
         raw_response = call_hf_model(messages)
-        security = _fallback_security()
-        uncertainty = _fallback_uncertainty()
-        robustness = _fallback_robustness()
+        security = fallback_security()
+        uncertainty = fallback_uncertainty()
+        robustness = fallback_robustness()
     else:
         model_name = MODEL_NAME
         raw_response, tokens, resampled, p_correct = generate(
@@ -152,13 +139,13 @@ async def analyse(request: ChatRequest, hf: bool = False):
             is_mcq=bool(is_mcq),
             device=_device,
         )
-        security = _poe_security(tokens, resampled)
-        uncertainty = _poe_uncertainty(p_correct)
+        security = poe_security(tokens, resampled)
+        uncertainty = poe_uncertainty(p_correct)
 
         bert_model = _models.get("bert")
         bert_tokenizer = _tokenizers.get("bert")
         if not is_mcq and (bert_model is None or bert_tokenizer is None):
-            robustness = _fallback_robustness()
+            robustness = fallback_robustness()
         else:
             robustness = get_robustness(
                 hydra,

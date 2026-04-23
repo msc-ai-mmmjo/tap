@@ -53,7 +53,7 @@ class PoE:
     ) -> tuple[list[str], list[str], list[int], Optional[float]]:
         # messages wins when provided so the chat backend can pass full multi-turn
         # history; prompt_text stays as the single-turn path for scripts/experiments.
-        if messages is None:
+        if not messages:
             messages = [{"role": "user", "content": prompt_text}]
         chat_prompt = self.tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
