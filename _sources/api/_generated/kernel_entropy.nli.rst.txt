@@ -1,0 +1,12 @@
+kernel\_entropy.nli
+===================
+
+.. automodule:: kernel_entropy.nli
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ModernBERTScorer
+   

@@ -1,0 +1,23 @@
+olmo\_tap.benchmarks.inference
+==============================
+
+.. automodule:: olmo_tap.benchmarks.inference
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      benchmark_decode
+      benchmark_ttft
+      build_baseline_model
+      build_hydra_model
+      forward_and_sample
+      get_all_kv_cache_managers
+      init_kv_cache
+      load_config
+      main
+      make_output_dir
+      reset_kv_cache_position
+      run_benchmarks
+   

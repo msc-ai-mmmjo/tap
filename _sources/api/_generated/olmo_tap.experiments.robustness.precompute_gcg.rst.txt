@@ -1,0 +1,12 @@
+olmo\_tap.experiments.robustness.precompute\_gcg
+================================================
+
+.. automodule:: olmo_tap.experiments.robustness.precompute_gcg
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      main
+   

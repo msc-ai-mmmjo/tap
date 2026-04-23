@@ -1,0 +1,12 @@
+kernel\_entropy.generation
+==========================
+
+.. automodule:: kernel_entropy.generation
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      HydraGenerator
+   

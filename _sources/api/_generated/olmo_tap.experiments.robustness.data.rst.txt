@@ -1,0 +1,19 @@
+olmo\_tap.experiments.robustness.data
+=====================================
+
+.. automodule:: olmo_tap.experiments.robustness.data
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      format_example
+      load_cached_shard
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CachedShardDataset
+   

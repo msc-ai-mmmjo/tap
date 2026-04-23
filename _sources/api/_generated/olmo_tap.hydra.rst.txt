@@ -1,0 +1,13 @@
+olmo\_tap.hydra
+===============
+
+.. automodule:: olmo_tap.hydra
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      HydraTransformer
+      HydraTransformerConfig
+   

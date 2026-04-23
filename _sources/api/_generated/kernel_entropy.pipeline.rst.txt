@@ -1,0 +1,12 @@
+kernel\_entropy.pipeline
+========================
+
+.. automodule:: kernel_entropy.pipeline
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      compute_kle
+   

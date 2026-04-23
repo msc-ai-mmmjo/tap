@@ -1,0 +1,14 @@
+olmo\_tap.benchmarks.plotting
+=============================
+
+.. automodule:: olmo_tap.benchmarks.plotting
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      plot_decode_curve
+      plot_histogram_kde
+      plot_results
+   

@@ -1,0 +1,12 @@
+kernel\_entropy.entropy
+=======================
+
+.. automodule:: kernel_entropy.entropy
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      kle_from_similarity
+   

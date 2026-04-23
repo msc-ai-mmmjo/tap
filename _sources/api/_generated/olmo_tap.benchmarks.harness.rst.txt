@@ -1,0 +1,16 @@
+olmo\_tap.benchmarks.harness
+============================
+
+.. automodule:: olmo_tap.benchmarks.harness
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      benchmark
+      compute_stats
+      filter_outliers_iqr
+      get_l2_flush_buffer
+      timed_call
+   

@@ -1,0 +1,16 @@
+﻿kernel\_entropy
+===============
+
+.. automodule:: kernel_entropy
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   entropy
+   generation
+   nli
+   pipeline

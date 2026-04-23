@@ -1,0 +1,15 @@
+olmo\_tap.benchmarks
+====================
+
+.. automodule:: olmo_tap.benchmarks
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   harness
+   inference
+   plotting

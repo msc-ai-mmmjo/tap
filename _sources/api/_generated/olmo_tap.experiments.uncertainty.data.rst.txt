@@ -1,0 +1,16 @@
+olmo\_tap.experiments.uncertainty.data
+======================================
+
+.. automodule:: olmo_tap.experiments.uncertainty.data
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      encode_second_pass
+      format_first_pass
+      format_second_pass
+      load_shard
+      preprocess_example
+   

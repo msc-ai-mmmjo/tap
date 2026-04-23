@@ -1,0 +1,12 @@
+olmo\_tap.experiments.hydra\_demo
+=================================
+
+.. automodule:: olmo_tap.experiments.hydra_demo
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      main
+   
