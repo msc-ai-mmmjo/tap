@@ -166,7 +166,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
                     model=bert_model,
                     tokenizer=bert_tokenizer,
                 ).compute()
-                entropy = kle_from_similarity(W, t=KLE_HEAT_KERNEL_T)
+                entropy = kle_from_similarity(W, t=KLE_HEAT_KERNEL_T)  # type: ignore[arg-type]
                 certainty = kle_to_certainty(entropy, KLE_N_SAMPLES)
                 uncertainty = poe_uncertainty(certainty)
             except Exception:
