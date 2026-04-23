@@ -118,18 +118,19 @@ class PoE:
 
             curr_d_token = torch.tensor([[d_token]], device="cuda")
             h_stack: list[torch.Tensor] = []
+
             for step in range(self.gamma):
                 h = self.model.forward_trunk(curr_d_token)
                 h_stack.append(h)
                 logits = self.model.forward_heads(h, head_indices=[draft_idx])
+
                 if step < self.gamma - 1:
                     # apply temperature
                     step_probs = F.softmax(logits[0, 0, 0, :].float() / T, dim=-1)
-                    step_token = torch.multinomial(step_probs, 1).item()
                     if temperature is not None:
-                        step_token = torch.multinomial(d_probs, 1).item()
+                        step_token = torch.multinomial(step_probs, 1).item()
                     else:
-                        step_token = torch.argmax(d_probs).item()
+                        step_token = torch.argmax(step_probs).item()
 
                     draft_step_ids.append(step_token)
                     draft_probs.append(step_probs)
