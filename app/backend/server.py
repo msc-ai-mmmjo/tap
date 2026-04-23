@@ -164,7 +164,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
                 hydra,
                 hydra_tokenizer,
                 list(messages),
-                clean_response=raw_response,
+                original_resp=raw_response,
                 is_mcq=bool(is_mcq),
                 adv_suffix_bank=DUMMY_ADV_SUFFIXES,
                 bert_model=bert_model,
