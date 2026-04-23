@@ -69,7 +69,7 @@ class ModernBERTScorer:
         self._model_id = model_id
 
         if model is not None and tokenizer is not None:
-            # A bit ugly but does the job, but should clean up
+            # TODO: does the job but ugly - might be better way
             type(self)._model = model
             type(self)._tokenizer = tokenizer
         else:
