@@ -27,7 +27,7 @@ const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> =
   },
   robustness: {
     definition:
-      "How the answer holds up against jailbreak attempts. We run several short attack strings and count how many times the answer changed meaning (letter for MCQ, semantic for NLP). Fewer flips means a more robust answer.",
+      "How the answer holds up against jailbreak attempts. We run several short attack strings and count how many times the answer changed meaning. Fewer flips means a more robust answer.",
     paper:
       'Method: Kumar et al., "AmpleGCG-Plus: A Strong Generative Model of Adversarial Suffixes to Jailbreak LLMs with Higher Success Rates in Fewer Attempts".',
   },
@@ -245,7 +245,7 @@ export function MetricCards({ data }: Props) {
     } else {
       robustnessCaption = stable
         ? `Answer held across ${robustness.attempts} attacks`
-        : 'Attacks that flipped the letter';
+        : 'Attacks that flipped the answer';
     }
   }
 
