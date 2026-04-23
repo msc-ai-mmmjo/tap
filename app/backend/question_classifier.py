@@ -1,9 +1,9 @@
 from enum import StrEnum
 
 import torch
-from transformers import (
-    AutoModelForSequenceClassification,
-    TokenizersBackend,
+from transformers import TokenizersBackend
+from transformers.models.modernbert.modeling_modernbert import (
+    ModernBertForSequenceClassification,
 )
 
 
@@ -19,13 +19,17 @@ _BERT_HYPOTHESES: dict[QuestionType, str] = {
 
 
 def detect_mcq_bert(
-    model: AutoModelForSequenceClassification,
+    model: ModernBertForSequenceClassification,
     tokenizer: TokenizersBackend,
     text: str,
     device: str = "cuda",
 ) -> bool:
     # should be {'contradiction': 2, 'entailment': 0, 'neutral': 1}
-    entailment_idx = model.config.label2id.get("entailment", 0)
+    if (label_id_map := model.config.label2id) is not None:
+        entailment_idx = label_id_map.get("entailment", 0)
+    else:
+        entailment_idx = 0
+
     scores: dict[QuestionType, float] = {}
 
     with torch.no_grad():

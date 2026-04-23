@@ -16,8 +16,8 @@ from transformers import TokenizersBackend
 # This lets us import types for hints without requiring transformers
 # to be installed when the module is imported in non-CUDA environments.
 if TYPE_CHECKING:
-    from transformers.models.auto.modeling_auto import (
-        AutoModelForSequenceClassification as AutoModelType,
+    from transformers.models.modernbert.modeling_modernbert import (
+        ModernBertForSequenceClassification as AutoModelType,
     )
 
 # Type alias for raw probability data from NLI scoring
@@ -57,7 +57,7 @@ class ModernBERTScorer:
         Args:
             sentences: List of N sentences to compare
             model_id: HuggingFace repo id or local path (default: tasksource/ModernBERT-large-nli)
-            model: Pre-loaded AutoModelForSequenceClassification. When provided together with
+            model: Pre-loaded ModernBertForSequenceClassification. When provided together with
                    tokenizer, the class-level singleton is set directly and no HF download or
                    CUDA check is performed.
             tokenizer: Pre-loaded tokenizer paired with model.
