@@ -42,6 +42,9 @@ function ActiveBody({
     <>
       <div className="text-[12px] mb-3" style={{ color: 'var(--color-ink-soft)' }}>
         {data.flipped} of {data.attempts} attacks flipped the answer
+        {data.worst_case && !data.worst_case.flipped
+          ? '. Showing the closest attempt.'
+          : ''}
       </div>
 
       {data.worst_case ? (
@@ -110,7 +113,7 @@ function WorstCaseBody({
             className="font-mono text-[10px] uppercase tracking-[0.16em] mb-1"
             style={{ color: 'var(--color-ink-muted)' }}
           >
-            — Adversarial response
+            {worstCase.flipped ? '— Adversarial response' : '— Response under this attack'}
           </div>
           {worstCase.adv_response ? (
             <div
