@@ -100,11 +100,7 @@ def generate(
         max_new_tokens=max_new_tokens,
     )
     output_parts, original_tokens, resampled_idxs, uncertainty = (
-        poe.generate_with_cache(
-            prompt_text="",
-            is_mcq=is_mcq,
-            messages=messages,
-        )
+        poe.generate_with_cache(prompt_text="", is_mcq=is_mcq, messages=messages)
     )
     raw_response, tokens, resampled = _tokens_and_resamples_from_poe_output(
         tokenizer, output_parts, original_tokens, resampled_idxs
@@ -179,16 +175,21 @@ def get_robustness(
     last_message = messages.pop()
 
     num_flipped = 0
-    # (suffix, adv_resp) for MCQ; (score, suffix, adv_resp) for NLP
+
+    ### 1. Generate all adversarial responses ###
+    adv_results: list[tuple[str, str]] = []
+
+    # For MCQs, track the first (suffix, adv_resp) that causes a change in the predicted answer
     mcq_first_flip: tuple[str, str] | None = None
-    nlp_entries: list[tuple[float, str, str]] = []
 
     for suffix in adv_suffix_bank:
         logger.info("Testing adversarial suffix: %s", suffix)
 
         attack_msg = {"role": "user", "content": last_message["content"] + suffix}
-        adv_prompt = messages + [attack_msg]
-        adv_resp, _, _, _ = generate(model, tokenizer, adv_prompt, is_mcq, device)
+        adv_resp, _, _, _ = generate(
+            model, tokenizer, messages + [attack_msg], is_mcq, device
+        )
+        adv_results.append((suffix, adv_resp))
 
         if is_mcq:
             if original_resp.strip().upper() != adv_resp.strip().upper():
@@ -196,17 +197,23 @@ def get_robustness(
                 num_flipped += 1
                 if mcq_first_flip is None:
                     mcq_first_flip = (suffix, adv_resp)
-        else:
-            scorer = ModernBERTScorer(
-                [original_resp, adv_resp],
-                model=bert_model,
-                tokenizer=bert_tokenizer,
-            )
-            similarity_mat, raw_probs = scorer.compute(verbose=True)
-            score = similarity_mat[0, 1].item()
 
-            # TODO - could use `raw_probs` contents directly as finer-grained
-            # NLI change measure instead of aggregated similarity score
+    ### 2. Score all NLP responses in a single batched NLI forward pass ###
+    # compute_with_baseline scores original_resp against each adv response only,
+    # running 2*(N-1) inferences instead of the full C(N,2) pairwise matrix.
+
+    # For NLP, store all (score, suffix, adv_resp) to later identify the worst-case example
+    nlp_entries: list[tuple[float, str, str]] = []
+
+    if not is_mcq and adv_results:
+        adv_responses = [resp for _, resp in adv_results]
+        scorer = ModernBERTScorer(
+            [original_resp] + adv_responses, model=bert_model, tokenizer=bert_tokenizer
+        )
+        # TODO - could expose per-direction raw probs as finer-grained NLI change measure
+        baseline_scores = scorer.compute_with_baseline(baseline_idx=0)
+        for j, (suffix, adv_resp) in enumerate(adv_results):
+            score = baseline_scores[j + 1].item()
             if score <= NLP_ROBUSTNESS_THRESHOLD:
                 logger.info(
                     "Adversarial suffix '%s' caused significant NLP answer change!",
@@ -222,7 +229,7 @@ def get_robustness(
         len(adv_suffix_bank),
     )
 
-    # Worst-case entry for the adversarial preview panel:
+    ### 3. Extract worst case entry for preview panel ###
     # NLP -> lowest NLI similarity (always returned); MCQ -> first flipped suffix, else None.
     worst_case: dict | None = None
     if is_mcq:
