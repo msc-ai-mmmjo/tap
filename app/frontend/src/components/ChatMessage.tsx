@@ -78,21 +78,16 @@ export function ChatMessage({ message }: Props) {
           >
             <span
               aria-hidden
-              className="inline-block w-3"
-              style={{ borderTop: '1px solid var(--color-ink-muted)' }}
-            />
+              className="inline-block w-3 text-center leading-none"
+            >
+              {expanded ? '−' : '+'}
+            </span>
             {expanded ? 'Hide' : 'Inspect'} details
             {analysis.security.resampled.length > 0 && (
               <span style={{ color: 'var(--color-warn)' }}>
                 · {analysis.security.resampled.length} swap{analysis.security.resampled.length !== 1 ? 's' : ''}
               </span>
             )}
-            <span
-              aria-hidden
-              className="inline-block w-3 text-center leading-none"
-            >
-              {expanded ? '−' : '+'}
-            </span>
           </button>
         </div>
       )}

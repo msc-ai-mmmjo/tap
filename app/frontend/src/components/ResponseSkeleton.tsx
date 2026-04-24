@@ -114,16 +114,11 @@ export function ResponseSkeleton({ active }: Props) {
       >
         <span
           aria-hidden
-          className="inline-block w-3"
-          style={{ borderTop: '1px solid var(--color-ink-muted)' }}
-        />
-        Inspect details
-        <span
-          aria-hidden
           className="inline-block w-3 text-center leading-none"
         >
           +
         </span>
+        Inspect details
       </div>
     </div>
   );
