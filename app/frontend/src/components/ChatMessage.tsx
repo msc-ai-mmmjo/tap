@@ -21,12 +21,15 @@ export function ChatMessage({ message }: Props) {
         >
           — Query
         </div>
-        <p
-          className="text-[14px] leading-snug"
-          style={{ color: 'var(--color-ink-2)' }}
+        <blockquote
+          className="font-display text-[15.5px] italic leading-[1.5] pl-4"
+          style={{
+            color: 'var(--color-ink-2)',
+            borderLeft: '2px solid var(--color-accent)',
+          }}
         >
           {message.content}
-        </p>
+        </blockquote>
       </div>
     );
   }

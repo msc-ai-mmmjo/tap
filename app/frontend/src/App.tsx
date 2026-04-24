@@ -11,6 +11,21 @@ const SAMPLE_QUERIES = [
   'Acute monoarticular knee pain, synovial fluid shows negatively birefringent needle-shaped crystals. Which fits? A) Gout B) Pseudogout C) Septic arthritis D) Rheumatoid arthritis',
 ];
 
+function ExchangeSeparator({ turn }: { turn: number }) {
+  return (
+    <div className="my-8 flex items-center gap-3" aria-hidden>
+      <div className="flex-1" style={{ borderTop: '1px solid var(--color-rule)' }} />
+      <div
+        className="font-mono text-[10px] uppercase tracking-[0.18em]"
+        style={{ color: 'var(--color-ink-soft)' }}
+      >
+        {String(turn).padStart(2, '0')}
+      </div>
+      <div className="flex-1" style={{ borderTop: '1px solid var(--color-rule)' }} />
+    </div>
+  );
+}
+
 function App() {
   const { messages, loading, error, send } = useChat();
   const lastMsgRef = useRef<HTMLDivElement>(null);
@@ -142,11 +157,15 @@ function App() {
             </div>
           )}
 
-          {messages.map((msg, i) => (
-            <div key={i} ref={i === messages.length - 1 ? lastMsgRef : undefined}>
-              <ChatMessage message={msg} />
-            </div>
-          ))}
+          {messages.map((msg, i) => {
+            const turn = messages.slice(0, i + 1).filter((m) => m.role === 'user').length;
+            return (
+              <div key={i} ref={i === messages.length - 1 ? lastMsgRef : undefined}>
+                {msg.role === 'user' && turn > 1 && <ExchangeSeparator turn={turn} />}
+                <ChatMessage message={msg} />
+              </div>
+            );
+          })}
 
           {loading && <ResponseSkeleton active={loading} />}
 
