@@ -16,7 +16,7 @@ def format_first_pass(question: str, mcq_options: list[str]) -> str:
     return (
         preamble
         + question
-        + f"A: {mcq_options[0]}, "
+        + f" A: {mcq_options[0]}, "
         + f"B: {mcq_options[1]}, "
         + f"C: {mcq_options[2]}, "
         + f"D: {mcq_options[3]}"
