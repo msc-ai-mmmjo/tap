@@ -1,4 +1,4 @@
-# Trustworthy Answer Protocol, React App
+# Trustworthy Answer Protocol - Application
 
 Multi-turn chat interface over our fine-tuned medical LLM, with response-level trust metrics surfaced at a glance and expandable per-claim analysis. The landing page introduces the problem with definition cards and example queries; clicking one drops you straight into the chat flow.
 
