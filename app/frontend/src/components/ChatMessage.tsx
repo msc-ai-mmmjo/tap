@@ -17,15 +17,15 @@ export function ChatMessage({ message }: Props) {
       <div className="mb-8 animate-fade-in">
         <div
           className="font-mono text-[10px] uppercase tracking-[0.18em] mb-2"
-          style={{ color: 'var(--color-accent)' }}
+          style={{ color: 'var(--color-accent-warm)' }}
         >
-          — Query
+          — Re:
         </div>
         <p
-          className="font-display text-[22px] leading-[1.25]"
-          style={{ color: 'var(--color-ink)' }}
+          className="text-[14px] leading-snug"
+          style={{ color: 'var(--color-ink-2)' }}
         >
-          “{message.content}”
+          {message.content}
         </p>
       </div>
     );
