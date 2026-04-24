@@ -11,6 +11,7 @@ from transformers import TokenizersBackend
 
 from app.backend.adversarial_suffixes import DUMMY_ADV_SUFFIXES
 from app.backend.bert_inference import load_bert
+from app.backend.claim_confidence import compute_claim_confidences
 from app.backend.claim_splitter import decompose_into_claims
 from app.backend.constants import HF_FALLBACK_MODEL as HF_MODEL, HF_TOKEN
 from app.backend.hydra_inference import (
@@ -19,7 +20,6 @@ from app.backend.hydra_inference import (
     load_hydra,
     MODEL_NAME,
 )
-from app.backend.mock_metrics import mock_claim_confidence
 from app.backend.question_classifier import detect_mcq_bert
 from app.backend.response_payloads import (
     fallback_robustness,
@@ -190,22 +190,34 @@ async def analyse(request: ChatRequest, hf: bool = False):
 
     logger.info("Generation complete (%d chars)", len(raw_response))
 
-    claims_text = decompose_into_claims(raw_response)
-    claims = []
-    scores = []
-    for text in claims_text:
-        metrics = mock_claim_confidence(text)
-        scores.append(metrics["confidence"])
-        claims.append(
-            {
-                "text": text,
-                "confidence": metrics["confidence"],
-                "confidence_level": metrics["level"],
-                "guidance": metrics["guidance"],
-            }
-        )
+    bert_model = _models.get("bert")
+    bert_tokenizer = _tokenizers.get("bert")
 
-    overall = round(sum(scores) / len(scores), 2) if scores else 0.0
+    claims: list[dict] = []
+    overall: float | None = None
+    if bert_model is not None and bert_tokenizer is not None:
+        try:
+            claims_text = decompose_into_claims(raw_response)
+            metrics_list = compute_claim_confidences(
+                raw_response, claims_text, bert_model, bert_tokenizer
+            )
+            claims = [
+                {
+                    "text": text,
+                    "confidence": m["confidence"],
+                    "confidence_level": m["level"],
+                    "guidance": m["guidance"],
+                }
+                for text, m in zip(claims_text, metrics_list)
+            ]
+            if metrics_list:
+                overall = round(
+                    sum(m["confidence"] for m in metrics_list) / len(metrics_list), 2
+                )
+        except Exception:
+            logger.exception("Claim ledger unavailable; returning empty claims")
+            claims = []
+            overall = None
 
     return {
         "claims": claims,

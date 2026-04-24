@@ -41,7 +41,7 @@ export interface Uncertainty {
 
 export interface AnalysisResponse {
   claims: Claim[];
-  overall_confidence: number;
+  overall_confidence: number | null;
   uncertainty: Uncertainty;
   security: SecurityStatus;
   robustness: RobustnessStatus;
