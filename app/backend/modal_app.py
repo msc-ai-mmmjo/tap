@@ -99,7 +99,7 @@ def download_weights() -> None:
 
 
 @app.cls(
-    gpu=["A100-40GB", "L40S"],
+    gpu=["H100", "A100-40GB"],
     volumes={WEIGHTS_MOUNT: weights_vol},
     secrets=[hf_secret],
     scaledown_window=300,
