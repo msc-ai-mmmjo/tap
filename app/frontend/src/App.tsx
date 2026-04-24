@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react';
 import { useChat } from './hooks/useChat';
 import { ChatMessage } from './components/ChatMessage';
 import { ChatInput } from './components/ChatInput';
+import { ResponseSkeleton } from './components/ResponseSkeleton';
 
 const SAMPLE_QUERIES = [
   "I'm admitting a patient in diabetic ketoacidosis, where do I start?",
@@ -147,20 +148,7 @@ function App() {
             </div>
           ))}
 
-          {loading && (
-            <div className="mb-6 animate-fade-in" aria-live="polite">
-              <div
-                className="font-mono text-[10.5px] uppercase tracking-[0.18em] flex items-center gap-3"
-                style={{ color: 'var(--color-ink-muted)' }}
-              >
-                <span
-                  className="inline-block w-2 h-2 rounded-full animate-pulse"
-                  style={{ background: 'var(--color-accent)' }}
-                />
-                Analysing response
-              </div>
-            </div>
-          )}
+          {loading && <ResponseSkeleton active={loading} />}
 
           {error && (
             <div
