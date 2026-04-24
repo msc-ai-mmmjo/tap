@@ -12,21 +12,19 @@
   --color-card: #fbfaf6;
   --color-rule: #d8d2c2;
   --color-rule-soft: #e6e0d0;
+  --color-rule-on-ink: rgba(255, 255, 255, 0.18);
   --color-ink: #15171c;
   --color-ink-2: #2b2e36;
   --color-ink-muted: #4a4d57;
   --color-ink-soft: #6b6d76;
 
   /* Single sharp accent */
-  --color-accent: #1a3a4a;
-  --color-accent-soft: #d9e2e6;
+  --color-accent: #1d4ed8;
 
   /* Semantic — muted clinical */
   --color-ok: #1f6f4f;
-  --color-ok-soft: #d6e8de;
   --color-warn: #a05a14;
-  --color-warn-soft: #f0e0c4;
-  --color-bad: #9b2a2a;
+  --color-bad: #b91c1c;
   --color-bad-soft: #efd5d5;
 }
 
@@ -83,4 +81,26 @@
   background-position: 0 0, 0 4px;
   background-repeat: no-repeat;
   height: 5px;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+.skeleton-bar {
+  background: var(--color-rule-soft);
+  border-radius: 1px;
+  animation: skeleton-pulse 2.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-bar { animation: none; opacity: 0.8; }
+}
+
+@keyframes phrase-swap {
+  from { opacity: 0; transform: translateY(-1px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.phrase-swap { animation: phrase-swap 220ms ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .phrase-swap { animation: none; }
 }

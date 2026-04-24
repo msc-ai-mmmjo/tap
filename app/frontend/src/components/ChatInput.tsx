@@ -83,6 +83,14 @@ export function ChatInput({ onSubmit, loading }: Props) {
             )}
           </button>
         </div>
+        <div
+          className="text-[11px] leading-snug mt-2"
+          style={{ color: 'var(--color-ink-soft)' }}
+        >
+          Research prototype. Outputs are not clinically validated and must not be
+          used to inform patient care or clinical decisions. Always verify with
+          qualified clinical sources before acting on anything shown here.
+        </div>
       </div>
     </form>
   );

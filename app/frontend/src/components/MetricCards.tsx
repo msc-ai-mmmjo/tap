@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { AnalysisResponse } from '../types/api';
-import { ROBUSTNESS_FLIP_WARN_RATIO } from '../lib/constants';
+import { CONFIDENCE_THRESHOLDS, ROBUSTNESS_FLIP_WARN_RATIO } from '../lib/constants';
 
 interface Props {
   data: AnalysisResponse;
@@ -21,7 +21,7 @@ const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> =
   },
   security: {
     definition:
-      "Each token is cross-checked by several independent heads in the model. Whenever they disagree with the draft, the token is rewritten. Fewer rewrites means stronger agreement across heads, and a more trustworthy answer.",
+      "Defends against training-data tampering (poisoning). Each token is cross-checked by several independent heads in the model; whenever they disagree with the draft, the token is rewritten. Fewer rewrites means stronger agreement across heads, and a more trustworthy answer.",
     paper:
       'Method: Ghitu & Wicker, "Towards Poisoning Robustness Certification for Natural Language Generation".',
   },
@@ -128,7 +128,7 @@ function InfoTooltip({ info, label }: { info: MetricInfo; label: string }) {
               className="font-mono text-[10px] uppercase tracking-wider pt-1.5 mt-1.5"
               style={{
                 color: 'var(--color-paper-2)',
-                borderTop: '1px solid rgba(255,255,255,0.18)',
+                borderTop: '1px solid var(--color-rule-on-ink)',
               }}
             >
               {info.paper}
@@ -146,18 +146,13 @@ interface CellProps {
   info: MetricInfo;
   value: string;
   valueColour?: string;
+  severityLabel?: string;
   caption: string;
-  isFirst?: boolean;
 }
 
-function MetricCell({ index, label, info, value, valueColour, caption, isFirst }: CellProps) {
+function MetricCell({ index, label, info, value, valueColour, severityLabel, caption }: CellProps) {
   return (
-    <div
-      className="px-5 py-4"
-      style={{
-        borderLeft: isFirst ? 'none' : '1px solid var(--color-rule)',
-      }}
-    >
+    <div className="px-5 py-4 border-l border-rule first:border-l-0">
       <div className="flex items-center justify-between mb-3">
         <div
           className="font-mono text-[10px] uppercase tracking-[0.16em] flex items-baseline gap-1.5"
@@ -168,11 +163,21 @@ function MetricCell({ index, label, info, value, valueColour, caption, isFirst }
         </div>
         <InfoTooltip info={info} label={label} />
       </div>
-      <div
-        className="font-mono text-[24px] tabular-nums leading-none"
-        style={{ color: valueColour ?? 'var(--color-ink)' }}
-      >
-        {value}
+      <div className="flex items-baseline gap-2 leading-none">
+        <span
+          className="font-mono text-[18px] tabular-nums"
+          style={{ color: valueColour ?? 'var(--color-ink)' }}
+        >
+          {value}
+        </span>
+        {severityLabel && (
+          <span
+            className="font-mono text-[9.5px] uppercase tracking-[0.14em]"
+            style={{ color: valueColour ?? 'var(--color-ink-soft)' }}
+          >
+            {severityLabel}
+          </span>
+        )}
       </div>
       <div
         className="text-[11.5px] leading-snug mt-2"
@@ -184,48 +189,76 @@ function MetricCell({ index, label, info, value, valueColour, caption, isFirst }
   );
 }
 
+type Severity = 'ok' | 'warn' | 'bad' | 'na';
+
+const SEVERITY_COLOUR: Record<Severity, string> = {
+  ok: 'var(--color-ok)',
+  warn: 'var(--color-warn)',
+  bad: 'var(--color-bad)',
+  na: 'var(--color-ink-muted)',
+};
+
+const SEVERITY_LABEL: Record<Severity, string | undefined> = {
+  ok: 'Low risk',
+  warn: 'Moderate',
+  bad: 'High risk',
+  na: undefined,
+};
+
 export function MetricCards({ data }: Props) {
   const { overall: certaintyOverall } = data.uncertainty;
   const certaintyValue =
     certaintyOverall === null ? '—' : `${Math.round(certaintyOverall * 100)}%`;
-  const certaintyColour =
-    certaintyOverall === null ? 'var(--color-ink-muted)' : undefined;
-  const certaintyCaption =
-    certaintyOverall === null
-      ? 'Fallback: no uncertainty estimate'
-      : 'Estimated confidence this answer is correct';
+  let certaintySeverity: Severity;
+  let certaintyCaption: string;
+  if (certaintyOverall === null) {
+    certaintySeverity = 'na';
+    certaintyCaption = 'Fallback: no uncertainty estimate';
+  } else if (certaintyOverall >= CONFIDENCE_THRESHOLDS.high) {
+    certaintySeverity = 'ok';
+    certaintyCaption = 'High confidence this answer is correct';
+  } else if (certaintyOverall >= CONFIDENCE_THRESHOLDS.moderate) {
+    certaintySeverity = 'warn';
+    certaintyCaption = 'Moderate confidence, verify key claims';
+  } else {
+    certaintySeverity = 'bad';
+    certaintyCaption = 'Low confidence, double-check before acting';
+  }
 
   const { certified, resampled, tokens } = data.security;
   const resampledCount = resampled.length;
   const totalTokens = tokens.length;
 
   let securityValue: string;
-  let securityColour: string;
+  let securitySeverity: Severity;
   let securityCaption: string;
   if (certified === null) {
     securityValue = '—';
-    securityColour = 'var(--color-ink-muted)';
+    securitySeverity = 'na';
     securityCaption = 'Fallback: no PoE guarantee';
   } else {
     securityValue = `${resampledCount} swap${resampledCount !== 1 ? 's' : ''}`;
-    securityColour =
-      resampledCount === 0
-        ? 'var(--color-ok)'
-        : resampledCount <= 3
-          ? 'var(--color-warn)'
-          : 'var(--color-bad)';
-    securityCaption = `${resampledCount} of ${totalTokens} tokens resampled during verification`;
+    if (resampledCount === 0) {
+      securitySeverity = 'ok';
+      securityCaption = `All ${totalTokens} tokens agreed across heads`;
+    } else if (resampledCount <= 3) {
+      securitySeverity = 'warn';
+      securityCaption = `${resampledCount} of ${totalTokens} tokens resampled, minor disagreement`;
+    } else {
+      securitySeverity = 'bad';
+      securityCaption = `${resampledCount} of ${totalTokens} tokens resampled, heavy disagreement`;
+    }
   }
 
   const robustness = data.robustness;
   let robustnessValue: string;
-  let robustnessColour: string;
+  let robustnessSeverity: Severity;
   let robustnessCaption: string;
 
   if (robustness.type === 'unavailable') {
     robustnessValue = '—';
-    robustnessColour = 'var(--color-ink-muted)';
-    robustnessCaption = 'Awaiting real pipeline';
+    robustnessSeverity = 'na';
+    robustnessCaption = 'Fallback: no adversarial examples';
   } else {
     const stable = robustness.flipped === 0;
     const flipRatio =
@@ -233,19 +266,24 @@ export function MetricCards({ data }: Props) {
     robustnessValue = stable
       ? 'Stable'
       : `${robustness.flipped}/${robustness.attempts} flipped`;
-    robustnessColour = stable
-      ? 'var(--color-ok)'
-      : flipRatio <= ROBUSTNESS_FLIP_WARN_RATIO
-        ? 'var(--color-warn)'
-        : 'var(--color-bad)';
-    if (robustness.type === 'nlp') {
-      robustnessCaption = stable
-        ? `0 of ${robustness.attempts} attacks changed meaning`
-        : 'Attacks that changed meaning';
+    if (stable) {
+      robustnessSeverity = 'ok';
+      robustnessCaption =
+        robustness.type === 'nlp'
+          ? `Meaning held across ${robustness.attempts} attacks`
+          : `Answer held across ${robustness.attempts} attacks`;
+    } else if (flipRatio <= ROBUSTNESS_FLIP_WARN_RATIO) {
+      robustnessSeverity = 'warn';
+      robustnessCaption =
+        robustness.type === 'nlp'
+          ? 'Some attacks shifted the meaning'
+          : 'Some attacks flipped the letter';
     } else {
-      robustnessCaption = stable
-        ? `Answer held across ${robustness.attempts} attacks`
-        : 'Attacks that flipped the letter';
+      robustnessSeverity = 'bad';
+      robustnessCaption =
+        robustness.type === 'nlp'
+          ? 'Many attacks shifted the meaning'
+          : 'Many attacks flipped the letter';
     }
   }
 
@@ -254,16 +292,16 @@ export function MetricCards({ data }: Props) {
       className="grid grid-cols-3"
       style={{
         background: 'var(--color-card)',
-        border: '1px solid var(--color-rule)',
+        border: '1px solid var(--color-rule-soft)',
       }}
     >
       <MetricCell
-        isFirst
         index="01"
         label="Certainty"
         info={METRIC_INFO.certainty}
         value={certaintyValue}
-        valueColour={certaintyColour}
+        valueColour={SEVERITY_COLOUR[certaintySeverity]}
+        severityLabel={SEVERITY_LABEL[certaintySeverity]}
         caption={certaintyCaption}
       />
       <MetricCell
@@ -271,7 +309,8 @@ export function MetricCards({ data }: Props) {
         label="Security"
         info={METRIC_INFO.security}
         value={securityValue}
-        valueColour={securityColour}
+        valueColour={SEVERITY_COLOUR[securitySeverity]}
+        severityLabel={SEVERITY_LABEL[securitySeverity]}
         caption={securityCaption}
       />
       <MetricCell
@@ -279,7 +318,8 @@ export function MetricCards({ data }: Props) {
         label="Robustness"
         info={METRIC_INFO.robustness}
         value={robustnessValue}
-        valueColour={robustnessColour}
+        valueColour={SEVERITY_COLOUR[robustnessSeverity]}
+        severityLabel={SEVERITY_LABEL[robustnessSeverity]}
         caption={robustnessCaption}
       />
     </div>

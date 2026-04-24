@@ -22,7 +22,7 @@ export function TrustAnalysis({ data }: Props) {
             className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center gap-2"
             style={{ color: 'var(--color-ink-muted)' }}
           >
-            <span style={{ color: 'var(--color-accent)' }}>◇</span>
+            <span style={{ color: 'var(--color-accent)' }}>◆</span>
             <span>— Experimental</span>
             <span style={{ color: 'var(--color-ink-soft)' }}>
               · claim-level uncertainty

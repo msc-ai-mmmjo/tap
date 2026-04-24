@@ -23,7 +23,7 @@ export function AdversarialPreviewPanel({ data }: Props) {
 
         {data.type === 'unavailable' ? (
           <div className="text-[12px]" style={{ color: 'var(--color-ink-soft)' }}>
-            Robustness pipeline is being wired, check back soon.
+            No adversarial examples available for this response.
           </div>
         ) : (
           <ActiveBody data={data} />

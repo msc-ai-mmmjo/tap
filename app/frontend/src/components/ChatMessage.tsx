@@ -21,12 +21,15 @@ export function ChatMessage({ message }: Props) {
         >
           — Query
         </div>
-        <p
-          className="font-display text-[22px] leading-[1.25]"
-          style={{ color: 'var(--color-ink)' }}
+        <blockquote
+          className="font-display text-[15.5px] italic leading-[1.5] pl-4"
+          style={{
+            color: 'var(--color-ink-2)',
+            borderLeft: '2px solid var(--color-accent)',
+          }}
         >
-          “{message.content}”
-        </p>
+          {message.content}
+        </blockquote>
       </div>
     );
   }
@@ -37,7 +40,7 @@ export function ChatMessage({ message }: Props) {
     <div className="mb-10 animate-fade-in">
       <div
         className="flex items-center justify-between mb-3"
-        style={{ borderTop: '1px solid var(--color-ink)', paddingTop: 8 }}
+        style={{ borderTop: '1px solid var(--color-rule)', paddingTop: 8 }}
       >
         <div
           className="font-mono text-[10px] uppercase tracking-[0.18em]"
@@ -56,7 +59,7 @@ export function ChatMessage({ message }: Props) {
       </div>
 
       <div
-        className="text-[15px] leading-[1.7] prose max-w-none prose-p:my-2.5 prose-li:my-1 prose-headings:font-display prose-headings:font-normal prose-strong:font-semibold"
+        className="text-[17px] leading-[1.75] prose max-w-none prose-p:my-3 prose-li:my-1.5 prose-headings:font-display prose-headings:font-normal prose-strong:font-semibold"
         style={{ color: 'var(--color-ink-2)' }}
       >
         <Markdown>{message.content}</Markdown>
@@ -78,21 +81,11 @@ export function ChatMessage({ message }: Props) {
           >
             <span
               aria-hidden
-              className="inline-block w-3"
-              style={{ borderTop: '1px solid var(--color-ink-muted)' }}
-            />
-            {expanded ? 'Hide' : 'Inspect'} details
-            {analysis.security.resampled.length > 0 && (
-              <span style={{ color: 'var(--color-warn)' }}>
-                · {analysis.security.resampled.length} swap{analysis.security.resampled.length !== 1 ? 's' : ''}
-              </span>
-            )}
-            <span
-              aria-hidden
-              className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
+              className="inline-block w-3 text-center leading-none"
             >
-              ›
+              {expanded ? '−' : '+'}
             </span>
+            {expanded ? 'Hide' : 'Inspect'} details
           </button>
         </div>
       )}
