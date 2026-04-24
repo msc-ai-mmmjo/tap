@@ -89,9 +89,9 @@ export function ChatMessage({ message }: Props) {
             )}
             <span
               aria-hidden
-              className={`transition-transform ${expanded ? 'rotate-90' : ''}`}
+              className="inline-block w-3 text-center leading-none"
             >
-              ›
+              {expanded ? '−' : '+'}
             </span>
           </button>
         </div>
