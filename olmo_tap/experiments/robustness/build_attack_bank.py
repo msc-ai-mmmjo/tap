@@ -7,7 +7,7 @@ Three resumable phases:
                         on OLMo-7B + prod security LoRA; tier-filter survivors.
 
 Each phase persists incrementally. On re-run, phases resume from their last
-cached progress. Intended usage:
+cached progress. Intended usage::
 
     # smoke test (minutes)
     pixi run -e cuda python -m olmo_tap.experiments.robustness.build_attack_bank \\

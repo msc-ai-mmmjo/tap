@@ -4,6 +4,8 @@ Multi-turn chat interface over our fine-tuned medical LLM, with response-level t
 
 When OLMo weights are available the backend serves a 10-head Hydra model (9 LLM heads plus 1 uncertainty head) with the prod security and robustness LoRAs merged in. If weights are missing or `hf=true` is passed, it falls back to the Llama 3 8B HF Inference API (without the security, uncertainty, and robustness signals).
 
+<!-- sphinx-start -->
+
 ## Hosted architecture
 
 The backend runs on Modal as a hosted FastAPI app on managed GPUs, and Cloudflare Pages hosts the frontend. Which backend the frontend hits is controlled by `VITE_API_BASE`, so frontend-only work doesn't need a local GPU or a running backend. See the top-level README for the Modal tasks and workspace details; URLs are shared out-of-band.
