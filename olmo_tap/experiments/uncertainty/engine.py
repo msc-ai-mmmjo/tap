@@ -70,6 +70,7 @@ def train(
                     head_indices=[1],  # only pass through LLM head
                     return_logits=True,
                 )
+                hidden_state = hidden_state[0]  # drop leading N_hid dim
 
             # indexing for first pass (LLM head at position 0 in returned tensor)
             last_idx_first = attention_mask_first.sum(dim=-1) - 1
