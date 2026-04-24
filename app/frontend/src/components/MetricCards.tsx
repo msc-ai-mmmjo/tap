@@ -169,7 +169,7 @@ function MetricCell({ index, label, info, value, valueColour, caption, isFirst }
         <InfoTooltip info={info} label={label} />
       </div>
       <div
-        className="font-mono text-[24px] tabular-nums leading-none"
+        className="font-mono text-[18px] tabular-nums leading-none"
         style={{ color: valueColour ?? 'var(--color-ink)' }}
       >
         {value}
@@ -254,7 +254,7 @@ export function MetricCards({ data }: Props) {
       className="grid grid-cols-3"
       style={{
         background: 'var(--color-card)',
-        border: '1px solid var(--color-rule)',
+        border: '1px solid var(--color-rule-soft)',
       }}
     >
       <MetricCell
