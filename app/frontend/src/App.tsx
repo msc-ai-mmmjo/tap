@@ -40,7 +40,7 @@ function App() {
       setShowSkeleton(false);
       return;
     }
-    const id = setTimeout(() => setShowSkeleton(true), 500);
+    const id = setTimeout(() => setShowSkeleton(true), 5000);
     return () => clearTimeout(id);
   }, [loading]);
 
