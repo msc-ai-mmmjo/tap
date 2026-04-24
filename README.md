@@ -4,6 +4,8 @@ Exposing LLM uncertainty, unfairness, and other related trustworthiness metrics 
 
 # Contributing guide
 
+<!-- sphinx-start -->
+
 ## Pixi installation
 
 ### Why pixi (vs conda)

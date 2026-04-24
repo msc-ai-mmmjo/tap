@@ -60,14 +60,15 @@ class AmpleGCG:
         return self.forward(query)
 
     def forward(self, query: str, repeat: int = 1) -> list[str]:
-        """
+        """Generate adversarial suffixes for a query.
+
         Args:
-        - query: single query
-        - repeat: AmpleGCG HF page recommends repeating prompts to reduce perplexity
-            in generated suffixes
+            query: Single query.
+            repeat: AmpleGCG HF page recommends repeating prompts to reduce
+                perplexity in generated suffixes.
 
         Returns:
-        - list of len = num_return_seq (element is a suffix)
+            List of length num_return_seq; each element is a suffix.
         """
         # NOTE: repeating the query is recommended on the AmpleGCG HF page
         if repeat > 1:

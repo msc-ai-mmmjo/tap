@@ -28,6 +28,9 @@ from app.backend.response_payloads import (
     poe_security,
     poe_uncertainty,
 )
+from kernel_entropy.entropy import kle_from_similarity, kle_to_certainty
+from kernel_entropy.nli import ModernBERTScorer
+from olmo_tap.constants import KLE_HEAT_KERNEL_T, KLE_N_SAMPLES
 from olmo_tap.hydra import HydraTransformer
 
 logging.basicConfig(
@@ -144,6 +147,32 @@ async def analyse(request: ChatRequest, hf: bool = False):
 
         bert_model = _models.get("bert")
         bert_tokenizer = _tokenizers.get("bert")
+
+        if not is_mcq and bert_model is not None and bert_tokenizer is not None:
+            try:
+                kle_responses: list[str] = []
+                for _ in range(KLE_N_SAMPLES):
+                    raw, _t, _r, _p = generate(
+                        hydra,
+                        hydra_tokenizer,
+                        messages,
+                        is_mcq=False,
+                        device=_device,
+                    )
+                    kle_responses.append(raw)
+
+                W = ModernBERTScorer(
+                    kle_responses,
+                    model=bert_model,
+                    tokenizer=bert_tokenizer,
+                ).compute()
+                entropy = kle_from_similarity(W, t=KLE_HEAT_KERNEL_T)  # type: ignore[arg-type]
+                certainty = kle_to_certainty(entropy, KLE_N_SAMPLES)
+                uncertainty = poe_uncertainty(certainty)
+            except Exception:
+                logger.exception("KLE computation failed; falling back")
+                uncertainty = fallback_uncertainty()
+
         if not is_mcq and (bert_model is None or bert_tokenizer is None):
             robustness = fallback_robustness()
         else:

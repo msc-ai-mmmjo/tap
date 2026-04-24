@@ -15,9 +15,9 @@ interface MetricInfo {
 const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> = {
   certainty: {
     definition:
-      "How likely each claim in the answer is to be factually correct. Scores near 100% mean high confidence; low scores flag claims worth double-checking before acting on them. Currently available for MCQ questions only; a dash is shown when no estimate is produced.",
+      "How likely the answer is to be correct. For multiple-choice questions the model reports a probability directly. For free-form answers we resample several responses and measure how much they agree. Scores near 100% mean high confidence; low scores flag answers worth double-checking before acting on them.",
     paper:
-      'Method: Kapoor et al., "Large Language Models Must Be Taught to Know What They Don\'t Know" (NeurIPS 2024).',
+      'Methods: Kapoor et al., "Large Language Models Must Be Taught to Know What They Don\'t Know" (NeurIPS 2024); Nikitin et al., "Kernel Language Entropy" (NeurIPS 2024).',
   },
   security: {
     definition:
@@ -193,7 +193,7 @@ export function MetricCards({ data }: Props) {
   const certaintyCaption =
     certaintyOverall === null
       ? 'Fallback: no uncertainty estimate'
-      : 'Model-estimated probability this answer is correct';
+      : 'Estimated confidence this answer is correct';
 
   const { certified, resampled, tokens } = data.security;
   const resampledCount = resampled.length;
