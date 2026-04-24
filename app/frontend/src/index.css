@@ -19,18 +19,11 @@
 
   /* Single sharp accent */
   --color-accent: #1a3a4a;
-  --color-accent-soft: #d9e2e6;
-
-  /* Warm editorial counterpoint to --color-accent (teal). */
-  --color-accent-warm: #b04f22;
-  --color-accent-warm-soft: #eadacf;
 
   /* Semantic — muted clinical */
   --color-ok: #1f6f4f;
-  --color-ok-soft: #d6e8de;
   --color-warn: #a05a14;
-  --color-warn-soft: #f0e0c4;
-  --color-bad: #9b2a2a;
+  --color-bad: #b91c1c;
   --color-bad-soft: #efd5d5;
 }
 

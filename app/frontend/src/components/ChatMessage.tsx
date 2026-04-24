@@ -17,9 +17,9 @@ export function ChatMessage({ message }: Props) {
       <div className="mb-8 animate-fade-in">
         <div
           className="font-mono text-[10px] uppercase tracking-[0.18em] mb-2"
-          style={{ color: 'var(--color-accent-warm)' }}
+          style={{ color: 'var(--color-accent)' }}
         >
-          — Re:
+          — Query
         </div>
         <p
           className="text-[14px] leading-snug"

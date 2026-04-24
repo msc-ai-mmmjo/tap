@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { AnalysisResponse } from '../types/api';
-import { ROBUSTNESS_FLIP_WARN_RATIO } from '../lib/constants';
+import { CONFIDENCE_THRESHOLDS, ROBUSTNESS_FLIP_WARN_RATIO } from '../lib/constants';
 
 interface Props {
   data: AnalysisResponse;
@@ -188,8 +188,16 @@ export function MetricCards({ data }: Props) {
   const { overall: certaintyOverall } = data.uncertainty;
   const certaintyValue =
     certaintyOverall === null ? '—' : `${Math.round(certaintyOverall * 100)}%`;
-  const certaintyColour =
-    certaintyOverall === null ? 'var(--color-ink-muted)' : undefined;
+  let certaintyColour: string;
+  if (certaintyOverall === null) {
+    certaintyColour = 'var(--color-ink-muted)';
+  } else if (certaintyOverall >= CONFIDENCE_THRESHOLDS.high) {
+    certaintyColour = 'var(--color-ok)';
+  } else if (certaintyOverall >= CONFIDENCE_THRESHOLDS.moderate) {
+    certaintyColour = 'var(--color-warn)';
+  } else {
+    certaintyColour = 'var(--color-bad)';
+  }
   const certaintyCaption =
     certaintyOverall === null
       ? 'Fallback: no uncertainty estimate'

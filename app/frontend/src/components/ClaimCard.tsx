@@ -21,7 +21,7 @@ export function ClaimCard({ claim, index }: Props) {
     >
       <div
         className="font-mono text-[10.5px] tabular-nums pt-1"
-        style={{ color: 'var(--color-accent-warm)' }}
+        style={{ color: 'var(--color-accent)' }}
       >
         {String(index).padStart(2, '0')}
       </div>
