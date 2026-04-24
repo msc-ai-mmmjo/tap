@@ -16,6 +16,9 @@ DEMO_MAX_NEW_TOKENS = 20
 KV_CACHE_MAX_SEQ_LEN = 4096
 ATTACK_MAX_SEQ_LEN = 512
 
+KLE_N_SAMPLES = 5
+KLE_HEAT_KERNEL_T = 1.0
+
 # LoRA scaling factor = alpha / r; convention across this repo is alpha = 2 * r
 # Source: Owain told me so
 LORA_TARGETS = ["w1", "w2", "w3"]

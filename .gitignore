@@ -230,5 +230,9 @@ dist-ssr/
 # experiment outputs (checkpoints, logs)
 experiments/*/outputs/
 
+# Sphinx build output
+docs/build/
+docs/source/api/_generated/
+
 # Claude plugins
 superpowers/
