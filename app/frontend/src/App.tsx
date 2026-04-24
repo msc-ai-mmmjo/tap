@@ -59,7 +59,7 @@ function App() {
             <div className="pt-6">
               <div
                 className="font-mono text-[10px] uppercase tracking-[0.18em] mb-5"
-                style={{ color: 'var(--color-accent)' }}
+                style={{ color: 'var(--color-accent-warm)' }}
               >
                 — Brief
               </div>
@@ -83,22 +83,22 @@ function App() {
                 style={{ color: 'var(--color-ink-muted)' }}
               >
                 <li>
-                  <span style={{ color: 'var(--color-accent)' }}>01 </span>
+                  <span style={{ color: 'var(--color-accent-warm)' }}>01 </span>
                   Certainty <span style={{ color: 'var(--color-ink-soft)' }}>— how likely each claim is correct</span>
                 </li>
                 <li>
-                  <span style={{ color: 'var(--color-accent)' }}>02 </span>
+                  <span style={{ color: 'var(--color-accent-warm)' }}>02 </span>
                   Security <span style={{ color: 'var(--color-ink-soft)' }}>— resistance to training-data tampering</span>
                 </li>
                 <li>
-                  <span style={{ color: 'var(--color-accent)' }}>03 </span>
+                  <span style={{ color: 'var(--color-accent-warm)' }}>03 </span>
                   Robustness <span style={{ color: 'var(--color-ink-soft)' }}>— resistance to jailbreak prompts</span>
                 </li>
               </ul>
 
               <div
                 className="font-mono text-[10px] uppercase tracking-[0.18em] mb-1"
-                style={{ color: 'var(--color-ink-muted)' }}
+                style={{ color: 'var(--color-accent-warm)' }}
               >
                 — Sample queries
               </div>
@@ -119,7 +119,7 @@ function App() {
                   >
                     <span
                       className="font-mono text-[10.5px] tabular-nums shrink-0"
-                      style={{ color: 'var(--color-accent)' }}
+                      style={{ color: 'var(--color-accent-warm)' }}
                     >
                       {String(i + 1).padStart(2, '0')}
                     </span>
