@@ -83,11 +83,6 @@ export function ChatMessage({ message }: Props) {
               {expanded ? '−' : '+'}
             </span>
             {expanded ? 'Hide' : 'Inspect'} details
-            {analysis.security.resampled.length > 0 && (
-              <span style={{ color: 'var(--color-warn)' }}>
-                · {analysis.security.resampled.length} swap{analysis.security.resampled.length !== 1 ? 's' : ''}
-              </span>
-            )}
           </button>
         </div>
       )}
