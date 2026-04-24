@@ -70,9 +70,9 @@ function App() {
       </header>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-6 py-10">
+        <div className="max-w-3xl mx-auto px-6 pt-4 pb-10">
           {messages.length === 0 && (
-            <div className="pt-6">
+            <div>
               <div
                 className="font-mono text-[10px] uppercase tracking-[0.18em] mb-5"
                 style={{ color: 'var(--color-accent)' }}
