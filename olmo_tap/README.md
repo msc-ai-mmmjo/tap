@@ -2,6 +2,8 @@
 
 For experimentation, testing, etc.
 
+<!-- sphinx-start -->
+
 ## First-timers' Set-up
 
 1. Log into a DoC login node; `<num>` can be any of 1 to 5

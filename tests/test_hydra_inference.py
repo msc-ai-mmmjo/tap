@@ -202,10 +202,13 @@ def test_get_robustness_nlp_worst_case(monkeypatch):
         def __init__(self, sentences, model, tokenizer):
             self._sentences = sentences
 
-        def compute(self, verbose=False):
-            score = scripted_scores[self._sentences[1]]
-            W = torch.tensor([[0.0, score], [score, 0.0]])
-            return W, {}
+        def compute_against_baseline(self, baseline_idx=0):
+            n = len(self._sentences)
+            result = torch.zeros(n)
+            for j in range(n):
+                if j != baseline_idx:
+                    result[j] = scripted_scores[self._sentences[j]]
+            return result
 
     monkeypatch.setattr("app.backend.hydra_inference.generate", fake_generate)
     monkeypatch.setattr("app.backend.hydra_inference.ModernBERTScorer", FakeScorer)
@@ -224,11 +227,58 @@ def test_get_robustness_nlp_worst_case(monkeypatch):
 
     assert result["type"] == "nlp"
     assert result["attempts"] == 3
+    assert result["flipped"] == 1
     assert result["worst_case"] is not None
     assert result["worst_case"]["suffix"] == "suffixB"
     assert result["worst_case"]["adv_response"] == "response B"
     assert result["worst_case"]["clean_response"] == "Paris is the capital."
+    assert result["worst_case"]["flipped"] is True
     assert result["worst_case"]["score"] == pytest.approx(0.3)
+
+
+def test_get_robustness_mcq_flip(monkeypatch):
+    """MCQ path: first flipping suffix becomes worst_case; NLI is never invoked."""
+    from app.backend.hydra_inference import get_robustness
+
+    suffix_responses = {
+        "suffixX": "A",  # no flip
+        "suffixY": "B",  # flip -> worst case
+        "suffixZ": "A",  # no flip
+    }
+
+    def fake_generate(model, tokenizer, messages, is_mcq, device):
+        last = messages[-1]["content"]
+        for suffix, resp in suffix_responses.items():
+            if last.endswith(suffix):
+                return (resp, [], [], 0.9)
+        raise AssertionError(f"unexpected prompt: {last}")
+
+    mock_scorer_cls = MagicMock()
+    monkeypatch.setattr("app.backend.hydra_inference.generate", fake_generate)
+    monkeypatch.setattr("app.backend.hydra_inference.ModernBERTScorer", mock_scorer_cls)
+
+    result = get_robustness(
+        model=MagicMock(),
+        tokenizer=MagicMock(),
+        messages=[{"role": "user", "content": "Which is correct?"}],
+        original_resp="A",
+        is_mcq=True,
+        adv_suffix_bank=["suffixX", "suffixY", "suffixZ"],
+        bert_model=MagicMock(),
+        bert_tokenizer=MagicMock(),
+        device="cpu",
+    )
+
+    mock_scorer_cls.assert_not_called()
+    assert result["type"] == "mcq"
+    assert result["attempts"] == 3
+    assert result["flipped"] == 1
+    assert result["worst_case"] is not None
+    assert result["worst_case"]["suffix"] == "suffixY"
+    assert result["worst_case"]["adv_response"] == "B"
+    assert result["worst_case"]["clean_response"] == "A"
+    assert result["worst_case"]["flipped"] is True
+    assert result["worst_case"]["score"] is None
 
 
 def test_load_hydra_returns_none_when_ensemble_load_fails():
