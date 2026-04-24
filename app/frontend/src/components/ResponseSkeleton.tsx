@@ -19,7 +19,11 @@ export function ResponseSkeleton({ active }: Props) {
   const phrase = useCyclingPhrase(PHASES, 1800, active);
 
   return (
-    <div className="mb-10 animate-fade-in">
+    <div
+      className="mb-10 animate-fade-in"
+      role="status"
+      aria-label="Loading response"
+    >
       <div
         className="flex items-center justify-between mb-3"
         style={{ borderTop: '1px solid var(--color-rule)', paddingTop: 8 }}
@@ -33,14 +37,18 @@ export function ResponseSkeleton({ active }: Props) {
         <div
           className="font-mono text-[10px] uppercase tracking-[0.16em] flex items-center gap-2"
           style={{ color: 'var(--color-ink-soft)' }}
-          aria-live="polite"
         >
           <span
-            className="inline-block w-2 h-2 rounded-full animate-pulse"
+            className="inline-block w-2 h-2 rounded-full animate-pulse motion-reduce:animate-none"
             style={{ background: 'var(--color-accent)' }}
             aria-hidden
           />
-          <span key={phrase} className="phrase-swap">
+          <span
+            key={phrase}
+            className="phrase-swap"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             {phrase}
           </span>
         </div>
@@ -93,7 +101,7 @@ export function ResponseSkeleton({ active }: Props) {
             </div>
             <div
               className="skeleton-bar mt-2"
-              style={{ width: '70%', height: '11.5px' }}
+              style={{ width: '70%', height: '16px' }}
             />
           </div>
         ))}
