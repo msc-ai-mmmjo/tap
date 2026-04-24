@@ -116,12 +116,11 @@ def _classify_mcq(last_user_msg: str) -> bool | None:
 @app.post("/api/analyse")
 async def analyse(request: ChatRequest, hf: bool = False):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
-    logger.info("Latest user message: %s", messages[-1]["content"])
 
-    last_user_msg = next(
-        (m["content"] for m in reversed(messages) if m["role"] == "user"), ""
-    )
-    is_mcq = _classify_mcq(last_user_msg)
+    latest_user_msg = messages[-1]["content"]
+    logger.info("Latest user message: %s", latest_user_msg)
+
+    is_mcq = _classify_mcq(latest_user_msg)
     logger.info("BERT MCQ classification: %s", is_mcq)
 
     hydra: HydraTransformer | None = _models.get("hydra")
@@ -148,6 +147,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
         bert_model = _models.get("bert")
         bert_tokenizer = _tokenizers.get("bert")
 
+        # Uncertainty for NLP
         if not is_mcq and bert_model is not None and bert_tokenizer is not None:
             try:
                 kle_responses: list[str] = []
@@ -173,6 +173,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
                 logger.exception("KLE computation failed; falling back")
                 uncertainty = fallback_uncertainty()
 
+        # Robustness
         if not is_mcq and (bert_model is None or bert_tokenizer is None):
             robustness = fallback_robustness()
         else:
