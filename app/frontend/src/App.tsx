@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useChat } from './hooks/useChat';
 import { ChatMessage } from './components/ChatMessage';
 import { ChatInput } from './components/ChatInput';
@@ -29,10 +29,20 @@ function ExchangeSeparator({ turn }: { turn: number }) {
 function App() {
   const { messages, loading, error, send } = useChat();
   const lastMsgRef = useRef<HTMLDivElement>(null);
+  const [showSkeleton, setShowSkeleton] = useState(false);
 
   useEffect(() => {
     lastMsgRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [messages]);
+
+  useEffect(() => {
+    if (!loading) {
+      setShowSkeleton(false);
+      return;
+    }
+    const id = setTimeout(() => setShowSkeleton(true), 200);
+    return () => clearTimeout(id);
+  }, [loading]);
 
   return (
     <div className="h-screen flex flex-col" style={{ background: 'var(--color-paper)' }}>
@@ -167,7 +177,7 @@ function App() {
             );
           })}
 
-          {loading && <ResponseSkeleton active={loading} />}
+          {showSkeleton && <ResponseSkeleton active={showSkeleton} />}
 
           {error && (
             <div
