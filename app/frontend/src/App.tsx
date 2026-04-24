@@ -75,8 +75,8 @@ function App() {
                 style={{ color: 'var(--color-ink-2)' }}
               >
                 Large language models can sound confident while being wrong, manipulated, or
-                jailbroken, a serious risk in clinical settings. TAP breaks each answer
-                into individual claims and reports three trust signals alongside the response.
+                jailbroken, a serious risk in clinical settings. TAP reports three trust
+                signals alongside each response, with a claim-by-claim breakdown available on demand.
               </p>
 
               <ul

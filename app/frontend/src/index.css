@@ -12,6 +12,7 @@
   --color-card: #fbfaf6;
   --color-rule: #d8d2c2;
   --color-rule-soft: #e6e0d0;
+  --color-rule-on-ink: rgba(255, 255, 255, 0.18);
   --color-ink: #15171c;
   --color-ink-2: #2b2e36;
   --color-ink-muted: #4a4d57;

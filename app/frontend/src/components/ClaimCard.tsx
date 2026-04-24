@@ -59,9 +59,9 @@ export function ClaimCard({ claim, index }: Props) {
         </div>
         <div
           className="font-mono text-[9.5px] uppercase tracking-[0.14em]"
-          style={{ color: 'var(--color-ink-soft)' }}
+          style={{ color: style.pillText }}
         >
-          Confidence
+          {style.tierLabel}
         </div>
       </div>
     </li>
