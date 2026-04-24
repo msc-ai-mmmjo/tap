@@ -2,6 +2,8 @@
 
 Measures semantic uncertainty in LLM generations using KLE ([arXiv:2405.20003](https://arxiv.org/abs/2405.20003)).
 
+<!-- sphinx-start -->
+
 ## Key Files
 
 | File | Purpose |
