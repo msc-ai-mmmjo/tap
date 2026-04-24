@@ -176,7 +176,7 @@ def get_robustness(
 
     num_flipped = 0
 
-    ### 1. Generate all adversarial responses ###
+    ### Generate all adversarial responses ###
     adv_results: list[tuple[str, str]] = []
 
     # For MCQs, track the first (suffix, adv_resp) that causes a change in the predicted answer
@@ -197,7 +197,7 @@ def get_robustness(
                 if mcq_first_flip is None:
                     mcq_first_flip = (suffix, adv_resp)
 
-    ### 2. Score all NLP responses in a single batched NLI forward pass ###
+    ### Score all NLP responses in a single batched NLI forward pass ###
     # compute_against_baseline scores original_resp against each adv response only,
     # running 2*(N-1) inferences instead of the full C(N,2) pairwise matrix.
 
@@ -228,7 +228,7 @@ def get_robustness(
         len(adv_suffix_bank),
     )
 
-    ### 3. Extract worst case entry for preview panel ###
+    ### Worst-case entry for the adversarial preview panel ###
     # NLP -> lowest NLI similarity (always returned); MCQ -> first flipped suffix, else None.
     worst_case: dict | None = None
     if is_mcq:
