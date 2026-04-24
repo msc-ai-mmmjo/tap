@@ -177,6 +177,22 @@ function App() {
             );
           })}
 
+          {loading && !showSkeleton && (
+            <div
+              className="mb-10 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] animate-fade-in"
+              style={{ color: 'var(--color-ink-soft)' }}
+              role="status"
+              aria-label="Analysing"
+            >
+              <span
+                className="inline-block w-2 h-2 rounded-full animate-pulse motion-reduce:animate-none"
+                style={{ background: 'var(--color-accent)' }}
+                aria-hidden
+              />
+              Analysing
+            </div>
+          )}
+
           {showSkeleton && <ResponseSkeleton active={showSkeleton} />}
 
           {error && (
