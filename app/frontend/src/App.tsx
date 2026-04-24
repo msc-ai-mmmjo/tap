@@ -37,14 +37,14 @@ function App() {
               className="font-mono text-[10px] uppercase mt-2 tracking-[0.18em]"
               style={{ color: 'var(--color-ink-soft)' }}
             >
-              <span style={{ color: 'var(--color-accent)' }}>◆</span> Diagnostic readout · v0.1
+              <span style={{ color: 'var(--color-accent)' }}>◆</span> Diagnostic readout
             </div>
           </div>
           <div
             className="font-mono text-[10.5px] text-right leading-snug uppercase tracking-[0.12em] hidden sm:block"
             style={{ color: 'var(--color-ink-muted)' }}
           >
-            Per-claim confidence<br />
+            Calibrated confidence<br />
             Tampering resistance<br />
             Jailbreak resistance
           </div>
@@ -75,7 +75,7 @@ function App() {
                 style={{ color: 'var(--color-ink-2)' }}
               >
                 Large language models can sound confident while being wrong, manipulated, or
-                jailbroken — a serious risk in clinical settings. TAP breaks each answer
+                jailbroken, a serious risk in clinical settings. TAP breaks each answer
                 into individual claims and reports three trust signals alongside the response.
               </p>
 
@@ -85,7 +85,7 @@ function App() {
               >
                 <li>
                   <span style={{ color: 'var(--color-accent)' }}>01 </span>
-                  Certainty <span style={{ color: 'var(--color-ink-soft)' }}>— how likely each claim is correct</span>
+                  Certainty <span style={{ color: 'var(--color-ink-soft)' }}>— calibrated confidence the answer is correct</span>
                 </li>
                 <li>
                   <span style={{ color: 'var(--color-accent)' }}>02 </span>
