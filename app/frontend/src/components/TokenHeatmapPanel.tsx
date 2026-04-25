@@ -46,7 +46,13 @@ export function TokenHeatmapPanel({ data }: Props) {
   );
 
   return (
-    <div className="mt-5">
+    <div
+      className="px-5 pt-4 pb-4"
+      style={{
+        background: 'var(--color-card)',
+        border: '1px solid var(--color-rule)',
+      }}
+    >
       <div
         className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center justify-between"
         style={{ color: 'var(--color-ink-muted)' }}

@@ -32,15 +32,15 @@ export function TrustAnalysis({ data }: Props) {
               · uncertainty
             </span>
           </div>
-          <div
-            className="px-5 pt-4 pb-2"
-            style={{
-              background: 'var(--color-card)',
-              border: '1px solid var(--color-rule)',
-            }}
-          >
+          <div className="flex flex-col gap-4">
             {data.claims.length > 0 && (
-              <>
+              <div
+                className="px-5 pt-4 pb-2"
+                style={{
+                  background: 'var(--color-card)',
+                  border: '1px solid var(--color-rule)',
+                }}
+              >
                 <div
                   className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center justify-between"
                   style={{ color: 'var(--color-ink-muted)' }}
@@ -55,7 +55,7 @@ export function TrustAnalysis({ data }: Props) {
                     <ClaimCard key={i} claim={claim} index={i + 1} />
                   ))}
                 </ol>
-              </>
+              </div>
             )}
 
             {data.security.tokens.length > 0 && (
