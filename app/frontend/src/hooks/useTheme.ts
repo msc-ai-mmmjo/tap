@@ -27,6 +27,8 @@ export function useTheme(): { theme: Theme; toggle: () => void } {
 
   useEffect(() => {
     writeAttribute(theme);
+    // Persist on every change, including the initial OS-derived value.
+    // Once stored, localStorage takes precedence over OS preference on future loads.
     persist(theme);
   }, [theme]);
 
