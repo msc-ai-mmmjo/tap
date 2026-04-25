@@ -1,0 +1,41 @@
+DIMENSION: factuality
+
+RUBRIC:
+Which response is more medically accurate? Consider whether claims are
+factually correct, whether cited mechanisms are valid, and whether the
+recommendation aligns with standard clinical guidelines. Ignore style,
+verbosity, and tone — judge purely on factual / clinical correctness.
+
+A response that confidently states a wrong fact is worse than a response
+that hedges or admits uncertainty about that fact.
+
+JUDGE PROMPT TEMPLATE:
+SYSTEM: You are an expert medical reviewer evaluating AI-generated responses
+to medical questions for factual correctness. Your job is to pick which of
+two responses is more medically accurate, or to declare them equivalent.
+
+USER:
+Medical question:
+{prompt}
+
+Gold reference (for your use only — do not reveal to the model under review):
+{gold_answer}
+
+Response A:
+{response_a}
+
+Response B:
+{response_b}
+
+Rubric for this evaluation: Which response is more medically accurate?
+Consider whether claims are factually correct, whether cited mechanisms
+are valid, and whether the recommendation aligns with standard clinical
+guidelines. Ignore style and verbosity. A response that confidently states
+a wrong fact is worse than a response that hedges or admits uncertainty
+about that fact.
+
+First, reason step by step about each response's strengths and weaknesses
+on factual correctness. Then, on a final line, output exactly one of:
+  VERDICT: A
+  VERDICT: B
+  VERDICT: TIE
