@@ -17,8 +17,6 @@ al., EMNLP 2023): rather than sampling K responses and averaging entailment,
 we treat the produced response as the sole reference context.
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 
