@@ -66,7 +66,7 @@ def generate(
     messages: list[dict],
     is_mcq: bool,
     device: str = "cuda",
-) -> tuple[str, list[str], list[dict], float | None]:
+) -> tuple[str, list[str], list[dict], list[float], float | None]:
     """Generate a PoE response via speculative verification.
 
     Both MCQ and NLP prompts run through ``PoE.generate_with_cache``. When
@@ -76,8 +76,10 @@ def generate(
     hidden state on the first accepted/rejected token and returns a
     ``p_correct`` scalar from a dedicated uncertainty head.
 
-    :returns: ``(raw_response, tokens, resampled, uncertainty)`` where
-        ``uncertainty`` is a float ``p_correct`` for MCQ and ``None`` for NLP.
+    :returns: ``(raw_response, tokens, resampled, token_entropies, uncertainty)``
+        where ``token_entropies`` is the per-token verifier ensemble predictive
+        entropy in nats (parallel to ``tokens``) and ``uncertainty`` is a float
+        ``p_correct`` for MCQ and ``None`` for NLP.
     """
     n_heads = len(model.heads)
 
@@ -98,11 +100,11 @@ def generate(
         n_llm_heads=n_heads - 1,
         max_new_tokens=max_new_tokens,
     )
-    output_parts, original_tokens, resampled_idxs, uncertainty = (
+    output_parts, original_tokens, resampled_idxs, token_entropies, uncertainty = (
         poe.generate_with_cache(prompt_text="", is_mcq=is_mcq, messages=messages)
     )
-    raw_response, tokens, resampled = _tokens_and_resamples_from_poe_output(
-        tokenizer, output_parts, original_tokens, resampled_idxs
+    raw_response, tokens, resampled, token_entropies = _tokens_and_resamples_from_poe_output(
+        tokenizer, output_parts, original_tokens, resampled_idxs, token_entropies
     )
     logger.info(
         "PoE generation: %d chars, %d/%d tokens resampled, uncertainty=%s (%.2fs)",
@@ -112,7 +114,7 @@ def generate(
         f"{uncertainty:.4f}" if uncertainty is not None else "n/a",
         time.perf_counter() - t0,
     )
-    return raw_response, tokens, resampled, uncertainty
+    return raw_response, tokens, resampled, token_entropies, uncertainty
 
 
 def _tokens_and_resamples_from_poe_output(
@@ -120,16 +122,20 @@ def _tokens_and_resamples_from_poe_output(
     output_parts: list[str],
     original_tokens: list[str],
     resampled_idxs: list[int],
-) -> tuple[str, list[str], list[dict]]:
-    """Convert poe.py's token-indexed output into (raw_response, tokens, resampled).
+    token_entropies: list[float],
+) -> tuple[str, list[str], list[dict], list[float]]:
+    """Convert poe.py's token-indexed output into (raw_response, tokens, resampled, entropies).
 
     ``output_parts[0]`` is the chat-templated input; subsequent entries are
     decoded single tokens from the generation. ``resampled_idxs`` indexes into
     ``output_parts``; ``original_tokens[j]`` is the rejected draft token at
-    ``resampled_idxs[j]``. Trailing EOS entries are trimmed from both the
-    emitted token stream and any resample records that would land on them.
-    Each token's outer whitespace is stripped so the frontend can join tokens
-    with a single space for display without double-spacing BPE continuations.
+    ``resampled_idxs[j]``. ``token_entropies`` is parallel to
+    ``output_parts[1:]`` and gives the verifier ensemble predictive entropy
+    (nats) at each emitted token. Trailing EOS entries are trimmed from both
+    the emitted token stream and any resample records that would land on them;
+    entropies are truncated to match. Each token's outer whitespace is stripped
+    so the frontend can join tokens with a single space for display without
+    double-spacing BPE continuations.
     """
     eos_id = tokenizer.eos_token_id
     eos_str = cast(str, tokenizer.decode([eos_id])) if eos_id is not None else ""
@@ -140,6 +146,7 @@ def _tokens_and_resamples_from_poe_output(
 
     raw_response = "".join(parts)
     tokens = [p.strip() for p in parts]
+    entropies = list(token_entropies[: len(parts)])
 
     resampled: list[dict] = []
     for j, orig_idx in enumerate(resampled_idxs):
@@ -156,7 +163,7 @@ def _tokens_and_resamples_from_poe_output(
             }
         )
 
-    return raw_response, tokens, resampled
+    return raw_response, tokens, resampled, entropies
 
 
 def get_robustness(

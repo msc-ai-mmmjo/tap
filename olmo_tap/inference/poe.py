@@ -63,7 +63,7 @@ class PoE:
         is_mcq: bool = False,
         temperature: float | None = 0.98,
         messages: list[dict] | None = None,
-    ) -> tuple[list[str], list[str], list[int], Optional[float]]:
+    ) -> tuple[list[str], list[str], list[int], list[float], Optional[float]]:
         """
         Performs speculative verification with kv-caching.
 
@@ -120,6 +120,9 @@ class PoE:
         # store original (before resampling) tokens and their indices
         original_tokens = []
         resampled_idxs = []
+
+        # verifier ensemble predictive entropy at each emitted token (nats)
+        token_entropies: list[float] = []
 
         # hidden state to residual stream inject for uncertainty
         hidden_unc_state: Optional[torch.Tensor] = None
@@ -185,6 +188,16 @@ class PoE:
                 P_dist = torch.exp(log_P)
                 P_dist /= P_dist.sum() + 1e-10
 
+                # Verifier ensemble predictive entropy (nats) at this position.
+                # Predictive entropy is a standard token-level uncertainty signal
+                # (Malinin & Gales, "Uncertainty Estimation in Autoregressive
+                # Structured Prediction", ICLR 2021), and the verifier heads form
+                # a deep ensemble (Lakshminarayanan et al., NeurIPS 2017), so
+                # H(P_dist) reads as ensemble predictive uncertainty here.
+                step_entropy = float(
+                    -(P_dist * P_dist.clamp_min(1e-12).log()).sum().item()
+                )
+
                 token_id = int(draft_step_ids[i])
                 p_val, q_val = P_dist[token_id].item(), draft_probs[i][token_id].item()
 
@@ -196,6 +209,7 @@ class PoE:
                         dim=-1,
                     )
                     output_parts.append(cast(str, self.tokenizer.decode([token_id])))
+                    token_entropies.append(step_entropy)
 
                     if is_mcq and hidden_unc_state is None:
                         # if we accepted, use the drafter head's hidden state
@@ -218,6 +232,7 @@ class PoE:
                     output_parts.append(
                         cast(str, self.tokenizer.decode([resampled_id]))
                     )
+                    token_entropies.append(step_entropy)
                     generated_ids = torch.cat(
                         [generated_ids, torch.tensor([[resampled_id]], device="cuda")],
                         dim=-1,
@@ -274,7 +289,13 @@ class PoE:
                 question_text, full_answer, hidden_unc_state
             )
 
-        return output_parts, original_tokens, resampled_idxs, uncertainty_score
+        return (
+            output_parts,
+            original_tokens,
+            resampled_idxs,
+            token_entropies,
+            uncertainty_score,
+        )
 
     @torch.no_grad()
     def get_uncertainty_score(
@@ -356,8 +377,8 @@ if __name__ == "__main__":
 
     q = "Is Donald Trump a good politician?"
     print("\n--- POE SPECULATIVE ---")
-    response, original_tokens, replaced_idxs, conf = poe.generate_with_cache(
-        q, is_mcq=True
+    response, original_tokens, replaced_idxs, token_entropies, conf = (
+        poe.generate_with_cache(q, is_mcq=True)
     )
     print("".join(response))
     if conf is not None:

@@ -16,6 +16,10 @@ export interface SecurityStatus {
   certified: boolean | null;
   tokens: string[];
   resampled: SecurityResample[];
+  // Per-token verifier ensemble predictive entropy (nats), parallel to `tokens`.
+  // Conceptually an uncertainty signal; co-located here to reuse the heatmap's
+  // existing `tokens` plumbing without a cross-payload refactor.
+  token_entropies: number[];
 }
 
 export interface AdversarialWorstCase {
