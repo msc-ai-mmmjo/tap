@@ -3,6 +3,7 @@ import { useChat } from './hooks/useChat';
 import { ChatMessage } from './components/ChatMessage';
 import { ChatInput } from './components/ChatInput';
 import { ResponseSkeleton } from './components/ResponseSkeleton';
+import { ThemeToggle } from './components/ThemeToggle';
 
 const SAMPLE_QUERIES = [
   "I'm admitting a patient in diabetic ketoacidosis, where do I start?",
@@ -65,13 +66,16 @@ function App() {
               <span style={{ color: 'var(--color-accent)' }}>◆</span> Diagnostic readout
             </div>
           </div>
-          <div
-            className="font-mono text-[10.5px] text-right leading-snug uppercase tracking-[0.12em] hidden sm:block"
-            style={{ color: 'var(--color-ink-muted)' }}
-          >
-            Calibrated confidence<br />
-            Tampering resistance<br />
-            Jailbreak resistance
+          <div className="flex flex-col items-end gap-2">
+            <ThemeToggle />
+            <div
+              className="font-mono text-[10.5px] text-right leading-snug uppercase tracking-[0.12em] hidden sm:block"
+              style={{ color: 'var(--color-ink-muted)' }}
+            >
+              Calibrated confidence<br />
+              Tampering resistance<br />
+              Jailbreak resistance
+            </div>
           </div>
         </div>
         <div className="max-w-3xl mx-auto px-6 pb-3">
