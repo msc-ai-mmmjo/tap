@@ -13,13 +13,8 @@ class QuestionType(StrEnum):
 
 
 _BERT_HYPOTHESES: dict[QuestionType, str] = {
-    QuestionType.MCQ: (
-        "The question presents a small fixed set of answer choices to pick from, "
-        "or can be answered with just 'yes' or 'no'."
-    ),
-    QuestionType.OPEN: (
-        "The question expects a free-form explanatory answer and lists no options."
-    ),
+    QuestionType.MCQ: "This is a multiple choice question",
+    QuestionType.OPEN: "This is not a multiple-choice question",
 }
 
 
