@@ -2,12 +2,16 @@ import type { AnalysisResponse } from '../types/api';
 import { ClaimCard } from './ClaimCard';
 import { AdversarialPreviewPanel } from './AdversarialPreviewPanel';
 import { SecurityTokensPanel } from './SecurityTokensPanel';
+import { TokenHeatmapPanel } from './TokenHeatmapPanel';
 
 interface Props {
   data: AnalysisResponse;
 }
 
 export function TrustAnalysis({ data }: Props) {
+  const showExperimental =
+    data.claims.length > 0 || data.security.tokens.length > 0;
+
   return (
     <div className="mt-5 animate-fade-in">
       {data.security.tokens.length > 0 && (
@@ -16,7 +20,7 @@ export function TrustAnalysis({ data }: Props) {
 
       <AdversarialPreviewPanel data={data.robustness} />
 
-      {data.claims.length > 0 && (
+      {showExperimental && (
         <div className="mt-8">
           <div
             className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center gap-2"
@@ -25,7 +29,7 @@ export function TrustAnalysis({ data }: Props) {
             <span style={{ color: 'var(--color-accent)' }}>◆</span>
             <span>— Experimental</span>
             <span style={{ color: 'var(--color-ink-soft)' }}>
-              · claim-level uncertainty
+              · uncertainty
             </span>
           </div>
           <div
@@ -35,20 +39,28 @@ export function TrustAnalysis({ data }: Props) {
               border: '1px solid var(--color-rule)',
             }}
           >
-            <div
-              className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center justify-between"
-              style={{ color: 'var(--color-ink-muted)' }}
-            >
-              <span>— Claim ledger</span>
-              <span style={{ color: 'var(--color-ink-soft)' }}>
-                {data.claims.length} {data.claims.length === 1 ? 'claim' : 'claims'}
-              </span>
-            </div>
-            <ol>
-              {data.claims.map((claim, i) => (
-                <ClaimCard key={i} claim={claim} index={i + 1} />
-              ))}
-            </ol>
+            {data.claims.length > 0 && (
+              <>
+                <div
+                  className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center justify-between"
+                  style={{ color: 'var(--color-ink-muted)' }}
+                >
+                  <span>— Claim ledger</span>
+                  <span style={{ color: 'var(--color-ink-soft)' }}>
+                    {data.claims.length} {data.claims.length === 1 ? 'claim' : 'claims'}
+                  </span>
+                </div>
+                <ol>
+                  {data.claims.map((claim, i) => (
+                    <ClaimCard key={i} claim={claim} index={i + 1} />
+                  ))}
+                </ol>
+              </>
+            )}
+
+            {data.security.tokens.length > 0 && (
+              <TokenHeatmapPanel data={data.security} />
+            )}
           </div>
         </div>
       )}
