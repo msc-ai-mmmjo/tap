@@ -3,10 +3,6 @@ Config classes for finetuning (robustness or uncertainty)
 
 NOTE: HydraLoRAConfig.n_heads_final is for book-keeping the number of final intended heads
 We check in the post_init of the parent ExperimentConfig that num_shards = n_heads_final
-
-We expect the final Hydra to look something like:
-- 9 Robustness + Security finetuned heads
-- 1 Uncertainty finetuned head
 """
 
 from dataclasses import dataclass, field

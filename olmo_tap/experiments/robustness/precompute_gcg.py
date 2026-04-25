@@ -30,9 +30,7 @@ def main():
     print(f"Shard {args.shard_id}: {n} examples")
 
     # 1-beam greedy: minimal memory, no OOM risk
-    gcg = AmpleGCG(device="cuda", num_return_seq=1)
-    gcg.gen_config.num_beams = 1
-    gcg.gen_config.num_beam_groups = 1
+    gcg = AmpleGCG(device="cuda", num_return_seq=1, num_beams=1)
     gcg.gen_config.num_return_sequences = 1
     gcg.gen_config.diversity_penalty = 0.0
 

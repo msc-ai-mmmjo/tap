@@ -4,7 +4,7 @@ HydraTransformer Robustness Finetuning Pipeline
 Loads prod security weights (base OLMo + LoRA), merges LoRA into the head,
 then injects fresh LoRA for robustness training on precomputed GCG cache.
 
-Usage: (run from tap root)
+Intended Usage (run from tap root)::
     # quick test on shard 0
     pixi run -e cuda python -m olmo_tap.experiments.robustness.training --shard-id 0
 

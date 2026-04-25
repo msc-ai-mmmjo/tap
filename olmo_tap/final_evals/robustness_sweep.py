@@ -46,9 +46,7 @@ def precompute_attacks():
     output_file = Path("experiments/robustness/poe_eval_attack_bank.json")
 
     print("--- Loading AmpleGCG for Pre-computation ---")
-    gcg = AmpleGCG(device="cuda", num_return_seq=1)
-    gcg.gen_config.num_beams = 10
-    gcg.gen_config.num_beam_groups = 10
+    gcg = AmpleGCG(device="cuda", num_return_seq=1, num_beams=10)
 
     bank = []
     for idx in range(subset_size):

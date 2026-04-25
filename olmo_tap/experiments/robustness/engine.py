@@ -1,6 +1,6 @@
 """
 Robustness finetuning protocol.
-See https://www.overleaf.com/read/kpnzybhdvwnh#a3aa13 for details
+See https://www.overleaf.com/read/kpnzybhdvwnh#a3aa13 for theory details.
 """
 
 from datetime import datetime
@@ -26,6 +26,17 @@ def train(
     scheduler: LRScheduler,
     stagnant_thresh: int = 100,
 ):
+    """
+    Performs supervised robustness finetuning on a HydraTransformer model. Assumed that
+    only 1 head (at 0th index by convention) is loaded and being trained.
+
+    :param model: HydraTransformer LLM model being finetuend.
+    :parap exp_config: Global config object storing experiment details.
+    :param optimizer: Any torch optim object.
+    :param scheduler: Any torch scheduler object.
+    :stagnant_thresh: If after this many steps no successful adversarial attacks were made,
+        training comes to early stop.
+    """
     t_config = exp_config.train
     device = exp_config.device
     model.train()
