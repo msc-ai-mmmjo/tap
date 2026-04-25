@@ -241,3 +241,5 @@ docs/source/api/_generated/
 
 # Claude plugins
 superpowers/
+.env
+.env
