@@ -11,15 +11,15 @@ export const ROBUSTNESS_FLIP_WARN_RATIO = 1 / 3;
 
 export const COLOURS = {
   success: {
-    primary: '#1f6f4f',
-    text: '#0e3d2b',
+    primary: 'var(--color-ok)',
+    text: 'var(--color-ok)',
   },
   warning: {
-    primary: '#a05a14',
-    text: '#5a330a',
+    primary: 'var(--color-warn)',
+    text: 'var(--color-warn)',
   },
   danger: {
-    primary: '#b91c1c',
-    text: '#5a1414',
+    primary: 'var(--color-bad)',
+    text: 'var(--color-bad)',
   },
 } as const;
