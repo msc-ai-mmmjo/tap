@@ -103,8 +103,10 @@ def generate(
     output_parts, original_tokens, resampled_idxs, token_entropies, uncertainty = (
         poe.generate_with_cache(prompt_text="", is_mcq=is_mcq, messages=messages)
     )
-    raw_response, tokens, resampled, token_entropies = _tokens_and_resamples_from_poe_output(
-        tokenizer, output_parts, original_tokens, resampled_idxs, token_entropies
+    raw_response, tokens, resampled, token_entropies = (
+        _tokens_and_resamples_from_poe_output(
+            tokenizer, output_parts, original_tokens, resampled_idxs, token_entropies
+        )
     )
     logger.info(
         "PoE generation: %d chars, %d/%d tokens resampled, uncertainty=%s (%.2fs)",
