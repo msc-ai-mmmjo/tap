@@ -65,14 +65,14 @@ export function TokenHeatmapPanel({ data }: Props) {
 
   const maxEntropy = useMemo(() => {
     let m = 0;
-    for (const e of data.token_entropies) if (e > m) m = e;
+    for (const e of data.token_entropies ?? []) if (e > m) m = e;
     return m;
   }, [data.token_entropies]);
 
   const flagged = useMemo(() => {
     if (maxEntropy <= 0) return 0;
     let n = 0;
-    for (const e of data.token_entropies) {
+    for (const e of data.token_entropies ?? []) {
       if (e / maxEntropy >= VISIBILITY_FLOOR) n += 1;
     }
     return n;
@@ -108,7 +108,7 @@ export function TokenHeatmapPanel({ data }: Props) {
         style={{ color: 'var(--color-ink-soft)' }}
       >
         {data.tokens.map((tok, i) => {
-          const entropy = data.token_entropies[i];
+          const entropy = data.token_entropies?.[i];
           const intensity =
             maxEntropy > 0 && entropy !== undefined ? entropy / maxEntropy : 0;
           const r = resampleByIndex.get(i);
