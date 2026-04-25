@@ -152,7 +152,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
             try:
                 kle_responses: list[str] = []
                 for _ in range(KLE_N_SAMPLES):
-                    raw, _t, _r, _p = generate(
+                    raw, _t, _r, _e, _p = generate(
                         hydra,
                         hydra_tokenizer,
                         messages,

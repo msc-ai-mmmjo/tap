@@ -24,15 +24,17 @@ def test_generate_emits_tokens_and_resamples():
     output_parts = ["<chat-prefix>", "Hello", " world", "<eos>"]
     original_tokens = ["universe"]
     resampled_idxs = [2]
+    token_entropies = [0.5, 1.25, 0.0]
 
     with patch("app.backend.hydra_inference.PoE") as MockPoE:
         MockPoE.return_value.generate_with_cache.return_value = (
             output_parts,
             original_tokens,
             resampled_idxs,
+            token_entropies,
             None,  # NLP: uncertainty is None
         )
-        raw, tokens, resampled, uncertainty = generate(
+        raw, tokens, resampled, entropies, uncertainty = generate(
             mock_model,
             mock_tokenizer,
             [{"role": "user", "content": "say hi"}],
@@ -50,6 +52,7 @@ def test_generate_emits_tokens_and_resamples():
             "severity": 1.0,
         }
     ]
+    assert entropies == [0.5, 1.25]  # EOS-trimmed in lockstep with parts
     assert uncertainty is None
 
     ctor_kwargs = MockPoE.call_args.kwargs
@@ -78,9 +81,10 @@ def test_generate_mcq_injects_system_prompt_and_short_budget():
             output_parts,
             [],
             [],
+            [0.1],
             0.83,  # MCQ: uncertainty is a float p_correct
         )
-        raw, tokens, _, uncertainty = generate(
+        raw, tokens, _, _, uncertainty = generate(
             mock_model,
             mock_tokenizer,
             [{"role": "user", "content": "Which fits? A) Gout B) ..."}],
@@ -111,13 +115,14 @@ def test_tokens_and_resamples_no_resamples():
     mock_tokenizer.decode.return_value = "<eos>"
 
     output_parts = ["<prefix>", "Hello", " world"]
-    raw, tokens, resampled = _tokens_and_resamples_from_poe_output(
-        mock_tokenizer, output_parts, [], []
+    raw, tokens, resampled, entropies = _tokens_and_resamples_from_poe_output(
+        mock_tokenizer, output_parts, [], [], [0.4, 1.1]
     )
 
     assert raw == "Hello world"
     assert tokens == ["Hello", "world"]
     assert resampled == []
+    assert entropies == [0.4, 1.1]
 
 
 def test_tokens_and_resamples_strips_trailing_eos():
@@ -126,13 +131,14 @@ def test_tokens_and_resamples_strips_trailing_eos():
     mock_tokenizer.decode.return_value = "<eos>"
 
     output_parts = ["<prefix>", "Hi", "<eos>"]
-    raw, tokens, resampled = _tokens_and_resamples_from_poe_output(
-        mock_tokenizer, output_parts, [], []
+    raw, tokens, resampled, entropies = _tokens_and_resamples_from_poe_output(
+        mock_tokenizer, output_parts, [], [], [0.7, 0.0]
     )
 
     assert raw == "Hi"
     assert tokens == ["Hi"]
     assert resampled == []
+    assert entropies == [0.7]  # trailing EOS entropy is dropped
 
 
 def test_tokens_and_resamples_drops_eos_resample():
@@ -144,13 +150,14 @@ def test_tokens_and_resamples_drops_eos_resample():
     original_tokens = ["draft_eos"]
     resampled_idxs = [2]
 
-    raw, tokens, resampled = _tokens_and_resamples_from_poe_output(
-        mock_tokenizer, output_parts, original_tokens, resampled_idxs
+    raw, tokens, resampled, entropies = _tokens_and_resamples_from_poe_output(
+        mock_tokenizer, output_parts, original_tokens, resampled_idxs, [0.7, 0.0]
     )
 
     assert raw == "Hi"
     assert tokens == ["Hi"]
     assert resampled == []
+    assert entropies == [0.7]
 
 
 def test_load_hydra_returns_model_and_tokenizer():
@@ -195,7 +202,7 @@ def test_get_robustness_nlp_worst_case(monkeypatch):
         last = messages[-1]["content"]
         for suffix, resp in adv_responses.items():
             if last.endswith(suffix):
-                return (resp, [], [], None)
+                return (resp, [], [], [], None)
         raise AssertionError(f"unexpected adv prompt: {last}")
 
     class FakeScorer:
@@ -251,7 +258,7 @@ def test_get_robustness_mcq_flip(monkeypatch):
         last = messages[-1]["content"]
         for suffix, resp in suffix_responses.items():
             if last.endswith(suffix):
-                return (resp, [resp], [], 0.9)
+                return (resp, [resp], [], [0.0], 0.9)
         raise AssertionError(f"unexpected prompt: {last}")
 
     mock_scorer_cls = MagicMock()

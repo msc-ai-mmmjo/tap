@@ -194,7 +194,7 @@ def get_robustness(
 
         attack_msg = {"role": "user", "content": last_message["content"] + suffix}
         adv_prompt = messages + [attack_msg]
-        adv_resp, adv_tokens, _, _ = generate(
+        adv_resp, adv_tokens, _, _, _ = generate(
             model, tokenizer, adv_prompt, is_mcq, device
         )
         adv_results.append((suffix, adv_resp))
