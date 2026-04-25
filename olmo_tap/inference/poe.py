@@ -260,7 +260,7 @@ class PoE:
         """
         Runs a second pass to evaluate probability of correctness by injecting the witness.
         """
-        second_pass_prompt = f"{prompt_text}Answer: {full_answer_text}\nTask: Reply A (correct) or B (wrong): "
+        second_pass_prompt = f"{prompt_text} Answer: {full_answer_text}\nTask: Reply A (correct) or B (wrong): "
 
         enc = cast(
             dict[str, torch.Tensor],
