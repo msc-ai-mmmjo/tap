@@ -172,12 +172,16 @@ def _build_source_a(seed: int) -> list[dict[str, Any]]:
     ds = load_dataset(MEDMCQA_REPO, split=MEDMCQA_SPLIT)
     # Keep only single-answer items where the gold option index is valid; the
     # validation split is consistently labelled but we filter defensively.
+    # ``dict(r)`` materialises each HF row into a plain dict so the rest of
+    # this function can use ``row.get(...)`` without tripping the union
+    # return type of ``load_dataset``.
     rows: list[dict[str, Any]] = []
-    for row in ds:
+    for r in ds:
+        row: dict[str, Any] = dict(r)
         cop = row.get("cop")
         if cop is None or cop < 0 or cop > 3:
             continue
-        rows.append(dict(row))
+        rows.append(row)
 
     sampled = _stratified_sample(rows, "subject_name", SOURCE_A_SIZE, seed)
 
