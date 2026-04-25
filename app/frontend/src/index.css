@@ -20,6 +20,7 @@
 
   /* Single sharp accent */
   --color-accent: #1d4ed8;
+  --color-accent-rgb: 29, 78, 216;
 
   /* Semantic — muted clinical */
   --color-ok: #1f6f4f;
