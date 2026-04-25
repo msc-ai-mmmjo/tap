@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { SecurityStatus, SecurityResample } from '../types/api';
+import type { SecurityStatus } from '../types/api';
 import { TokenTooltip } from './TokenTooltip';
 
 interface Props {
@@ -21,12 +21,10 @@ function HeatmapToken({
   token,
   intensity,
   entropy,
-  resample,
 }: {
   token: string;
   intensity: number;
-  entropy: number | undefined;
-  resample: SecurityResample | undefined;
+  entropy: number;
 }) {
   const triggerStyle = {
     background: bgForIntensity(intensity),
@@ -34,16 +32,9 @@ function HeatmapToken({
     borderRadius: '2px',
   };
   const tooltipBody = (
-    <>
-      {resample && (
-        <div>{resample.old_token} → {resample.new_token}</div>
-      )}
-      {entropy !== undefined && (
-        <div style={{ opacity: 0.7 }}>
-          entropy {entropy.toFixed(2)} nats
-        </div>
-      )}
-    </>
+    <div style={{ opacity: 0.7 }}>
+      entropy {entropy.toFixed(2)} nats
+    </div>
   );
   return (
     <TokenTooltip
@@ -55,14 +46,6 @@ function HeatmapToken({
 }
 
 export function TokenHeatmapPanel({ data }: Props) {
-  const resampleByIndex = useMemo(
-    () =>
-      new Map<number, SecurityResample>(
-        data.resampled.map((r) => [r.index, r]),
-      ),
-    [data.resampled],
-  );
-
   const maxEntropy = useMemo(() => {
     let m = 0;
     for (const e of data.token_entropies ?? []) if (e > m) m = e;
@@ -111,16 +94,14 @@ export function TokenHeatmapPanel({ data }: Props) {
           const entropy = data.token_entropies?.[i];
           const intensity =
             maxEntropy > 0 && entropy !== undefined ? entropy / maxEntropy : 0;
-          const r = resampleByIndex.get(i);
           const visible = intensity >= VISIBILITY_FLOOR;
           return (
             <span key={i}>
-              {visible || r ? (
+              {visible && entropy !== undefined ? (
                 <HeatmapToken
                   token={tok}
-                  intensity={visible ? intensity : 0}
+                  intensity={intensity}
                   entropy={entropy}
-                  resample={r}
                 />
               ) : (
                 tok
