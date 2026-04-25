@@ -218,6 +218,7 @@ def test_get_robustness_nlp_worst_case(monkeypatch):
         tokenizer=MagicMock(),
         messages=[{"role": "user", "content": "What is the capital of France?"}],
         original_resp="Paris is the capital.",
+        original_tokens=[],
         is_mcq=False,
         adv_suffix_bank=suffix_bank,
         bert_model=MagicMock(),
@@ -250,7 +251,7 @@ def test_get_robustness_mcq_flip(monkeypatch):
         last = messages[-1]["content"]
         for suffix, resp in suffix_responses.items():
             if last.endswith(suffix):
-                return (resp, [], [], 0.9)
+                return (resp, [resp], [], 0.9)
         raise AssertionError(f"unexpected prompt: {last}")
 
     mock_scorer_cls = MagicMock()
@@ -262,6 +263,7 @@ def test_get_robustness_mcq_flip(monkeypatch):
         tokenizer=MagicMock(),
         messages=[{"role": "user", "content": "Which is correct?"}],
         original_resp="A",
+        original_tokens=["A"],
         is_mcq=True,
         adv_suffix_bank=["suffixX", "suffixY", "suffixZ"],
         bert_model=MagicMock(),

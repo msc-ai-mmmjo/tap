@@ -16,14 +16,12 @@ logger = logging.getLogger(__name__)
 
 MODEL_NAME = "Hydra"
 
-# TODO Per Michele's comment, we should play with this to see if we can get option +
-# some short explanation and refactor relevant inference pipeline e.g. robustness
-# to reflect that. From some tests I performed if it was left to free flow it would
-# just give dictionary definitions of each option.
-# I also wonder what happens if it gets an MCQ with no letter? Unsure what would happen
 MCQ_SYSTEM_PROMPT = (
-    "Respond with only the letter of the correct option (e.g. A, B, C, or D). "
-    "Do not add any explanation."
+    "Output your chosen option on its own first, then optionally a brief explanation.\n"
+    "- For lettered options, output just the single letter.\n"
+    "- For yes/no questions, output just 'yes' or 'no'.\n"
+    "- For other listed options, output just the option text exactly as given.\n"
+    "Then on a new line you may add one short sentence of explanation."
 )
 
 NLP_SYSTEM_PROMPT = (
@@ -72,10 +70,11 @@ def generate(
     """Generate a PoE response via speculative verification.
 
     Both MCQ and NLP prompts run through ``PoE.generate_with_cache``. When
-    ``is_mcq`` is true, a short system nudge is prepended, the token budget is
-    capped at ``MCQ_MAX_NEW_TOKENS`` so the model emits a bare letter, and the
-    PoE class captures a witness hidden state on the first accepted/rejected
-    token and returns a ``p_correct`` scalar from a dedicated uncertainty head.
+    ``is_mcq`` is true, a short system nudge is prepended and the token budget
+    is capped at ``MCQ_MAX_NEW_TOKENS`` so the model leads with the chosen
+    option and may add a brief explanation. The PoE class captures a witness
+    hidden state on the first accepted/rejected token and returns a
+    ``p_correct`` scalar from a dedicated uncertainty head.
 
     :returns: ``(raw_response, tokens, resampled, uncertainty)`` where
         ``uncertainty`` is a float ``p_correct`` for MCQ and ``None`` for NLP.
@@ -165,6 +164,7 @@ def get_robustness(
     tokenizer: PreTrainedTokenizerBase,
     messages: list[dict],
     original_resp: str,
+    original_tokens: list[str],
     is_mcq: bool,
     adv_suffix_bank: list[str],
     bert_model: Any,
@@ -187,11 +187,17 @@ def get_robustness(
 
         attack_msg = {"role": "user", "content": last_message["content"] + suffix}
         adv_prompt = messages + [attack_msg]
-        adv_resp, _, _, _ = generate(model, tokenizer, adv_prompt, is_mcq, device)
+        adv_resp, adv_tokens, _, _ = generate(
+            model, tokenizer, adv_prompt, is_mcq, device
+        )
         adv_results.append((suffix, adv_resp))
 
         if is_mcq:
-            if original_resp.strip().upper() != adv_resp.strip().upper():
+            # Compare the first generated token -- per MCQ_SYSTEM_PROMPT that token
+            # is the chosen option, so any flip there is an answer change.
+            orig_first = original_tokens[0].lower() if original_tokens else ""
+            adv_first = adv_tokens[0].lower() if adv_tokens else ""
+            if orig_first != adv_first:
                 logger.info("Adversarial suffix '%s' caused MCQ answer change!", suffix)
                 num_flipped += 1
                 if mcq_first_flip is None:
