@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
@@ -22,7 +23,7 @@ export function TokenTooltip({ token, tooltipBody, triggerStyle }: Props) {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const id = useId();
 
-  const place = () => {
+  const place = useCallback(() => {
     const t = triggerRef.current?.getBoundingClientRect();
     const tip = tooltipRef.current?.getBoundingClientRect();
     if (!t) return;
@@ -35,11 +36,11 @@ export function TokenTooltip({ token, tooltipBody, triggerStyle }: Props) {
     const overflowsBelow = t.bottom + 8 + height > window.innerHeight;
     const top = overflowsBelow ? t.top - height - 8 : t.bottom + 8;
     setPos({ top, left });
-  };
+  }, []);
 
   useLayoutEffect(() => {
     if (open) place();
-  }, [open]);
+  }, [open, place]);
 
   useEffect(() => {
     if (!open) return;
@@ -50,14 +51,13 @@ export function TokenTooltip({ token, tooltipBody, triggerStyle }: Props) {
       window.removeEventListener('scroll', onScroll, true);
       window.removeEventListener('resize', onScroll);
     };
-  }, [open]);
+  }, [open, place]);
 
   return (
     <>
       <span
         ref={triggerRef}
         tabIndex={0}
-        role="button"
         aria-describedby={open ? id : undefined}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}

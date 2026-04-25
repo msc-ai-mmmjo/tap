@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import type { SecurityStatus, SecurityResample } from '../types/api';
 import { TokenTooltip } from './TokenTooltip';
 
@@ -41,8 +42,12 @@ function HeatmapToken({
 }
 
 export function TokenHeatmapPanel({ data }: Props) {
-  const resampleByIndex = new Map<number, SecurityResample>(
-    data.resampled.map((r) => [r.index, r]),
+  const resampleByIndex = useMemo(
+    () =>
+      new Map<number, SecurityResample>(
+        data.resampled.map((r) => [r.index, r]),
+      ),
+    [data.resampled],
   );
 
   return (
@@ -78,7 +83,7 @@ export function TokenHeatmapPanel({ data }: Props) {
           const r = resampleByIndex.get(i);
           return (
             <span key={i}>
-              {r ? (
+              {r && r.severity > 0 ? (
                 <HeatmapToken token={tok} resample={r} />
               ) : (
                 tok
