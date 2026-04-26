@@ -43,7 +43,7 @@ def main():
         label = MCQ_LETTERS[int(row["cop"])]
 
         # PoE gives us the uncertainty score (p_correct) on is_mcq=True
-        output, _, _, conf_score = poe.generate_with_cache(prompt_text, is_mcq=True)
+        output, _, _, _, conf_score = poe.generate_with_cache(prompt_text, is_mcq=True)
 
         assert conf_score is not None  # optional return, pyrefly...
 

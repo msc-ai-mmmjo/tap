@@ -45,6 +45,8 @@ class PoE:
         beta: float = 1.0,
         max_new_tokens: int = 200,
     ):
+        if gamma < 1:
+            raise ValueError(f"gamma must be >= 1, got {gamma}")
         self.model = model
         self.tokenizer = tokenizer
         self.n_llm_heads = n_llm_heads
@@ -56,6 +58,270 @@ class PoE:
         self.A_id = tokenizer.encode("A", add_special_tokens=False)[0]
         self.B_id = tokenizer.encode("B", add_special_tokens=False)[0]
 
+    def _sample_token(
+        self, logits_1d: torch.Tensor, temperature: float | None
+    ) -> tuple[int, torch.Tensor]:
+        T = temperature if temperature is not None else 1
+
+        probs = F.softmax(logits_1d.float() / T, dim=-1)
+        token = (
+            int(torch.multinomial(probs, 1).item())
+            if temperature is not None
+            else int(torch.argmax(probs).item())
+        )
+        return token, probs
+
+    @torch.no_grad()
+    def _initialise_generation(
+        self,
+        prompt_text: str,
+        messages: list[dict] | None,
+        temperature: float | None,
+    ) -> tuple[
+        torch.Tensor,  # input_ids
+        torch.Tensor,  # generated_ids
+        list[dict],  # messages (resolved)
+        float,  # T
+        int,  # draft_idx
+        list[int],  # verifier_heads_idxs
+        torch.Tensor,  # next_step_logits  (n_llm_heads, 1, 1, V)
+        torch.Tensor,  # hidden_bank       (n_llm_heads, 1, seq, D)
+        list[str],  # output_parts      pre-populated with decoded prompt
+    ]:
+        # messages wins when provided so the chat backend can pass full multi-turn
+        # history; prompt_text stays as the single-turn path for scripts/experiments.
+        if not messages:
+            messages = [{"role": "user", "content": prompt_text}]
+        chat_prompt = self.tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        input_ids = torch.tensor([self.tokenizer.encode(chat_prompt)], device="cuda")
+
+        self.model.init_kv_cache(
+            batch_size=1,
+            max_seq_len=input_ids.size(1) + self.max_new_tokens + self.gamma,
+            omit_last=True,
+        )
+
+        T = temperature if temperature is not None else 1
+
+        draft_idx = int(torch.randint(0, self.n_llm_heads, (1,)).item())
+        verifier_heads_idxs = [i for i in range(self.n_llm_heads) if i != draft_idx]
+        llm_heads_indices = list(range(self.n_llm_heads))
+
+        # prefill cache; hidden_bank: (n_llm_heads, batch, seq, d_model)
+        next_step_logits, hidden_bank = self.model.residual_forward(
+            input_ids,
+            last_token_only=True,
+            head_indices=llm_heads_indices,
+            hidden_head_indices=llm_heads_indices,
+        )
+
+        generated_ids = input_ids.clone()
+        decoded = cast(
+            str, self.tokenizer.decode(input_ids[0], skip_special_tokens=True)
+        )
+
+        return (
+            input_ids,
+            generated_ids,
+            messages,
+            T,
+            draft_idx,
+            verifier_heads_idxs,
+            next_step_logits,
+            hidden_bank,
+            [decoded],
+        )
+
+    @torch.no_grad()
+    def _run_draft_step(
+        self, next_step_logits: torch.Tensor, draft_idx: int, temperature: float | None
+    ) -> tuple[
+        list[int],  # draft_step_ids   length == gamma
+        list[torch.Tensor],  # draft_probs       length == gamma, each (V,)
+        list[torch.Tensor],  # h_stack           length == gamma, each (1,1,D)
+        torch.Tensor,  # last_draft_logits shape (1,1,1,V)
+    ]:
+        draft_step_ids: list[int] = []
+        draft_probs: list[torch.Tensor] = []
+
+        d_token, d_probs = self._sample_token(
+            next_step_logits[draft_idx, 0, 0, :], temperature
+        )
+        draft_step_ids.append(d_token)
+        draft_probs.append(d_probs)
+
+        curr_d_token = torch.tensor([[d_token]], device="cuda")
+        h_stack: list[torch.Tensor] = []
+
+        for _ in range(self.gamma - 1):
+            h = self.model.forward_trunk(curr_d_token)
+            h_stack.append(h)
+            step_logits = self.model.forward_heads(h, head_indices=[draft_idx])
+            step_token, step_probs = self._sample_token(
+                step_logits[0, 0, 0, :], temperature
+            )
+            draft_step_ids.append(step_token)
+            draft_probs.append(step_probs)
+            curr_d_token = torch.tensor([[step_token]], device="cuda")
+
+        # final step: trunk + head forward only, no token sample needed
+        h = self.model.forward_trunk(curr_d_token)
+        h_stack.append(h)
+        last_draft_logits = self.model.forward_heads(h, head_indices=[draft_idx])
+
+        return draft_step_ids, draft_probs, h_stack, last_draft_logits
+
+    @torch.no_grad()
+    def _run_verify_step(
+        self,
+        h_stack: list[torch.Tensor],
+        draft_step_ids: list[int],
+        draft_probs: list[torch.Tensor],
+        next_step_logits: torch.Tensor,
+        last_draft_logits: torch.Tensor,
+        draft_idx: int,
+        verifier_heads_idxs: list[int],
+        hidden_bank: torch.Tensor,
+        L: int,
+        generated_ids: torch.Tensor,
+        n_output_parts: int,
+        T: float,
+        is_mcq: bool,
+        hidden_unc_state: Optional[torch.Tensor],
+    ) -> tuple[
+        torch.Tensor,  # updated generated_ids
+        torch.Tensor,  # next_step_logits for next round
+        list[str],  # new output_parts entries
+        list[float],  # new token_entropies entries
+        list[str],  # new original_tokens entries
+        list[int],  # new resampled_idxs (absolute)
+        Optional[torch.Tensor],  # updated hidden_unc_state
+        bool,  # did_reject
+        bool,  # eos_seen
+    ]:
+        # VERIFY: verifier heads consume the saved trunk hidden states; no trunk re-run, no sync.
+        v_block_logits = self.model.forward_heads(
+            torch.cat(h_stack, dim=1), head_indices=verifier_heads_idxs
+        )
+
+        new_parts: list[str] = []
+        new_entropies: list[float] = []
+        new_orig: list[str] = []
+        new_idxs: list[int] = []
+
+        accepted_this_round = 0
+        did_reject = False
+        eos_seen = False
+
+        for i in range(self.gamma):
+            v_logits = (
+                next_step_logits[verifier_heads_idxs, 0, 0, :]
+                if i == 0
+                else v_block_logits[:, 0, i - 1, :]
+            )
+
+            # apply temperature before log_softmax for ensemble
+            log_P = (self.beta * F.log_softmax(v_logits.float() / T, dim=-1)).sum(dim=0)
+            P_dist = torch.exp(log_P)
+            P_dist /= P_dist.sum() + 1e-10
+
+            # Verifier ensemble predictive entropy (nats) at this position.
+            # Predictive entropy is a standard token-level uncertainty signal
+            # (Malinin & Gales, "Uncertainty Estimation in Autoregressive
+            # Structured Prediction", ICLR 2021), and the verifier heads form
+            # a deep ensemble (Lakshminarayanan et al., NeurIPS 2017), so
+            # H(P_dist) reads as ensemble predictive uncertainty here.
+            step_entropy = float(-(P_dist * P_dist.clamp_min(1e-12).log()).sum().item())
+
+            token_id = int(draft_step_ids[i])
+            p_val, q_val = P_dist[token_id].item(), draft_probs[i][token_id].item()
+
+            if torch.rand(1).item() < min(1.0, p_val / (q_val + 1e-10)):
+                # accept
+                accepted_this_round += 1
+                generated_ids = torch.cat(
+                    [generated_ids, torch.tensor([[token_id]], device="cuda")],
+                    dim=-1,
+                )
+                new_parts.append(cast(str, self.tokenizer.decode([token_id])))
+                new_entropies.append(step_entropy)
+
+                if is_mcq and hidden_unc_state is None:
+                    # use the drafter head's prefill hidden state
+                    hidden_unc_state = hidden_bank[draft_idx, 0, -1, :].detach()
+
+                if token_id == self.tokenizer.eos_token_id:
+                    self.model.sync_kv_cache(generated_ids.size(1))
+                    eos_seen = True
+                    break
+            else:
+                # reject: re-sample from corrected distribution
+                correction = torch.clamp(P_dist - draft_probs[i], min=0)
+                resampled_id = int(
+                    torch.multinomial(correction / (correction.sum() + 1e-10), 1).item()
+                    if correction.sum() > 1e-6
+                    else torch.multinomial(P_dist, 1).item()
+                )
+
+                new_parts.append(cast(str, self.tokenizer.decode([resampled_id])))
+                new_entropies.append(step_entropy)
+                generated_ids = torch.cat(
+                    [generated_ids, torch.tensor([[resampled_id]], device="cuda")],
+                    dim=-1,
+                )
+
+                # store the old draft token which was resampled and its absolute index
+                new_orig.append(cast(str, self.tokenizer.decode([token_id])))
+                new_idxs.append(n_output_parts + len(new_parts) - 1)
+
+                if is_mcq and hidden_unc_state is None:
+                    # find best verifier head by highest probability mass on resampled token
+                    best_v_local_idx = int(
+                        torch.argmax(v_logits[:, resampled_id]).item()
+                    )
+                    global_idx = verifier_heads_idxs[best_v_local_idx]
+                    hidden_unc_state = hidden_bank[global_idx, 0, -1, :].detach()
+
+                # sync cache back to having L + accepted_this_round tokens
+                self.model.sync_kv_cache(L + accepted_this_round)
+
+                # get logits for next round using explicit position
+                corr_idx = torch.tensor([[L + accepted_this_round]], device="cuda")
+                next_step_logits = self.model(
+                    torch.tensor([[resampled_id]], device="cuda"),
+                    indices=corr_idx,
+                    last_token_only=True,
+                )
+
+                if resampled_id == self.tokenizer.eos_token_id:
+                    eos_seen = True
+
+                did_reject = True
+                break
+
+        if not did_reject:
+            # full acceptance: assemble next_step_logits from verifier block + final draft logit
+            new_next = v_block_logits.new_empty(
+                (self.n_llm_heads, 1, 1, v_block_logits.size(-1))
+            )
+            new_next[verifier_heads_idxs, 0, 0, :] = v_block_logits[:, 0, -1, :]
+            new_next[draft_idx, 0, 0, :] = last_draft_logits[0, 0, 0, :]
+            next_step_logits = new_next
+
+        return (
+            generated_ids,
+            next_step_logits,
+            new_parts,
+            new_entropies,
+            new_orig,
+            new_idxs,
+            hidden_unc_state,
+            did_reject,
+            eos_seen,
+        )
+
     @torch.no_grad()
     def generate_with_cache(
         self,
@@ -63,7 +329,7 @@ class PoE:
         is_mcq: bool = False,
         temperature: float | None = 0.98,
         messages: list[dict] | None = None,
-    ) -> tuple[list[str], list[str], list[int], Optional[float]]:
+    ) -> tuple[list[str], list[str], list[int], list[float], Optional[float]]:
         """
         Performs speculative verification with kv-caching.
 
@@ -75,206 +341,82 @@ class PoE:
         :returns: tuple[List of tokens (str) in generation with 0th entry as prompt,
             List of original tokens (str) at resampling indices,
             List of resampling indices (int),
+            List of per-token verifier ensemble entropy (float, nats),
             Optional uncertainty head confidence (float)]
         """
-        # messages wins when provided so the chat backend can pass full multi-turn
-        # history; prompt_text stays as the single-turn path for scripts/experiments.
-        if not messages:
-            messages = [{"role": "user", "content": prompt_text}]
-        chat_prompt = self.tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        )
-        input_ids = torch.tensor([self.tokenizer.encode(chat_prompt)], device="cuda")
-
-        # initialize cache
-        self.model.init_kv_cache(
-            batch_size=1,
-            max_seq_len=input_ids.size(1) + self.max_new_tokens + self.gamma,
-            omit_last=True,
-        )
-
-        # if temperature is None we take argmax
-        T = temperature if temperature is not None else 1
-
-        # sample draft head
-        draft_idx = int(torch.randint(0, self.n_llm_heads, (1,)).item())
-        verifier_heads_idxs = [i for i in range(self.n_llm_heads) if i != draft_idx]
-        llm_heads_indices = list(range(self.n_llm_heads))
-
-        # prefill cache by generating next 1 token (pass through only LLM heads)
-        # hidden_bank: (n_llm_heads, batch, seq, d_model)
-        next_step_logits, hidden_bank = self.model.residual_forward(
+        (
             input_ids,
-            last_token_only=True,
-            head_indices=llm_heads_indices,
-            hidden_head_indices=llm_heads_indices,
-        )
+            generated_ids,
+            messages,
+            T,
+            draft_idx,
+            verifier_heads_idxs,
+            next_step_logits,
+            hidden_bank,
+            output_parts,
+        ) = self._initialise_generation(prompt_text, messages, temperature)
 
-        # ids tensor and output string list
-        generated_ids = input_ids.clone()
-        decoded = cast(
-            str, self.tokenizer.decode(input_ids[0], skip_special_tokens=True)
-        )
-        output_parts: list[str] = [decoded]
-
-        # store original (before resampling) tokens and their indices
-        original_tokens = []
-        resampled_idxs = []
-
-        # hidden state to residual stream inject for uncertainty
+        original_tokens: list[str] = []
+        resampled_idxs: list[int] = []
+        token_entropies: list[float] = []
         hidden_unc_state: Optional[torch.Tensor] = None
 
         while (generated_ids.size(1) - input_ids.size(1)) < self.max_new_tokens:
             L = generated_ids.size(1)
-            # DRAFT
-            draft_step_ids = []
-            draft_probs = []
 
-            d_logits = next_step_logits[draft_idx, 0, 0, :]
-            # apply temperature
-            d_probs = F.softmax(d_logits.float() / T, dim=-1)
-            # use multinomial for sampling instead of argmax when temperature is involved
-            if temperature is not None:
-                d_token = torch.multinomial(d_probs, 1).item()
-            else:
-                d_token = torch.argmax(d_probs).item()
-
-            draft_step_ids.append(d_token)
-            draft_probs.append(d_probs)
-
-            curr_d_token = torch.tensor([[d_token]], device="cuda")
-            h_stack: list[torch.Tensor] = []
-
-            for step in range(self.gamma):
-                h = self.model.forward_trunk(curr_d_token)
-                h_stack.append(h)
-                logits = self.model.forward_heads(h, head_indices=[draft_idx])
-
-                if step < self.gamma - 1:
-                    # apply temperature
-                    step_probs = F.softmax(logits[0, 0, 0, :].float() / T, dim=-1)
-                    if temperature is not None:
-                        step_token = torch.multinomial(step_probs, 1).item()
-                    else:
-                        step_token = torch.argmax(step_probs).item()
-
-                    draft_step_ids.append(step_token)
-                    draft_probs.append(step_probs)
-                    curr_d_token = torch.tensor([[step_token]], device="cuda")
-
-            # VERIFY: verifier heads consume the saved trunk hidden states; no trunk re-run, no sync.
-            v_block_logits = self.model.forward_heads(
-                torch.cat(h_stack, dim=1), head_indices=verifier_heads_idxs
+            draft_step_ids, draft_probs, h_stack, last_draft_logits = (
+                self._run_draft_step(next_step_logits, draft_idx, temperature)
             )
 
-            accepted_this_round = 0
-            rejected = False
-            resampled_id = None
+            (
+                generated_ids,
+                next_step_logits,
+                new_parts,
+                new_entropies,
+                new_orig,
+                new_idxs,
+                hidden_unc_state,
+                did_reject,
+                eos_seen,
+            ) = self._run_verify_step(
+                h_stack,
+                draft_step_ids,
+                draft_probs,
+                next_step_logits,
+                last_draft_logits,
+                draft_idx,
+                verifier_heads_idxs,
+                hidden_bank,
+                L,
+                generated_ids,
+                len(output_parts),
+                T,
+                is_mcq,
+                hidden_unc_state,
+            )
 
-            for i in range(self.gamma):
-                v_logits = (
-                    next_step_logits[verifier_heads_idxs, 0, 0, :]
-                    if i == 0
-                    else v_block_logits[:, 0, i - 1, :]
-                )
+            output_parts.extend(new_parts)
+            token_entropies.extend(new_entropies)
+            original_tokens.extend(new_orig)
+            resampled_idxs.extend(new_idxs)
 
-                # apply temperature before log_softmax for ensemble
-                log_P = (self.beta * F.log_softmax(v_logits.float() / T, dim=-1)).sum(
-                    dim=0
-                )
-                P_dist = torch.exp(log_P)
-                P_dist /= P_dist.sum() + 1e-10
-
-                token_id = int(draft_step_ids[i])
-                p_val, q_val = P_dist[token_id].item(), draft_probs[i][token_id].item()
-
-                if torch.rand(1).item() < min(1.0, p_val / (q_val + 1e-10)):
-                    # accept
-                    accepted_this_round += 1
-                    generated_ids = torch.cat(
-                        [generated_ids, torch.tensor([[token_id]], device="cuda")],
-                        dim=-1,
-                    )
-                    output_parts.append(cast(str, self.tokenizer.decode([token_id])))
-
-                    if is_mcq and hidden_unc_state is None:
-                        # if we accepted, use the drafter head's hidden state
-                        hidden_unc_state = hidden_bank[draft_idx, 0, -1, :].detach()
-
-                    if token_id == self.tokenizer.eos_token_id:
-                        self.model.sync_kv_cache(generated_ids.size(1))
-                        break
-                else:
-                    # reject: re-sample from corrected distribution
-                    correction = torch.clamp(P_dist - draft_probs[i], min=0)
-                    resampled_id = int(
-                        torch.multinomial(
-                            correction / (correction.sum() + 1e-10), 1
-                        ).item()
-                        if correction.sum() > 1e-6
-                        else torch.multinomial(P_dist, 1).item()
-                    )
-
-                    output_parts.append(
-                        cast(str, self.tokenizer.decode([resampled_id]))
-                    )
-                    generated_ids = torch.cat(
-                        [generated_ids, torch.tensor([[resampled_id]], device="cuda")],
-                        dim=-1,
-                    )
-
-                    # store the old draft token which was resampled and its index
-                    original_tokens.append(cast(str, self.tokenizer.decode([token_id])))
-                    resampled_idxs.append(len(output_parts) - 1)
-
-                    if is_mcq and hidden_unc_state is None:
-                        # if we rejected, find best verifier head
-                        # best by highest probability mass on resampled token
-                        best_v_local_idx = int(
-                            torch.argmax(v_logits[:, resampled_id]).item()
-                        )
-                        global_idx = verifier_heads_idxs[best_v_local_idx]
-                        hidden_unc_state = hidden_bank[global_idx, 0, -1, :].detach()
-
-                    # sync cache back to having L + accepted_this_round tokens
-                    self.model.sync_kv_cache(L + accepted_this_round)
-
-                    # get logits for next round using explicit position
-                    corr_idx = torch.tensor([[L + accepted_this_round]], device="cuda")
-                    next_step_logits = self.model(
-                        torch.tensor([[resampled_id]], device="cuda"),
-                        indices=corr_idx,
-                        last_token_only=True,
-                    )
-
-                    rejected = True
-                    break
-
-            if (not rejected and token_id == self.tokenizer.eos_token_id) or (
-                rejected and resampled_id == self.tokenizer.eos_token_id
-            ):
+            if eos_seen:
                 break
-
-            if not rejected:
-                # full acceptance: assemble next_step_logits from verifier block + final draft logit
-                next_step_logits = v_block_logits.new_empty(
-                    (self.n_llm_heads, 1, 1, v_block_logits.size(-1))
-                )
-                next_step_logits[verifier_heads_idxs, 0, 0, :] = v_block_logits[
-                    :, 0, -1, :
-                ]
-                next_step_logits[draft_idx, 0, 0, :] = logits[0, 0, 0, :]  # type: ignore[unbound-name]
 
         uncertainty_score = None
         if is_mcq and hidden_unc_state is not None:
-            full_answer = "".join(output_parts[1:])
             # Use messages path so callers passing prompt_text="" still thread the question through.
-            question_text = messages[-1]["content"]
             uncertainty_score = self.get_uncertainty_score(
-                question_text, full_answer, hidden_unc_state
+                messages[-1]["content"], "".join(output_parts[1:]), hidden_unc_state
             )
 
-        return output_parts, original_tokens, resampled_idxs, uncertainty_score
+        return (
+            output_parts,
+            original_tokens,
+            resampled_idxs,
+            token_entropies,
+            uncertainty_score,
+        )
 
     @torch.no_grad()
     def get_uncertainty_score(
@@ -356,8 +498,8 @@ if __name__ == "__main__":
 
     q = "Is Donald Trump a good politician?"
     print("\n--- POE SPECULATIVE ---")
-    response, original_tokens, replaced_idxs, conf = poe.generate_with_cache(
-        q, is_mcq=True
+    response, original_tokens, replaced_idxs, token_entropies, conf = (
+        poe.generate_with_cache(q, is_mcq=True)
     )
     print("".join(response))
     if conf is not None:
