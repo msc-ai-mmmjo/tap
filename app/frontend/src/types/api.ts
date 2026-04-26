@@ -18,8 +18,10 @@ export interface SecurityStatus {
   resampled: SecurityResample[];
   // Per-token verifier ensemble predictive entropy (nats), parallel to `tokens`.
   // Conceptually an uncertainty signal; co-located here to reuse the heatmap's
-  // existing `tokens` plumbing without a cross-payload refactor.
-  token_entropies: number[];
+  // existing `tokens` plumbing without a cross-payload refactor. Optional so
+  // the frontend can keep rendering against older backend deployments that
+  // don't ship this field yet.
+  token_entropies?: number[];
 }
 
 export interface AdversarialWorstCase {
