@@ -33,7 +33,7 @@ function HeatmapToken({
   };
   const tooltipBody = (
     <div style={{ opacity: 0.7 }}>
-      entropy {entropy.toFixed(2)} nats
+      entropy {entropy < 0.005 ? '< 0.01' : entropy.toFixed(2)} nats
     </div>
   );
   return (
@@ -48,7 +48,7 @@ function HeatmapToken({
 export function TokenHeatmapPanel({ data }: Props) {
   const maxEntropy = useMemo(() => {
     let m = 0;
-    for (const e of data.token_entropies ?? []) if (e > m) m = e;
+    for (const e of data.token_entropies ?? []) if (Number.isFinite(e) && e > m) m = e;
     return m;
   }, [data.token_entropies]);
 
