@@ -70,6 +70,16 @@ matplotlib = "*"
 msc-ai-group-project = { path = ".", editable = true }
 
 # ---------------------------------------------
+# Evals Feature (Elo tournament judge pipeline)
+# ---------------------------------------------
+# Scoped to the default env only. The judge calls Anthropic's Messages
+# API and is not needed in the cuda env (which is for OLMo training /
+# inference). Keeping it out of cuda also avoids re-resolving against
+# the huggingface-hub<0.28.0 pin pulled in by ai2-olmo-core.
+[tool.pixi.feature.evals.pypi-dependencies]
+anthropic = "*"
+
+# ---------------------------------------------
 # Docs Feature (Sphinx site)
 # ---------------------------------------------
 # Docs env composes the `cuda` feature so autodoc can import the real
@@ -88,7 +98,7 @@ ghp-import = "*"
 # Environments
 # ---------------------------------------------
 [tool.pixi.environments]
-default = { solve-group = "default" }
+default = { features = ["evals"], solve-group = "default" }
 cuda = { features = ["cuda"], solve-group = "cuda" }
 docs = { features = ["docs", "cuda"], solve-group = "cuda" }
 
