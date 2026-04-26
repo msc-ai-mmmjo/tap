@@ -40,8 +40,14 @@ nltk = ">=3.9"
 # ---------------------------------------------
 # Kept at top level so the Modal CLI is available in the default env
 # (deploying doesn't require the cuda feature / GPU pip stack).
+# fastapi/pydantic/uvicorn live here because app/backend/server.py is
+# imported both locally (`pixi run app-api`, default env) and on Modal
+# (cuda env, which inherits the default feature).
 [tool.pixi.pypi-dependencies]
 modal = ">=1.0"
+fastapi = "*"
+pydantic = ">=2"
+uvicorn = "*"
 
 # ---------------------------------------------
 # CUDA Feature (for GPU users)
@@ -66,6 +72,10 @@ peft = "*"
 datasets = ">=2.10"
 scipy = "*"
 matplotlib = "*"
+numpy = "*"
+tqdm = "*"
+safetensors = "*"
+wandb = "*"
 msc-ai-group-project = { path = ".", editable = true }
 
 # ---------------------------------------------
@@ -111,7 +121,6 @@ test-cov = "pytest --cov"
 typecheck = { cmd = "pyrefly check", default-environment = "cuda" }
 
 # Application
-serve = "python interface.py"
 app-api = "PYTHONPATH=. uvicorn app.backend.server:app --port 8000 --ws none"
 
 # Modal deployment
