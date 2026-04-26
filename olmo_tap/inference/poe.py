@@ -16,10 +16,24 @@ sync_kv_cache fires only on rejection — on full acceptance all three caches en
 
 import torch
 import torch.nn.functional as F
+from dataclasses import dataclass
 from typing import cast, Optional
 
 from olmo_tap.hydra import HydraTransformer
 from transformers import PreTrainedTokenizerBase
+
+
+@dataclass
+class _VerifyResult:
+    generated_ids: torch.Tensor
+    next_step_logits: torch.Tensor
+    new_parts: list[str]
+    new_entropies: list[float]
+    new_orig: list[str]
+    new_idxs: list[int]
+    hidden_unc_state: Optional[torch.Tensor]
+    did_reject: bool
+    eos_seen: bool
 
 
 class PoE:
@@ -61,27 +75,19 @@ class PoE:
     def _sample_token(
         self, logits_1d: torch.Tensor, temperature: float | None
     ) -> tuple[int, torch.Tensor]:
-        T = temperature if temperature is not None else 1
-
-        probs = F.softmax(logits_1d.float() / T, dim=-1)
-        token = (
-            int(torch.multinomial(probs, 1).item())
-            if temperature is not None
-            else int(torch.argmax(probs).item())
-        )
-        return token, probs
+        if temperature is None:
+            probs = F.softmax(logits_1d.float(), dim=-1)
+            return int(torch.argmax(probs).item()), probs
+        probs = F.softmax(logits_1d.float() / temperature, dim=-1)
+        return int(torch.multinomial(probs, 1).item()), probs
 
     @torch.no_grad()
     def _initialise_generation(
-        self,
-        prompt_text: str,
-        messages: list[dict] | None,
-        temperature: float | None,
+        self, prompt_text: str, messages: list[dict] | None
     ) -> tuple[
         torch.Tensor,  # input_ids
         torch.Tensor,  # generated_ids
         list[dict],  # messages (resolved)
-        float,  # T
         int,  # draft_idx
         list[int],  # verifier_heads_idxs
         torch.Tensor,  # next_step_logits  (n_llm_heads, 1, 1, V)
@@ -102,8 +108,6 @@ class PoE:
             max_seq_len=input_ids.size(1) + self.max_new_tokens + self.gamma,
             omit_last=True,
         )
-
-        T = temperature if temperature is not None else 1
 
         draft_idx = int(torch.randint(0, self.n_llm_heads, (1,)).item())
         verifier_heads_idxs = [i for i in range(self.n_llm_heads) if i != draft_idx]
@@ -126,7 +130,6 @@ class PoE:
             input_ids,
             generated_ids,
             messages,
-            T,
             draft_idx,
             verifier_heads_idxs,
             next_step_logits,
@@ -136,7 +139,10 @@ class PoE:
 
     @torch.no_grad()
     def _run_draft_step(
-        self, next_step_logits: torch.Tensor, draft_idx: int, temperature: float | None
+        self,
+        next_step_logits: torch.Tensor,
+        draft_idx: int,
+        temperature: float | None,
     ) -> tuple[
         list[int],  # draft_step_ids   length == gamma
         list[torch.Tensor],  # draft_probs       length == gamma, each (V,)
@@ -187,20 +193,12 @@ class PoE:
         L: int,
         generated_ids: torch.Tensor,
         n_output_parts: int,
-        T: float,
+        temperature: float | None,
         is_mcq: bool,
         hidden_unc_state: Optional[torch.Tensor],
-    ) -> tuple[
-        torch.Tensor,  # updated generated_ids
-        torch.Tensor,  # next_step_logits for next round
-        list[str],  # new output_parts entries
-        list[float],  # new token_entropies entries
-        list[str],  # new original_tokens entries
-        list[int],  # new resampled_idxs (absolute)
-        Optional[torch.Tensor],  # updated hidden_unc_state
-        bool,  # did_reject
-        bool,  # eos_seen
-    ]:
+    ) -> _VerifyResult:
+        T = temperature if temperature is not None else 1
+
         # VERIFY: verifier heads consume the saved trunk hidden states; no trunk re-run, no sync.
         v_block_logits = self.model.forward_heads(
             torch.cat(h_stack, dim=1), head_indices=verifier_heads_idxs
@@ -301,7 +299,7 @@ class PoE:
                 did_reject = True
                 break
 
-        if not did_reject:
+        if not did_reject and not eos_seen:
             # full acceptance: assemble next_step_logits from verifier block + final draft logit
             new_next = v_block_logits.new_empty(
                 (self.n_llm_heads, 1, 1, v_block_logits.size(-1))
@@ -310,16 +308,16 @@ class PoE:
             new_next[draft_idx, 0, 0, :] = last_draft_logits[0, 0, 0, :]
             next_step_logits = new_next
 
-        return (
-            generated_ids,
-            next_step_logits,
-            new_parts,
-            new_entropies,
-            new_orig,
-            new_idxs,
-            hidden_unc_state,
-            did_reject,
-            eos_seen,
+        return _VerifyResult(
+            generated_ids=generated_ids,
+            next_step_logits=next_step_logits,
+            new_parts=new_parts,
+            new_entropies=new_entropies,
+            new_orig=new_orig,
+            new_idxs=new_idxs,
+            hidden_unc_state=hidden_unc_state,
+            did_reject=did_reject,
+            eos_seen=eos_seen,
         )
 
     @torch.no_grad()
@@ -348,13 +346,12 @@ class PoE:
             input_ids,
             generated_ids,
             messages,
-            T,
             draft_idx,
             verifier_heads_idxs,
             next_step_logits,
             hidden_bank,
             output_parts,
-        ) = self._initialise_generation(prompt_text, messages, temperature)
+        ) = self._initialise_generation(prompt_text, messages)
 
         original_tokens: list[str] = []
         resampled_idxs: list[int] = []
@@ -368,17 +365,7 @@ class PoE:
                 self._run_draft_step(next_step_logits, draft_idx, temperature)
             )
 
-            (
-                generated_ids,
-                next_step_logits,
-                new_parts,
-                new_entropies,
-                new_orig,
-                new_idxs,
-                hidden_unc_state,
-                did_reject,
-                eos_seen,
-            ) = self._run_verify_step(
+            res = self._run_verify_step(
                 h_stack,
                 draft_step_ids,
                 draft_probs,
@@ -390,17 +377,20 @@ class PoE:
                 L,
                 generated_ids,
                 len(output_parts),
-                T,
+                temperature,
                 is_mcq,
                 hidden_unc_state,
             )
 
-            output_parts.extend(new_parts)
-            token_entropies.extend(new_entropies)
-            original_tokens.extend(new_orig)
-            resampled_idxs.extend(new_idxs)
+            generated_ids = res.generated_ids
+            next_step_logits = res.next_step_logits
+            hidden_unc_state = res.hidden_unc_state
+            output_parts.extend(res.new_parts)
+            token_entropies.extend(res.new_entropies)
+            original_tokens.extend(res.new_orig)
+            resampled_idxs.extend(res.new_idxs)
 
-            if eos_seen:
+            if res.eos_seen:
                 break
 
         uncertainty_score = None
