@@ -34,7 +34,7 @@ def train(
     :parap exp_config: Global config object storing experiment details.
     :param optimizer: Any torch optim object.
     :param scheduler: Any torch scheduler object.
-    :stagnant_thresh: If after this many steps no successful adversarial attacks were made,
+    :param stagnant_thresh: If after this many steps no successful adversarial attacks were made,
         training comes to early stop.
     """
     t_config = exp_config.train
