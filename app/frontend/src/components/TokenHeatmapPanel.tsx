@@ -83,7 +83,7 @@ export function TokenHeatmapPanel({ data }: Props) {
             />
             <span>high</span>
             <span style={{ opacity: 0.7 }}>
-              (max {maxEntropy.toFixed(2)} nats)
+              (max {maxEntropy < 0.005 ? '< 0.01' : maxEntropy.toFixed(2)} nats)
             </span>
           </span>
         )}
