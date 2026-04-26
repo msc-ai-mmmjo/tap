@@ -39,6 +39,7 @@ appropriate hedging / abstention; non-curated prompts omit that tag.
 from __future__ import annotations
 
 import hashlib
+import importlib
 import json
 import logging
 import os
@@ -690,8 +691,11 @@ def reconcile_swap(
 
 def _make_anthropic_client(config: JudgeConfig):
     """Construct an Anthropic SDK client; fail loudly if no key is configured."""
+    # The anthropic SDK only ships in the default pixi env (the judge runs
+    # without a GPU); the cuda env used for typechecking does not have it,
+    # so we resolve it dynamically to keep static-analysis green.
     try:
-        import anthropic
+        anthropic = importlib.import_module("anthropic")
     except ImportError as exc:  # pragma: no cover - install error path
         raise RuntimeError(
             "The `anthropic` package is required for judge_pairs; install it "
