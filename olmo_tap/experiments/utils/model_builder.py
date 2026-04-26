@@ -19,6 +19,7 @@ from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
 def build_base_model(config: HydraLoRAConfig) -> HydraTransformer:
     """
     :param config: Config file detailing architecture of model to be loaded
+
     :returns HydraTransformer: OLMo with base weights
     """
     factory = (

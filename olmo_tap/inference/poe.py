@@ -71,6 +71,11 @@ class PoE:
         :param is_mcq: if True, the uncertainty head is used to produce confidence probability.
         :param temperature: global temperature scaling (if not None, sample based token generation).
         :param messages: optional argument for multi-turn chatbot conversation.
+
+        :returns: tuple[List of tokens (str) in generation with 0th entry as prompt,
+            List of original tokens at resampling indices,
+            List of resampling indices,
+            Optional uncertainty head confidence]
         """
         # messages wins when provided so the chat backend can pass full multi-turn
         # history; prompt_text stays as the single-turn path for scripts/experiments.

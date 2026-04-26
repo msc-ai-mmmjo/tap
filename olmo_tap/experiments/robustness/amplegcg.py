@@ -81,6 +81,7 @@ class AmpleGCG:
         :param query: Single query.
         :param repeat: AmpleGCG HF page recommends repeating prompts to reduce
                         perplexity in generated suffixes.
+
         :returns: List of length num_return_seq; each element is a suffix.
         """
         # NOTE: repeating the query is recommended on the AmpleGCG HF page

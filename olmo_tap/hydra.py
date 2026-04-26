@@ -287,6 +287,7 @@ class HydraTransformer(nn.Module):
         :param last_token_only: If True, project only the final sequence position through
             the lm_head. Output seq dim collapses to 1. Cheap inference path for
             classification / next-token argmax; training must keep False.
+
         :returns: Logits tensor ``(n_selected, batch, seq_out, vocab)`` where
             ``seq_out == 1`` if ``last_token_only`` else ``seq``.
         """
@@ -313,6 +314,7 @@ class HydraTransformer(nn.Module):
         :param input_ids: Token IDs ``(batch, seq)``.
         :param hidden_head_indices: Global list of indices into ``self.heads``; must all be in ``head_indices``.
         :param head_indices: Optional subset of head indices to run. None means all heads.
+
         :returns: tuple[Logits tensor ``(n_selected, batch, seq, vocab)``,
                         hidden-state tensor ``(batch, seq, d_model)``].
         """
