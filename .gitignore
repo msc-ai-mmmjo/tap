@@ -230,9 +230,16 @@ dist-ssr/
 # experiment outputs (checkpoints, logs)
 experiments/*/outputs/
 
+# Elo eval caches, run artifacts, and local-only design notes
+olmo_tap/final_evals/elo/caches/
+olmo_tap/final_evals/elo/runs/
+olmo_tap/final_evals/elo/tournament1_implementation_plan.md
+
 # Sphinx build output
 docs/build/
 docs/source/api/_generated/
 
 # Claude plugins
 superpowers/
+.env
+.env

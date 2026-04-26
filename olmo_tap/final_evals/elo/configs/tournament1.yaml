@@ -1,0 +1,108 @@
+# Tournament 1 — configuration-level Elo across four entrants.
+#
+# Edit this file to tweak the eval; the actual entrant loaders are dispatched
+# in code (see olmo_tap/final_evals/elo/entrants.py).  Entries here are
+# structural / hyperparameter only.
+
+tournament_id: tournament1
+description: >-
+  Configuration-level ablation of the Hydra trustworthy-LLM stack against
+  the base OLMo2-7B-Instruct.  Each entrant differs in which LoRAs are
+  merged and whether PoE speculative decoding is used.  Decoding hparams
+  (temperature, top_p, max_new_tokens) are held constant across all
+  Hydra entrants; the base entrant uses greedy decoding per benchmark
+  convention.
+
+# ---------------------------------------------------------------------------
+# Entrants — keyed by entrant_id (matches ENTRANTS_BY_ID in entrants.py).
+# build_entrant() in entrants.py is currently stubbed; the structural
+# definitions below are still the source of truth for the rest of the
+# pipeline.
+# ---------------------------------------------------------------------------
+entrants:
+  - entrant_id: base_olmo
+    loader: vanilla_hf
+    rob_checkpoint: null      # no LoRAs merged
+    bypass_jury: true         # vanilla single-stream decoding
+    temperature: null         # greedy
+    needs_uncertainty: false
+  - entrant_id: security_only
+    loader: custom_poe
+    rob_checkpoint: null      # security LoRAs only
+    bypass_jury: true         # single-head sampled decoding
+    temperature: 0.98
+    needs_uncertainty: false
+  - entrant_id: security_plus_robustness
+    loader: custom_poe
+    rob_checkpoint: -1        # final robustness checkpoint
+    bypass_jury: true         # single-head sampled decoding
+    temperature: 0.98
+    needs_uncertainty: false
+  - entrant_id: full_poe
+    loader: custom_poe
+    rob_checkpoint: -1        # final robustness checkpoint
+    bypass_jury: false        # full PoE speculative decoding + jury
+    temperature: 0.98
+    needs_uncertainty: false
+
+# ---------------------------------------------------------------------------
+# Generation hyperparameters held constant across the Hydra entrants.
+# ---------------------------------------------------------------------------
+generation:
+  max_new_tokens: 256
+
+# ---------------------------------------------------------------------------
+# Prompt set — single bank.jsonl committed in prompts/.  Sources A and B
+# (MedMCQA-open and MedQA) are materialised today; a curated Source C is
+# appended later.
+# ---------------------------------------------------------------------------
+prompts:
+  bank_path: olmo_tap/final_evals/elo/prompts/bank.jsonl
+  expected_size: 200          # 80 (A) + 70 (B) + 50 (C, hand-curated)
+
+# ---------------------------------------------------------------------------
+# Rubric files — one per dimension.  Factuality includes {gold_answer} in
+# its template (it requires a ground-truth anchor); the other two do not
+# (they evaluate framing rather than answer-matching).
+# ---------------------------------------------------------------------------
+rubrics:
+  factuality:
+    path: olmo_tap/final_evals/elo/configs/rubrics/factuality.txt
+    expects_gold_answer: true
+  calibration:
+    path: olmo_tap/final_evals/elo/configs/rubrics/calibration.txt
+    expects_gold_answer: false
+  clinical_utility:
+    path: olmo_tap/final_evals/elo/configs/rubrics/clinical_utility.txt
+    expects_gold_answer: false
+
+# ---------------------------------------------------------------------------
+# LLM judge configuration — Anthropic Batch API with prompt caching on the
+# system + rubric prefix.  Pilot uses Sonnet, headline run uses Opus.
+# ---------------------------------------------------------------------------
+judge:
+  pilot_model: claude-sonnet-4-6
+  headline_model: claude-opus-4-7
+  use_batch_api: true
+  use_prompt_caching: true
+  position_swap: true         # judge each pair twice; inconsistent → tie
+
+# ---------------------------------------------------------------------------
+# Elo engine hyperparameters following Boubdir et al. (2023), "Elo
+# Uncovered: Robustness and Best Practices in Language Model Evaluation".
+# ---------------------------------------------------------------------------
+elo:
+  initial_rating: 1400.0
+  n_perms: 500                # final report uses 500; tests use 100
+  k_factor_sweep: [1, 4, 8, 16, 32]
+  default_k: 16               # primary K used for the headline table
+  shuffle_seed: 20260425      # reproducibility seed for numpy.random.default_rng
+
+# ---------------------------------------------------------------------------
+# Caches — gitignored under caches/.  Two layers: response cache (keyed on
+# entrant config + prompt) and judgment cache (keyed on response hash +
+# rubric version + judge model).
+# ---------------------------------------------------------------------------
+caches:
+  responses_dir: olmo_tap/final_evals/elo/caches/responses
+  judgments_dir: olmo_tap/final_evals/elo/caches/judgments
