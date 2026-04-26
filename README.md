@@ -42,7 +42,7 @@ Restart your terminal after installation, e.g with `exec bash`.
 
 ```bash
 pixi install              # Install dependencies (first time / after pulling)
-pixi run <task>           # Run a task (lint, test, serve, etc.)
+pixi run <task>           # Run a task (lint, test, app-api, etc.)
 pixi run python script.py # Run any python file
 pixi shell                # Enter activated environment (for IDE/manual commands)
 ```
@@ -60,7 +60,7 @@ Most commands use the default environment automatically. To use CUDA:
 
 ```bash
 pixi install -e cuda      # Install the CUDA environment (one-time)
-pixi run -e cuda serve    # Run app with CUDA support
+pixi run -e cuda app-api  # Run app backend with CUDA support
 pixi run -e cuda python train.py
 ```
 
