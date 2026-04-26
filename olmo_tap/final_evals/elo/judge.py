@@ -691,6 +691,13 @@ def reconcile_swap(
 
 def _make_anthropic_client(config: JudgeConfig):
     """Construct an Anthropic SDK client; fail loudly if no key is configured."""
+    api_key = config.api_key or os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "ANTHROPIC_API_KEY is not set. Add it to your .env file (see "
+            ".env.example) or pass api_key explicitly to JudgeConfig."
+        )
+
     # The anthropic SDK only ships in the default pixi env (the judge runs
     # without a GPU); the cuda env used for typechecking does not have it,
     # so we resolve it dynamically to keep static-analysis green.
@@ -701,13 +708,6 @@ def _make_anthropic_client(config: JudgeConfig):
             "The `anthropic` package is required for judge_pairs; install it "
             "via the default pixi env."
         ) from exc
-
-    api_key = config.api_key or os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        raise RuntimeError(
-            "ANTHROPIC_API_KEY is not set. Add it to your .env file (see "
-            ".env.example) or pass api_key explicitly to JudgeConfig."
-        )
     return anthropic.Anthropic(api_key=api_key)
 
 
