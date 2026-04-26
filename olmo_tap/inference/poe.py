@@ -16,10 +16,30 @@ sync_kv_cache fires only on rejection — on full acceptance all three caches en
 
 import torch
 import torch.nn.functional as F
+from collections import Counter
+from dataclasses import dataclass
 from typing import cast, Optional
 
 from olmo_tap.hydra import HydraTransformer
 from transformers import PreTrainedTokenizerBase
+
+
+def _validity_radius(per_head_winners: list[int], target_id: int) -> int:
+    """Minimum head-vote flips to give target_id outright plurality (ties don't count).
+
+    Greedy is used instead of TPA Algorithm 1 because Algorithm 1 underestimates
+    when competitors are tied (the Δ=0 case, e.g. V=[4,4] gives 2 instead of 4).
+    """
+    counts = Counter(per_head_winners)
+    n_target = counts.pop(target_id, 0)
+    competitors = sorted(counts.values(), reverse=True)
+    k = 0
+    while competitors and n_target <= competitors[0]:
+        competitors[0] -= 1
+        competitors.sort(reverse=True)
+        n_target += 1
+        k += 1
+    return k
 
 
 class PoE:
