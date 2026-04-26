@@ -171,18 +171,26 @@ def test_rubric_load_requires_version_header(tmp_path: Path) -> None:
 # --------------------------------------------------------------------------- #
 
 
-def test_factuality_filters_curated(basic_pair: PairToJudge, curated_pair: PairToJudge) -> None:
+def test_factuality_filters_curated(
+    basic_pair: PairToJudge, curated_pair: PairToJudge
+) -> None:
     filtered = filter_pairs_for_dimension([basic_pair, curated_pair], "factuality")
     assert filtered == [basic_pair]
 
 
-def test_calibration_keeps_curated(basic_pair: PairToJudge, curated_pair: PairToJudge) -> None:
+def test_calibration_keeps_curated(
+    basic_pair: PairToJudge, curated_pair: PairToJudge
+) -> None:
     filtered = filter_pairs_for_dimension([basic_pair, curated_pair], "calibration")
     assert filtered == [basic_pair, curated_pair]
 
 
-def test_clinical_utility_keeps_curated(basic_pair: PairToJudge, curated_pair: PairToJudge) -> None:
-    filtered = filter_pairs_for_dimension([basic_pair, curated_pair], "clinical_utility")
+def test_clinical_utility_keeps_curated(
+    basic_pair: PairToJudge, curated_pair: PairToJudge
+) -> None:
+    filtered = filter_pairs_for_dimension(
+        [basic_pair, curated_pair], "clinical_utility"
+    )
     assert filtered == [basic_pair, curated_pair]
 
 
@@ -441,9 +449,7 @@ class _FakeMessage:
 class _FakeBatchResultEntry:
     def __init__(self, custom_id: str, message: _FakeMessage) -> None:
         self.custom_id = custom_id
-        self.result = type(
-            "Result", (), {"type": "succeeded", "message": message}
-        )()
+        self.result = type("Result", (), {"type": "succeeded", "message": message})()
 
 
 class _FakeBatch:
@@ -549,7 +555,9 @@ def test_judge_pairs_end_to_end_with_fake_client(
 
     # Cache file should now contain both entries.
     cache_path = cache_dir / "judgments_factuality.jsonl"
-    lines = [line for line in cache_path.read_text(encoding="utf-8").splitlines() if line]
+    lines = [
+        line for line in cache_path.read_text(encoding="utf-8").splitlines() if line
+    ]
     assert len(lines) == 2
     keys = {json.loads(line)["cache_key"] for line in lines}
     assert keys == {forward_key, swapped_key}
