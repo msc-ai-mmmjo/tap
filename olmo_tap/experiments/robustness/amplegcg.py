@@ -21,6 +21,9 @@ class AmpleGCG:
     :param num_beams: number of parallel paths attempted in beam search.
     :param num_beam_groups: can group the beam search paths.
     :param num_return_sequences: number of returned adversarial suffixes.
+
+    NOTE: by default we always have num_beam_groups == num_beams unless arg explicitly passed
+    for num_beam_groups.
     """
 
     def __init__(
@@ -31,7 +34,7 @@ class AmpleGCG:
         min_new_tokens: int = 20,
         diversity_penalty: float = 1.0,
         num_beams: int = 10,
-        num_beam_groups: int = 10,
+        num_beam_groups: int | None = None,
         num_return_seq: int = 1,
     ):
         model_name = "osunlp/AmpleGCG-llama2-sourced-llama2-7b-chat"
@@ -53,6 +56,8 @@ class AmpleGCG:
             "eos_token_id": tokenizer.eos_token_id,
             "bos_token_id": tokenizer.bos_token_id,
         }
+        if num_beam_groups is None:
+            num_beam_groups = num_beams
 
         gen_config = {
             "do_sample": do_sample,

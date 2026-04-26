@@ -10,7 +10,7 @@ predicted Q into equal-width bins, compute the empirical accuracy P per bin,
 and plot P vs Q with the y=x diagonal. Drops one PNG per shard.
 
 Intended Usage::
-    pixi run -e cuda python -m olmo_tap.experiments.uncertainty.eval \\
+    pixi run -e cuda python -m olmo_tap.experiments.uncertainty.single_head_eval \\
         --checkpoint olmo_tap/weights/uncertainty/checkpoint_final.pt
 """
 
