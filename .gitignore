@@ -71,7 +71,7 @@ instance/
 .scrapy
 
 # Benchmark outputs
-benchmarks/results/
+**/benchmarks/results/
 
 # Sphinx documentation
 docs/_build/

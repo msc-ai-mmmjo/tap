@@ -1,5 +1,6 @@
 {
-    "n_heads": 5,
+    "size": "7b",
+    "n_heads": 9,
     "heads_depth": 3,
     "prompt_length": 512,
     "generation_length": 128,
@@ -7,5 +8,12 @@
     "warmup_ms": 100.0,
     "rep_ms": 1000.0,
     "dtype": "bfloat16",
-    "baseline": false
-  }
+    "baseline": true,
+    "poe": true,
+    "poe_gamma": 4,
+    "poe_gammas": [1, 2, 4, 8],
+    "poe_beta": 1.0,
+    "poe_max_new_tokens": 64,
+    "poe_rep_ms": 8000.0,
+    "poe_prompt": "Explain in a few sentences why deep learning models can struggle with calibration."
+}
