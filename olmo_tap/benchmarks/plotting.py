@@ -88,6 +88,15 @@ def plot_results(results, output_dir):
         plot_histogram_kde(ax_ttft, results[key]["ttft"]["filtered_ms"], label, color)
         plot_decode_curve(ax_latency, ax_tps, results[key]["decode"], label, color)
 
+    # PoE prefill TTFT (residual_forward over all heads, no draft loop).
+    if "hydra_poe" in results and "ttft" in results["hydra_poe"]:
+        plot_histogram_kde(
+            ax_ttft,
+            results["hydra_poe"]["ttft"]["filtered_ms"],
+            f"{LABELS['hydra_poe']} (prefill)",
+            PALETTE["hydra_poe"],
+        )
+
     # PoE: per-gamma effective TPS + per-token equivalent latency. Per-token
     # latency = call_median_ms / avg_accepted_tokens (apples-to-apples vs the
     # other rows' per-step decode latency).
@@ -118,7 +127,7 @@ def plot_results(results, output_dir):
                 label=f"{label_g} ({per_tok_ms:.1f} ms/tok eq.)",
             )
 
-    ax_ttft.set_title("TTFT Distribution (PoE excluded — bundled in call wall time)")
+    ax_ttft.set_title("TTFT Distribution")
     ax_ttft.legend()
     ax_latency.set_title("Decode Latency vs Position")
     ax_latency.legend()

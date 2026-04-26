@@ -32,12 +32,15 @@ Output lands in ``olmo_tap/benchmarks/results/<YYYY-MM-DD>_run<NN>/``:
 * ``graph.png``    — TTFT KDE, per-position decode latency, per-position TPS.
 
 NOTE:
-PoE timing reports a single ``call_median_ms`` per γ — the wall time of one
-full ``generate_with_cache`` call (max_new_tokens tokens). The
-``effective_tps`` field is ``1000 * accepted_tokens / call_median_ms``, i.e.
-draft-acceptance throughput. Under non-zero resample rate the user-visible
-TPS is slightly higher because resampled positions are still real output
-tokens; see :func:`benchmark_poe` docstring for the exact definitions.
+PoE is reported as two numbers per γ. ``ttft`` is the prefill cost — one
+``residual_forward`` over all draft + verifier heads, the same call PoE
+issues at the top of every ``generate_with_cache``. ``per_gamma[γ]`` is the
+end-to-end call timing: ``median_ms`` is the wall time of a full
+``max_new_tokens``-token generation, and ``effective_tps`` is
+``1000 * accepted_tokens / median_ms``, i.e. draft-acceptance throughput.
+Under non-zero resample rate the user-visible TPS is slightly higher because
+resampled positions are still real output tokens; see :func:`benchmark_poe`
+docstring for exact definitions.
 """
 
 import json
@@ -258,6 +261,48 @@ def benchmark_decode(
     return results
 
 
+def benchmark_poe_ttft(poe, prompt_ids, warmup_ms=100.0, rep_ms=1000.0):
+    """Time the prefill stage that PoE pays at the start of every generation.
+
+    Specifically, times :meth:`HydraTransformer.residual_forward` with
+    ``last_token_only=True`` over all draft + verifier heads — the exact call
+    issued at the top of :meth:`PoE.generate_with_cache`. KV-cache pointers
+    are reset to zero in ``setup`` each iteration so every measurement is a
+    fresh prefill. Uses the same random token IDs as the other TTFT rows for
+    apples-to-apples comparison; token values don't affect prefill cost since
+    it's architecture-bound at this granularity.
+
+    :param poe: :class:`PoE` instance whose ``.model`` carries an initialised
+        KV cache (caller must have called ``poe.model.init_kv_cache(...)``).
+    :param prompt_ids: ``(1, prompt_length)`` token tensor on CUDA.
+    :param warmup_ms: Warmup budget passed to :func:`harness.benchmark`.
+    :param rep_ms: Measurement budget.
+    :returns: TTFT stats dict with the same shape as :func:`benchmark_ttft`.
+    """
+    from olmo_tap.benchmarks.harness import (
+        benchmark,
+        compute_stats,
+        filter_outliers_iqr,
+    )
+
+    llm_heads_indices = list(range(poe.n_llm_heads))
+
+    def setup():
+        poe.model.sync_kv_cache(0, omit_last=True)
+
+    def fn():
+        poe.model.residual_forward(
+            prompt_ids,
+            last_token_only=True,
+            head_indices=llm_heads_indices,
+            hidden_head_indices=llm_heads_indices,
+        )
+
+    raw = benchmark(fn, warmup_ms, rep_ms, flush_l2=True, setup=setup)
+    filtered = filter_outliers_iqr(raw)
+    return {"raw_ms": raw, "filtered_ms": filtered, **compute_stats(filtered)}
+
+
 def benchmark_poe(poe, prompt_text, warmup_ms=100.0, rep_ms=1000.0):
     """Time end-to-end :meth:`PoE.generate_with_cache` and compute throughput
     + acceptance statistics.
@@ -432,6 +477,27 @@ def main():
         print("\nBuilding PoE ensemble (real merged-LoRA weights)...")
         poe, poe_model = build_poe(cfg, dtype=dtype)
 
+        # Initialise KV cache once for the prefill TTFT and γ sweep that
+        # follow. PoE.generate_with_cache re-inits internally per call, so
+        # this only affects the residual_forward TTFT bench below.
+        poe.model.init_kv_cache(
+            batch_size=1,
+            max_seq_len=max_seq_len
+            + cfg["poe_max_new_tokens"]
+            + max(cfg.get("poe_gammas") or [cfg["poe_gamma"]]),
+            omit_last=True,
+        )
+
+        with torch.no_grad():
+            print("\n--- Hydra + PoE (TTFT, prefill only) ---")
+            poe_ttft = benchmark_poe_ttft(
+                poe,
+                prompt_ids,
+                warmup_ms=cfg["warmup_ms"],
+                rep_ms=cfg["rep_ms"],
+            )
+            print(f"  TTFT median: {poe_ttft['median_ms']:.2f} ms")
+
         gammas = cfg.get("poe_gammas") or [cfg["poe_gamma"]]
         rep_ms_poe = cfg.get("poe_rep_ms", cfg["rep_ms"])
         per_gamma: dict[str, Any] = {}
@@ -452,7 +518,7 @@ def main():
                     f"resample: {stats['resample_rate']} · n_calls={stats['n_calls']}"
                 )
                 per_gamma[str(gamma)] = stats
-        results["hydra_poe"] = {"per_gamma": per_gamma}
+        results["hydra_poe"] = {"ttft": poe_ttft, "per_gamma": per_gamma}
         del poe, poe_model
         torch.cuda.empty_cache()
 
