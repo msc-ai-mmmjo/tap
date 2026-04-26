@@ -73,9 +73,9 @@ class PoE:
         :param messages: optional argument for multi-turn chatbot conversation.
 
         :returns: tuple[List of tokens (str) in generation with 0th entry as prompt,
-            List of original tokens at resampling indices,
-            List of resampling indices,
-            Optional uncertainty head confidence]
+            List of original tokens (str) at resampling indices,
+            List of resampling indices (int),
+            Optional uncertainty head confidence (float)]
         """
         # messages wins when provided so the chat backend can pass full multi-turn
         # history; prompt_text stays as the single-turn path for scripts/experiments.
