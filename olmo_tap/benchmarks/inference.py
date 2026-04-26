@@ -141,6 +141,9 @@ def build_poe(cfg, dtype=torch.bfloat16):
     model, n_heads = load_ensemble()
     model.to(dtype=dtype)
     tokenizer = AutoTokenizer.from_pretrained(WEIGHTS_DIR)
+    assert tokenizer is not None, (
+        f"AutoTokenizer.from_pretrained({WEIGHTS_DIR}) returned None"
+    )
     poe = PoE(
         model=model,
         tokenizer=tokenizer,
