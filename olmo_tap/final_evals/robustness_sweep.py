@@ -1,5 +1,10 @@
 """
 Evaluate accuracy across robustness weight checkpoints with PoE.
+
+It was empirically observed that robustness finetuning both increased robustness (model flipped its answer
+with lower frequency when adversarial tokens were appended to the prompt) but accuracy suffered. This file
+sweeps through checkpoints of robustness LoRA weights to identify the checkpoint with best PoE accuracy and
+lowest answer flip rate.
 """
 
 import os

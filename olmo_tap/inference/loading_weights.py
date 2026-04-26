@@ -1,3 +1,5 @@
+"""Helper file to load our 10 head Hydra model (9 LLM heads + 1 Uncertainty head)"""
+
 import json
 import torch
 from olmo_tap.constants import (
