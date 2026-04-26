@@ -551,7 +551,9 @@ def append_cache_record(
         fh.write("\n")
 
 
-def _record_to_raw(record: Mapping[str, Any], pair: PairToJudge, rubric: Rubric) -> _RawJudgement:
+def _record_to_raw(
+    record: Mapping[str, Any], pair: PairToJudge, rubric: Rubric
+) -> _RawJudgement:
     """Reconstruct a ``_RawJudgement`` from a cached record + the live pair."""
     metadata = record.get("metadata", {}) or {}
     return _RawJudgement(
@@ -620,7 +622,9 @@ def parse_verdict(reply_text: str) -> Verdict:
     return "TIE"
 
 
-def _swapped_verdict_to_entrant(verdict: Verdict, position_swap: bool, pair: PairToJudge) -> str | None:
+def _swapped_verdict_to_entrant(
+    verdict: Verdict, position_swap: bool, pair: PairToJudge
+) -> str | None:
     """Translate a position-local verdict to a concrete entrant id.
 
     With ``position_swap=False`` the slots map straight through;
@@ -703,7 +707,9 @@ def _make_anthropic_client(config: JudgeConfig):
     return anthropic.Anthropic(api_key=api_key)
 
 
-def _build_batch_requests(queries: list[_JudgeQuery], max_tokens: int) -> list[dict[str, Any]]:
+def _build_batch_requests(
+    queries: list[_JudgeQuery], max_tokens: int
+) -> list[dict[str, Any]]:
     """Convert each query into a Batch API request dict."""
     return [
         {
@@ -735,7 +741,9 @@ def _submit_batch_with_retry(client, requests: list[dict[str, Any]], max_retries
             time.sleep(backoff)
             backoff *= 2
     # Defensive — the loop should either return or raise above.
-    raise RuntimeError("Batch submission failed without a captured exception") from last_exc
+    raise RuntimeError(
+        "Batch submission failed without a captured exception"
+    ) from last_exc
 
 
 def _poll_batch(client, batch_id: str, config: JudgeConfig) -> Any:
@@ -760,9 +768,13 @@ def _extract_reply_text(message: Any) -> str:
     """Pull plain text out of a Messages API response."""
     chunks: list[str] = []
     for block in getattr(message, "content", []) or []:
-        block_type = getattr(block, "type", None) or (block.get("type") if isinstance(block, dict) else None)
+        block_type = getattr(block, "type", None) or (
+            block.get("type") if isinstance(block, dict) else None
+        )
         if block_type == "text":
-            text = getattr(block, "text", None) or (block.get("text") if isinstance(block, dict) else "")
+            text = getattr(block, "text", None) or (
+                block.get("text") if isinstance(block, dict) else ""
+            )
             if text:
                 chunks.append(text)
     return "\n".join(chunks)
@@ -783,21 +795,28 @@ def _process_batch_results(
     for entry in client.messages.batches.results(batch_id):
         custom_id = getattr(entry, "custom_id", None)
         if custom_id is None or custom_id not in queries_by_key:
-            logger.warning("Batch %s returned unknown custom_id %r", batch_id, custom_id)
+            logger.warning(
+                "Batch %s returned unknown custom_id %r", batch_id, custom_id
+            )
             continue
         query = queries_by_key[custom_id]
         result = getattr(entry, "result", None)
         result_type = getattr(result, "type", None)
         if result_type != "succeeded":
             logger.error(
-                "Batch %s: request %s failed with type=%s", batch_id, custom_id, result_type
+                "Batch %s: request %s failed with type=%s",
+                batch_id,
+                custom_id,
+                result_type,
             )
             failed.append(custom_id)
             continue
         message = getattr(result, "message", None)
         reply_text = _extract_reply_text(message)
         if not reply_text:
-            logger.error("Batch %s: request %s returned an empty reply", batch_id, custom_id)
+            logger.error(
+                "Batch %s: request %s returned an empty reply", batch_id, custom_id
+            )
             failed.append(custom_id)
             continue
         verdict = parse_verdict(reply_text)
@@ -812,8 +831,12 @@ def _process_batch_results(
                 verdict=verdict,
                 reasoning=reply_text,
                 timestamp=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                cache_creation_input_tokens=getattr(usage, "cache_creation_input_tokens", 0) or 0,
-                cache_read_input_tokens=getattr(usage, "cache_read_input_tokens", 0) or 0,
+                cache_creation_input_tokens=getattr(
+                    usage, "cache_creation_input_tokens", 0
+                )
+                or 0,
+                cache_read_input_tokens=getattr(usage, "cache_read_input_tokens", 0)
+                or 0,
                 input_tokens=getattr(usage, "input_tokens", 0) or 0,
                 output_tokens=getattr(usage, "output_tokens", 0) or 0,
             )
@@ -883,7 +906,9 @@ def judge_pairs(
             )
             cached_record = cache.get(cache_key)
             if cached_record is not None:
-                cached_raw_by_key[cache_key] = _record_to_raw(cached_record, pair, rubric)
+                cached_raw_by_key[cache_key] = _record_to_raw(
+                    cached_record, pair, rubric
+                )
             else:
                 queries.append(query)
 
@@ -901,7 +926,9 @@ def judge_pairs(
         fresh_raw = _run_batch(queries, config, client)
         for raw in fresh_raw:
             append_cache_record(
-                config.cache_dir, rubric.dimension, _raw_to_record(raw, rubric.dimension)
+                config.cache_dir,
+                rubric.dimension,
+                _raw_to_record(raw, rubric.dimension),
             )
             stats.cache_creation_input_tokens += raw.cache_creation_input_tokens
             stats.cache_read_input_tokens += raw.cache_read_input_tokens

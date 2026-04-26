@@ -35,8 +35,7 @@ from olmo_tap.final_evals.elo.judge import (
 REPO_ROOT = Path(__file__).resolve().parents[4]
 
 RUBRIC_PATHS: dict[Dimension, Path] = {
-    "factuality": REPO_ROOT
-    / "olmo_tap/final_evals/elo/configs/rubrics/factuality.txt",
+    "factuality": REPO_ROOT / "olmo_tap/final_evals/elo/configs/rubrics/factuality.txt",
     "calibration": REPO_ROOT
     / "olmo_tap/final_evals/elo/configs/rubrics/calibration.txt",
     "clinical_utility": REPO_ROOT
@@ -99,7 +98,9 @@ def _summarise(result, dimension: Dimension) -> bool:
         return False
     judgment = result.judgments[0]
     raw_forward, raw_swapped = judgment.raw
-    print(f"[{dimension}] winner = {judgment.winner!r}, inconsistent = {judgment.inconsistent}")
+    print(
+        f"[{dimension}] winner = {judgment.winner!r}, inconsistent = {judgment.inconsistent}"
+    )
     print(
         f"[{dimension}] forward verdict = {raw_forward.verdict}, "
         f"swapped verdict = {raw_swapped.verdict}"
@@ -143,7 +144,9 @@ def main() -> int:
         return 2
 
     load_dotenv()
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
+    )
 
     pair = _build_pair()
     config = JudgeConfig(
@@ -168,8 +171,12 @@ def main() -> int:
         result = judge_pairs(pairs=[pair], rubric=rubric, config=config)
         passed = _summarise(result, dimension)
         all_passed = all_passed and passed
-        total_stats["cache_creation_input_tokens"] += result.cache_stats.cache_creation_input_tokens
-        total_stats["cache_read_input_tokens"] += result.cache_stats.cache_read_input_tokens
+        total_stats["cache_creation_input_tokens"] += (
+            result.cache_stats.cache_creation_input_tokens
+        )
+        total_stats["cache_read_input_tokens"] += (
+            result.cache_stats.cache_read_input_tokens
+        )
         total_stats["input_tokens"] += result.cache_stats.input_tokens
         total_stats["output_tokens"] += result.cache_stats.output_tokens
         total_stats["fresh_calls"] += result.cache_stats.fresh_calls
