@@ -23,6 +23,19 @@ from transformers import PreTrainedTokenizerBase
 
 
 class PoE:
+    """
+    Inference mechanism for multi-head branched Hydra transformer.
+    Performs Product of Experts (PoE) speculative-verification to produce
+    responses to user prompts.
+
+    :param model: instance of Hydra transformer with desired weights loaded.
+    :param tokenizer: tokenizer for corresponding model.
+    :param n_llm_heads: number of LLM heads in Hydra.
+    :param gamma: steps size in which spec-verify is conducted.
+    :param beta: inverse temperature scaling for verifier heads.
+    :param max_new_tokens: maximum allowed tokens to be generated from a single prompt.
+    """
+
     def __init__(
         self,
         model: HydraTransformer,
@@ -51,6 +64,19 @@ class PoE:
         temperature: float | None = 0.98,
         messages: list[dict] | None = None,
     ) -> tuple[list[str], list[str], list[int], Optional[float]]:
+        """
+        Performs speculative verification with kv-caching.
+
+        :param prompt_text: the user prompt as a string.
+        :param is_mcq: if True, the uncertainty head is used to produce confidence probability.
+        :param temperature: global temperature scaling (if not None, sample based token generation).
+        :param messages: optional argument for multi-turn chatbot conversation.
+
+        :returns: tuple[List of tokens (str) in generation with 0th entry as prompt,
+            List of original tokens (str) at resampling indices,
+            List of resampling indices (int),
+            Optional uncertainty head confidence (float)]
+        """
         # messages wins when provided so the chat backend can pass full multi-turn
         # history; prompt_text stays as the single-turn path for scripts/experiments.
         if not messages:
@@ -258,7 +284,13 @@ class PoE:
         witness_hidden_state: torch.Tensor,
     ) -> float:
         """
-        Runs a second pass to evaluate probability of correctness by injecting the witness.
+        Pass through uncertainty head to evaluate probability of correctness of PoE generated answer.
+        NOTE: only for multiple choice
+
+        :param prompt_text: the user prompt as a string.
+        :param full_answer_text: the full generated PoE response as a string.
+        :param witness_hidden_state: the hidden state (just before projection to vocab size) of the
+        witness head at the final index in the prompt (from which the multiple choice answer is sampled).
         """
         second_pass_prompt = f"{prompt_text} Answer: {full_answer_text}\nTask: Reply A (correct) or B (wrong): "
 

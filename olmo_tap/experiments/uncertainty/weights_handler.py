@@ -1,3 +1,7 @@
+"""
+Helper class to handle cycling through frozen LLM heads during uncertainty finetuning.
+"""
+
 from pathlib import Path
 import copy
 from olmo_tap.experiments.utils.model_builder import load_and_merge_lora_weights
@@ -6,6 +10,22 @@ from olmo_tap.experiments.utils.config import HydraLoRAConfig
 
 
 class FrozenHeadHandler:
+    """
+    During uncertainty head finetuning we cycle through randomly sampled frozen LLM heads
+    (frozen meaning no grad or trainable LoRA weights). This class manages the loading and
+    unloading of different heads.
+
+    :param model: Hydra transformer model to be trained.
+    :param prod_config: config for Hydra production (security) LoRA weights.
+    :param robust_config: config for Hydra robustness LoRA weights.
+    :param prod_dir: directory storing production (security) LoRA weights.
+    :param robust_dir: directory storing robustness LoRA weights.
+    :param n_frozen: number of frozen LLM heads in total.
+
+    NOTE: only one frozen LLM head is ever loaded at a given time, n_frozen refers to the total
+    number of heads available to cycle through.
+    """
+
     def __init__(
         self,
         model: HydraTransformer,

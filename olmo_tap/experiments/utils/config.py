@@ -1,12 +1,5 @@
 """
-Config classes for finetuning (robustness or uncertainty)
-
-NOTE: HydraLoRAConfig.n_heads_final is for book-keeping the number of final intended heads
-We check in the post_init of the parent ExperimentConfig that num_shards = n_heads_final
-
-We expect the final Hydra to look something like:
-- 9 Robustness + Security finetuned heads
-- 1 Uncertainty finetuned head
+Config classes to support training and inference.
 """
 
 from dataclasses import dataclass, field
@@ -15,6 +8,12 @@ from olmo_tap.constants import LORA_TARGETS, VOCAB_SIZE, WEIGHTS_DIR
 
 @dataclass
 class HydraLoRAConfig:
+    """
+    Supports loading Hydra model for inference or training.
+    NOTE: n_heads_final is for book-keeping the number of heads the final Hydra model
+    is intended to have; n_heads_training is the actual number loaded at training time.
+    """
+
     # architecture
     weights_dir: str = WEIGHTS_DIR
     model_size: str = "7b"  # "1b" or "7b"
@@ -32,6 +31,10 @@ class HydraLoRAConfig:
 
 @dataclass
 class TrainingConfig:
+    """
+    Config to store training specific parameters.
+    """
+
     # optimizer hyperparams
     learning_rate: float = 1e-4
     batch_size: int = 16
@@ -71,6 +74,10 @@ class TrainingConfig:
 
 @dataclass
 class ExperimentConfig:
+    """
+    Master config to store the HydraLoraConfig and TrainingConfig in training.
+    """
+
     # random seed for experiment tracking
     # NOTE: no default value to avoid disagreements
     seed: int

@@ -1,5 +1,10 @@
 """
 Evaluate accuracy across robustness weight checkpoints with PoE.
+
+It was empirically observed that robustness finetuning increased robustness (model flipped its answer
+with lower frequency when adversarial tokens were appended to the prompt) but accuracy suffered. This file
+sweeps through checkpoints of robustness LoRA weights to identify the checkpoint with best PoE accuracy and
+lowest answer flip rate.
 """
 
 import os
@@ -46,9 +51,7 @@ def precompute_attacks():
     output_file = Path("experiments/robustness/poe_eval_attack_bank.json")
 
     print("--- Loading AmpleGCG for Pre-computation ---")
-    gcg = AmpleGCG(device="cuda", num_return_seq=1)
-    gcg.gen_config.num_beams = 10
-    gcg.gen_config.num_beam_groups = 10
+    gcg = AmpleGCG(device="cuda", num_return_seq=1, num_beams=10)
 
     bank = []
     for idx in range(subset_size):

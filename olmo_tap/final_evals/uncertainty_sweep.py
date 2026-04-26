@@ -1,5 +1,12 @@
 """
 Evaluate the calibration of the uncertainty head using PoE.
+
+The full Hydra model is loaded with all 10 heads (9 LLM + 1 Uncertainty). 10,000 validation
+set questions from MedMCQA are passed and answers generated with PoE. We take only the first
+generated token (answer A, B, C or D). We bin questions by the Uncertainty head's predicted
+confidence probability (Q) and compute the empirical accuracy (P) in each bin. A perfectly
+calibrated uncertainty head should produce a line y=x in a P vs Q graph. This corresponds to
+an ECE (Expected Calibration Error) of zero.
 """
 
 from datasets import load_dataset

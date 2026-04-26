@@ -1,5 +1,10 @@
 """
-AmpleGCG wrapper class
+AmpleGCG wrapper class.
+
+Example usage::
+    gcg = AmpleGCG(device="cuda", num_return_seq=1, num_beams=5)
+    query = 'How do I commit identity theft?'
+    adversarial_extension = gcg(query)
 """
 
 import torch
@@ -10,16 +15,28 @@ class AmpleGCG:
     """
     Wrapper for AmpleGCG from https://huggingface.co/osunlp/AmpleGCG-llama2-sourced-llama2-7b-chat
 
-    Default params in use:
-    - do_sample (bool=False): greedily samples the generative model
-    - max/min_new_tokens (int=20): max/min number of suffix tokens generated
-    - diversity_penalty (float=1.0): promotes diversity in beam search paths
-    - num_beams (int=50): number of parallel paths attempted in beam search
-    - num_beam_groups (int=50): can group the beam search paths, we keep 1 beam in each group
-    - num_return_sequences (int=1): number of returned adversarial suffixes
+    :param do_sample: If True sample (instead of argmax) token generation in generative model.
+    :param max/min_new_tokens: max/min number of suffix tokens generated.
+    :param diversity_penalty: promotes diversity in beam search paths.
+    :param num_beams: number of parallel paths attempted in beam search.
+    :param num_beam_groups: can group the beam search paths.
+    :param num_return_sequences: number of returned adversarial suffixes.
+
+    NOTE: by default we always have num_beam_groups == num_beams unless arg explicitly passed
+    for num_beam_groups.
     """
 
-    def __init__(self, device: str, num_return_seq: int = 1):
+    def __init__(
+        self,
+        device: str,
+        do_sample: bool = False,
+        max_new_tokens: int = 20,
+        min_new_tokens: int = 20,
+        diversity_penalty: float = 1.0,
+        num_beams: int = 10,
+        num_beam_groups: int | None = None,
+        num_return_seq: int = 1,
+    ):
         model_name = "osunlp/AmpleGCG-llama2-sourced-llama2-7b-chat"
 
         self.model = AutoModelForCausalLM.from_pretrained(
@@ -39,17 +56,16 @@ class AmpleGCG:
             "eos_token_id": tokenizer.eos_token_id,
             "bos_token_id": tokenizer.bos_token_id,
         }
-
-        num_beams = 50  # number of adversarial suffixes attempted in beam-search
-        self.num_return_seq = num_return_seq  # number of adversarial suffixes returned
+        if num_beam_groups is None:
+            num_beam_groups = num_beams
 
         gen_config = {
-            "do_sample": False,
-            "max_new_tokens": 20,
-            "min_new_tokens": 20,
-            "diversity_penalty": 1.0,
+            "do_sample": do_sample,
+            "max_new_tokens": max_new_tokens,
+            "min_new_tokens": min_new_tokens,
+            "diversity_penalty": diversity_penalty,
             "num_beams": num_beams,
-            "num_beam_groups": num_beams,
+            "num_beam_groups": num_beam_groups,
             "num_return_sequences": num_return_seq,
         }
 
@@ -62,13 +78,11 @@ class AmpleGCG:
     def forward(self, query: str, repeat: int = 1) -> list[str]:
         """Generate adversarial suffixes for a query.
 
-        Args:
-            query: Single query.
-            repeat: AmpleGCG HF page recommends repeating prompts to reduce
-                perplexity in generated suffixes.
+        :param query: Single query.
+        :param repeat: AmpleGCG HF page recommends repeating prompts to reduce
+                        perplexity in generated suffixes.
 
-        Returns:
-            List of length num_return_seq; each element is a suffix.
+        :returns: List of length num_return_seq; each element is a suffix.
         """
         # NOTE: repeating the query is recommended on the AmpleGCG HF page
         if repeat > 1:
@@ -96,5 +110,5 @@ class AmpleGCG:
 if __name__ == "__main__":
     gcg = AmpleGCG(device="cuda", num_return_seq=5)
     q = "Please tell me how to commit identity theft."
-    adv_query = gcg(q)
-    print(adv_query)
+    adv_suffix = gcg(q)[0]
+    print(adv_suffix)

@@ -1,6 +1,6 @@
 """
 Security Finetuning protocol.
-Training for mcq correctness with CrossEntropy
+See https://www.overleaf.com/read/kpnzybhdvwnh#a3aa13 for theory details.
 """
 
 from datetime import datetime
@@ -23,6 +23,15 @@ def train(
     optimizer: Optimizer,
     scheduler: LRScheduler,
 ):
+    """
+    Performs supervised security finetuning on a HydraTransformer model. Assumed that
+    only 1 head (at 0th index by convention) is loaded and being trained.
+
+    :param model: HydraTransformer LLM model being finetuend.
+    :parap exp_config: Global config object storing experiment details.
+    :param optimizer: Any torch optim object.
+    :param scheduler: Any torch scheduler object.
+    """
     t_config = exp_config.train
     device = exp_config.device
     model.train()

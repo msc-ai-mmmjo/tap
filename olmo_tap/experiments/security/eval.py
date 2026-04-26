@@ -1,17 +1,13 @@
 """
 Evaluate a model on MedMCQA classification accuracy.
 
-Usage:
+Usage::
+
     # Evaluate base OLMo (no finetuning)
     pixi run python -m experiments.security.eval --base
 
     # Evaluate a finetuned checkpoint
     pixi run python -m experiments.security.eval --checkpoint path/to/checkpoint_final.pt
-
-NOTE:
-The underlying `load_dataset` call admits a `split` kwarg to request a "train"
-or "validation" fold. We use the "validation" fold here (which is held-out from
-training) to evaluate.
 """
 
 import argparse
