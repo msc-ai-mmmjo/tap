@@ -140,6 +140,7 @@ olmo = { cmd = "python examples/olmo.py", default-environment = "cuda" }
 
 # Elo evaluation tournaments (CUDA + API credits)
 elo-tournament1 = { cmd = "python -m olmo_tap.final_evals.elo.run_tournament --config olmo_tap/final_evals/elo/configs/tournament1.yaml", default-environment = "cuda" }
+elo-generate = { cmd = "python -m olmo_tap.final_evals.elo.generate", default-environment = "cuda" }
 
 # Documentation
 # -W promotes warnings to errors so broken cross-references fail the build.

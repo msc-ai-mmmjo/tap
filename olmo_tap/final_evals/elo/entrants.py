@@ -1,15 +1,31 @@
 """Entrant definitions for the configuration-level Elo tournament.
 
-Defines the four configurations being compared and a dispatch table that the
-generation harness uses to materialise each entrant. The actual model loading
-recipes are not yet wired up — :func:`build_entrant` is intentionally
-stubbed for now and will land alongside the response-generation pipeline.
+Defines the four configurations being compared, a dispatch table for the
+generation harness, and the loader that materialises each entrant on
+GPU. The :class:`EntrantSpec` instances are deliberately serialisable
+(no torch / model objects) so the full tournament configuration can be
+hashed for cache keys and logged in the run manifest without GPU
+dependencies; the loaded resources live in :class:`LoadedEntrant`.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Optional, cast
+
+import torch
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    PreTrainedModel,
+    PreTrainedTokenizerBase,
+)
+
+from olmo_tap.constants import WEIGHTS_DIR
+from olmo_tap.final_evals._loading import load_eval_hydra
+from olmo_tap.hydra import HydraTransformer
+from olmo_tap.inference.poe import PoE
+
 
 EntrantId = Literal[
     "base_olmo",
@@ -58,6 +74,28 @@ class EntrantSpec:
     bypass_jury: bool
     temperature: float | None
     needs_uncertainty: bool = False
+
+
+@dataclass
+class LoadedEntrant:
+    """A materialised entrant: spec + the model resources needed to generate.
+
+    Attributes:
+        spec: The :class:`EntrantSpec` this loader instance was built from.
+        tokenizer: Tokenizer paired with the model.
+        hf_model: Vanilla HuggingFace causal-LM, populated only when
+            ``spec.loader == "vanilla_hf"``. ``None`` otherwise.
+        hydra: Underlying :class:`HydraTransformer`, populated only when
+            ``spec.loader == "custom_poe"``. ``None`` otherwise.
+        poe: :class:`PoE` wrapping ``hydra``, populated only when
+            ``spec.loader == "custom_poe"``. ``None`` otherwise.
+    """
+
+    spec: EntrantSpec
+    tokenizer: PreTrainedTokenizerBase
+    hf_model: Optional[PreTrainedModel] = None
+    hydra: Optional[HydraTransformer] = None
+    poe: Optional[PoE] = None
 
 
 ENTRANTS: tuple[EntrantSpec, ...] = (
@@ -109,19 +147,39 @@ def get_entrant(entrant_id: str) -> EntrantSpec:
         ) from exc
 
 
-def build_entrant(spec: EntrantSpec):
+def build_entrant(spec: EntrantSpec, max_new_tokens: int = 256) -> LoadedEntrant:
     """Materialise the model + tokenizer pair for an entrant.
 
-    Not yet implemented — actual loading lands once the eval-mode kwargs on
-    ``PoE.generate_with_cache`` (per-prompt seeding and ``bypass_jury``)
-    have been added. The dispatch will branch on ``spec.loader`` and reuse:
-
-    - ``vanilla_hf``: ``AutoModelForCausalLM.from_pretrained`` + greedy
-      ``model.generate``.
-    - ``custom_poe``: the body of ``load_custom_poe()`` from
-      ``robustness_sweep.py`` wrapped in :class:`PoE`.
+    Both loader paths land their tensors on CUDA in bfloat16 so generation
+    is comparable across entrants. The ``custom_poe`` path additionally
+    wraps the loaded :class:`HydraTransformer` in :class:`PoE` so the
+    eval harness can call ``generate_with_cache`` uniformly.
     """
-    raise NotImplementedError(
-        "build_entrant is not yet wired up — pending the eval-mode kwargs "
-        "on PoE.generate_with_cache."
-    )
+    if spec.loader == "vanilla_hf":
+        hf_model = cast(
+            PreTrainedModel,
+            AutoModelForCausalLM.from_pretrained(
+                WEIGHTS_DIR, torch_dtype=torch.bfloat16
+            ).to("cuda"),
+        )
+        hf_model.eval()
+        tokenizer = cast(
+            PreTrainedTokenizerBase, AutoTokenizer.from_pretrained(WEIGHTS_DIR)
+        )
+        return LoadedEntrant(spec=spec, tokenizer=tokenizer, hf_model=hf_model)
+
+    if spec.loader == "custom_poe":
+        merge_robustness = spec.rob_checkpoint is not None
+        hydra, n_heads = load_eval_hydra(merge_robustness=merge_robustness)
+        tokenizer = cast(
+            PreTrainedTokenizerBase, AutoTokenizer.from_pretrained(WEIGHTS_DIR)
+        )
+        poe = PoE(
+            hydra,
+            tokenizer,
+            n_llm_heads=n_heads - 1,
+            max_new_tokens=max_new_tokens,
+        )
+        return LoadedEntrant(spec=spec, tokenizer=tokenizer, hydra=hydra, poe=poe)
+
+    raise ValueError(f"Unknown loader {spec.loader!r} for entrant {spec.entrant_id}")
