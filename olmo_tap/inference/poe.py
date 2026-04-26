@@ -89,11 +89,20 @@ class PoE:
         self.A_id = tokenizer.encode("A", add_special_tokens=False)[0]
         self.B_id = tokenizer.encode("B", add_special_tokens=False)[0]
 
+        # Snapshot of the most recent generation's per-call metadata. Production
+        # callers can ignore it; eval harnesses read it after each call to
+        # recover the draft head, seed, n_resampled, etc. Refreshed on every
+        # generate_with_cache invocation.
+        self.last_diagnostics: dict[str, Any] = {}
+
     @torch.no_grad()
     def generate_with_cache(
         self,
         prompt_text: str,
         is_mcq: bool = False,
+        compute_uncertainty: Optional[bool] = None,
+        seed: Optional[int] = None,
+        bypass_jury: bool = False,
         temperature: float | None = 0.98,
         messages: list[dict] | None = None,
     ) -> PoEOutput:
@@ -200,6 +209,42 @@ class PoE:
                     draft_probs.append(step_probs)
                     curr_d_token = torch.tensor([[step_token]], device="cuda")
 
+            if bypass_jury:
+                # Single-head decoding: accept every draft token without running
+                # the verifier forward or the accept/reject loop. Equivalent to
+                # vanilla sampled decoding from the (seeded) draft head, just
+                # routed through the Hydra trunk + draft-head codepath.
+                eos_in_round = False
+                for i in range(self.gamma):
+                    token_id = int(draft_step_ids[i])
+                    generated_ids = torch.cat(
+                        [generated_ids, torch.tensor([[token_id]], device="cuda")],
+                        dim=-1,
+                    )
+                    output_parts.append(cast(str, self.tokenizer.decode([token_id])))
+                    if should_compute_uncertainty and hidden_unc_state is None:
+                        hidden_unc_state = hidden_bank[draft_idx, 0, -1, :].detach()
+                    if token_id == self.tokenizer.eos_token_id:
+                        # Trunk + draft caches advanced by gamma during the
+                        # draft loop; sync them back to the actual generated
+                        # length so EOS truncation is reflected in the cache.
+                        self.model.sync_kv_cache(generated_ids.size(1))
+                        eos_in_round = True
+                        break
+
+                if eos_in_round:
+                    break
+
+                # Next-round draft logits come from forward_heads on the last
+                # trunk hidden state (already computed in the draft loop above).
+                # Verifier slots are left zero — they're not consulted because
+                # the next round's verify step is bypassed too.
+                next_step_logits = logits.new_zeros(
+                    (self.n_llm_heads, 1, 1, logits.size(-1))
+                )
+                next_step_logits[draft_idx, 0, 0, :] = logits[0, 0, 0, :]
+                continue
+
             # VERIFY: verifier heads consume the saved trunk hidden states; no trunk re-run, no sync.
             v_block_logits = self.model.forward_heads(
                 torch.cat(h_stack, dim=1), head_indices=verifier_heads_idxs
@@ -262,7 +307,7 @@ class PoE:
                     stability_radii.append(max(0, (n_A - n_B) // 2))
                     stability_margins.append(s_margin)
 
-                    if is_mcq and hidden_unc_state is None:
+                    if should_compute_uncertainty and hidden_unc_state is None:
                         # if we accepted, use the drafter head's hidden state
                         hidden_unc_state = hidden_bank[draft_idx, 0, -1, :].detach()
 
@@ -346,7 +391,7 @@ class PoE:
                 next_step_logits[draft_idx, 0, 0, :] = logits[0, 0, 0, :]  # type: ignore[unbound-name]
 
         uncertainty_score = None
-        if is_mcq and hidden_unc_state is not None:
+        if should_compute_uncertainty and hidden_unc_state is not None:
             full_answer = "".join(output_parts[1:])
             # Use messages path so callers passing prompt_text="" still thread the question through.
             question_text = messages[-1]["content"]
