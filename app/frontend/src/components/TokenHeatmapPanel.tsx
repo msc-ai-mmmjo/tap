@@ -54,12 +54,16 @@ export function TokenHeatmapPanel({ data }: Props) {
 
   const flagged = useMemo(() => {
     if (maxEntropy <= 0) return 0;
+    const entropies = data.token_entropies ?? [];
+    // Bound by tokens.length so the counter can't claim more highlights than
+    // there are tokens to paint, in case the parallel arrays ever drift.
+    const limit = Math.min(data.tokens.length, entropies.length);
     let n = 0;
-    for (const e of data.token_entropies ?? []) {
-      if (e / maxEntropy >= VISIBILITY_FLOOR) n += 1;
+    for (let i = 0; i < limit; i++) {
+      if (entropies[i] / maxEntropy >= VISIBILITY_FLOOR) n += 1;
     }
     return n;
-  }, [data.token_entropies, maxEntropy]);
+  }, [data.token_entropies, data.tokens.length, maxEntropy]);
 
   return (
     <div
