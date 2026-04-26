@@ -52,19 +52,6 @@ export function TokenHeatmapPanel({ data }: Props) {
     return m;
   }, [data.token_entropies]);
 
-  const flagged = useMemo(() => {
-    if (maxEntropy <= 0) return 0;
-    const entropies = data.token_entropies ?? [];
-    // Bound by tokens.length so the counter can't claim more highlights than
-    // there are tokens to paint, in case the parallel arrays ever drift.
-    const limit = Math.min(data.tokens.length, entropies.length);
-    let n = 0;
-    for (let i = 0; i < limit; i++) {
-      if (entropies[i] / maxEntropy >= VISIBILITY_FLOOR) n += 1;
-    }
-    return n;
-  }, [data.token_entropies, data.tokens.length, maxEntropy]);
-
   return (
     <div
       className="px-5 pt-4 pb-4"
@@ -74,13 +61,32 @@ export function TokenHeatmapPanel({ data }: Props) {
       }}
     >
       <div
-        className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center justify-between"
+        className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center justify-between gap-3"
         style={{ color: 'var(--color-ink-muted)' }}
       >
         <span>— Token uncertainty heatmap</span>
-        <span style={{ color: 'var(--color-ink-soft)' }}>
-          {flagged} / {data.tokens.length} tokens highlighted
-        </span>
+        {maxEntropy > 0 && (
+          <span
+            className="flex items-center gap-2"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
+            <span>low</span>
+            <span
+              aria-hidden
+              style={{
+                display: 'inline-block',
+                width: '64px',
+                height: '8px',
+                background: `linear-gradient(to right, rgba(var(--color-accent-rgb), 0), rgba(var(--color-accent-rgb), ${MAX_ALPHA}))`,
+                border: '1px solid var(--color-rule)',
+              }}
+            />
+            <span>high</span>
+            <span style={{ opacity: 0.7 }}>
+              (max {maxEntropy.toFixed(2)} nats)
+            </span>
+          </span>
+        )}
       </div>
       {maxEntropy <= 0 && (
         <div
