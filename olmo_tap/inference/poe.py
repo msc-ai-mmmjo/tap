@@ -194,9 +194,7 @@ class PoE:
                 # Structured Prediction", ICLR 2021), and the verifier heads form
                 # a deep ensemble (Lakshminarayanan et al., NeurIPS 2017), so
                 # H(P_dist) reads as ensemble predictive uncertainty here.
-                step_entropy = float(
-                    -(P_dist * P_dist.clamp_min(1e-12).log()).sum().item()
-                )
+                step_entropy = float(torch.special.entr(P_dist).sum().item())
 
                 token_id = int(draft_step_ids[i])
                 p_val, q_val = P_dist[token_id].item(), draft_probs[i][token_id].item()

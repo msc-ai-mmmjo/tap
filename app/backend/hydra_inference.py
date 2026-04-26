@@ -148,6 +148,8 @@ def _tokens_and_resamples_from_poe_output(
 
     raw_response = "".join(parts)
     tokens = [p.strip() for p in parts]
+    # token_entropies may be one entry longer than parts if the final resampled
+    # token was EOS; the slice below trims it to match.
     entropies = list(token_entropies[: len(parts)])
 
     resampled: list[dict] = []
