@@ -11,6 +11,7 @@ from app.backend.hydra_inference import (
     load_hydra,
 )
 from olmo_tap.constants import MAX_NEW_TOKENS, MCQ_MAX_NEW_TOKENS
+from olmo_tap.inference.poe import PoEOutput
 
 
 def test_generate_emits_tokens_and_resamples():
@@ -25,16 +26,24 @@ def test_generate_emits_tokens_and_resamples():
     original_tokens = ["universe"]
     resampled_idxs = [2]
     token_entropies = [0.5, 1.25, 0.0]
+    stability_radii_raw = [3, 1, 0]
+    stability_margins_raw = [0.6, 0.2, 0.9]
+    validity_radii_raw = [2]
+    suppression_scores_raw = [0.05]
 
     with patch("app.backend.hydra_inference.PoE") as MockPoE:
-        MockPoE.return_value.generate_with_cache.return_value = (
-            output_parts,
-            original_tokens,
-            resampled_idxs,
-            token_entropies,
-            None,  # NLP: uncertainty is None
+        MockPoE.return_value.generate_with_cache.return_value = PoEOutput(
+            output_parts=output_parts,
+            original_tokens=original_tokens,
+            resampled_idxs=resampled_idxs,
+            token_entropies=token_entropies,
+            uncertainty=None,
+            stability_radii=stability_radii_raw,
+            stability_margins=stability_margins_raw,
+            validity_radii=validity_radii_raw,
+            suppression_scores=suppression_scores_raw,
         )
-        raw, tokens, resampled, entropies, uncertainty = generate(
+        raw, tokens, resampled, entropies, uncertainty, stability_radii, stability_margins = generate(
             mock_model,
             mock_tokenizer,
             [{"role": "user", "content": "say hi"}],
@@ -50,9 +59,13 @@ def test_generate_emits_tokens_and_resamples():
             "old_token": "universe",
             "new_token": "world",
             "severity": 1.0,
+            "validity_radius": 2,
+            "suppression_score": 0.05,
         }
     ]
-    assert entropies == [0.5, 1.25]  # EOS-trimmed in lockstep with parts
+    assert entropies == [0.5, 1.25]        # EOS-trimmed in lockstep with parts
+    assert stability_radii == [3, 1]       # EOS-trimmed (last entry dropped)
+    assert stability_margins == [0.6, 0.2]
     assert uncertainty is None
 
     ctor_kwargs = MockPoE.call_args.kwargs
@@ -77,14 +90,18 @@ def test_generate_mcq_injects_system_prompt_and_short_budget():
     output_parts = ["<chat-prefix>", "A"]
 
     with patch("app.backend.hydra_inference.PoE") as MockPoE:
-        MockPoE.return_value.generate_with_cache.return_value = (
-            output_parts,
-            [],
-            [],
-            [0.1],
-            0.83,  # MCQ: uncertainty is a float p_correct
+        MockPoE.return_value.generate_with_cache.return_value = PoEOutput(
+            output_parts=output_parts,
+            original_tokens=[],
+            resampled_idxs=[],
+            token_entropies=[0.1],
+            uncertainty=0.83,
+            stability_radii=[2],
+            stability_margins=[0.7],
+            validity_radii=[],
+            suppression_scores=[],
         )
-        raw, tokens, _, _, uncertainty = generate(
+        raw, tokens, _, _, uncertainty, stability_radii, stability_margins = generate(
             mock_model,
             mock_tokenizer,
             [{"role": "user", "content": "Which fits? A) Gout B) ..."}],
@@ -95,6 +112,8 @@ def test_generate_mcq_injects_system_prompt_and_short_budget():
     assert raw == "A"
     assert tokens == ["A"]
     assert uncertainty == 0.83
+    assert stability_radii == [2]
+    assert stability_margins == [0.7]
 
     ctor_kwargs = MockPoE.call_args.kwargs
     assert ctor_kwargs["n_llm_heads"] == 9
@@ -115,14 +134,18 @@ def test_tokens_and_resamples_no_resamples():
     mock_tokenizer.decode.return_value = "<eos>"
 
     output_parts = ["<prefix>", "Hello", " world"]
-    raw, tokens, resampled, entropies = _tokens_and_resamples_from_poe_output(
-        mock_tokenizer, output_parts, [], [], [0.4, 1.1]
+    raw, tokens, resampled, entropies, s_radii, s_margins = _tokens_and_resamples_from_poe_output(
+        mock_tokenizer, output_parts, [], [], [0.4, 1.1],
+        validity_radii=[], suppression_scores=[],
+        stability_radii=[1, 2], stability_margins=[0.8, 0.3],
     )
 
     assert raw == "Hello world"
     assert tokens == ["Hello", "world"]
     assert resampled == []
     assert entropies == [0.4, 1.1]
+    assert s_radii == [1, 2]
+    assert s_margins == [0.8, 0.3]
 
 
 def test_tokens_and_resamples_strips_trailing_eos():
@@ -131,14 +154,18 @@ def test_tokens_and_resamples_strips_trailing_eos():
     mock_tokenizer.decode.return_value = "<eos>"
 
     output_parts = ["<prefix>", "Hi", "<eos>"]
-    raw, tokens, resampled, entropies = _tokens_and_resamples_from_poe_output(
-        mock_tokenizer, output_parts, [], [], [0.7, 0.0]
+    raw, tokens, resampled, entropies, s_radii, s_margins = _tokens_and_resamples_from_poe_output(
+        mock_tokenizer, output_parts, [], [], [0.7, 0.0],
+        validity_radii=[], suppression_scores=[],
+        stability_radii=[3, 0], stability_margins=[0.9, 0.1],
     )
 
     assert raw == "Hi"
     assert tokens == ["Hi"]
     assert resampled == []
-    assert entropies == [0.7]  # trailing EOS entropy is dropped
+    assert entropies == [0.7]
+    assert s_radii == [3]   # EOS entry dropped
+    assert s_margins == [0.9]
 
 
 def test_tokens_and_resamples_drops_eos_resample():
@@ -150,14 +177,18 @@ def test_tokens_and_resamples_drops_eos_resample():
     original_tokens = ["draft_eos"]
     resampled_idxs = [2]
 
-    raw, tokens, resampled, entropies = _tokens_and_resamples_from_poe_output(
-        mock_tokenizer, output_parts, original_tokens, resampled_idxs, [0.7, 0.0]
+    raw, tokens, resampled, entropies, s_radii, s_margins = _tokens_and_resamples_from_poe_output(
+        mock_tokenizer, output_parts, original_tokens, resampled_idxs, [0.7, 0.0],
+        validity_radii=[3], suppression_scores=[0.02],
+        stability_radii=[2, 0], stability_margins=[0.5, 0.0],
     )
 
     assert raw == "Hi"
     assert tokens == ["Hi"]
-    assert resampled == []
+    assert resampled == []  # EOS resample dropped
     assert entropies == [0.7]
+    assert s_radii == [2]
+    assert s_margins == [0.5]
 
 
 def test_load_hydra_returns_model_and_tokenizer():
@@ -202,7 +233,7 @@ def test_get_robustness_nlp_worst_case(monkeypatch):
         last = messages[-1]["content"]
         for suffix, resp in adv_responses.items():
             if last.endswith(suffix):
-                return (resp, [], [], [], None)
+                return (resp, [], [], [], None, [], [])
         raise AssertionError(f"unexpected adv prompt: {last}")
 
     class FakeScorer:
@@ -258,7 +289,7 @@ def test_get_robustness_mcq_flip(monkeypatch):
         last = messages[-1]["content"]
         for suffix, resp in suffix_responses.items():
             if last.endswith(suffix):
-                return (resp, [resp], [], [0.0], 0.9)
+                return (resp, [resp], [], [0.0], 0.9, [], [])
         raise AssertionError(f"unexpected prompt: {last}")
 
     mock_scorer_cls = MagicMock()
