@@ -24,9 +24,7 @@ the actual model behavior).
 
 Usage::
 
-    # Pick a free GPU first (per repo convention)
-    nvidia-smi
-    CUDA_VISIBLE_DEVICES=0 pixi run -e cuda python -m olmo_tap.benchmarks.inference
+    pixi run -e cuda python -m olmo_tap.benchmarks.inference
 
 Output lands in ``olmo_tap/benchmarks/results/<YYYY-MM-DD>_run<NN>/``:
 
