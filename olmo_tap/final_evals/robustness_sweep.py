@@ -160,7 +160,7 @@ def main():
 
             with torch.no_grad():
                 # clean inference (accuracy)
-                out_clean, _, _, _ = poe.generate_with_cache(
+                out_clean, _, _, _, _ = poe.generate_with_cache(
                     clean_prompt, is_mcq=False, temperature=None
                 )
                 poe.model.reset_kv_cache(omit_last=True)
@@ -171,7 +171,7 @@ def main():
 
                 # poisoned inference (flip rate robustness)
                 poison_prompt = clean_prompt + " " + adv_suffix
-                out_poison, _, _, _ = poe.generate_with_cache(
+                out_poison, _, _, _, _ = poe.generate_with_cache(
                     poison_prompt, is_mcq=False, temperature=None
                 )
                 poe.model.reset_kv_cache(omit_last=True)

@@ -1,54 +1,47 @@
 import { useMemo } from 'react';
-import type { SecurityStatus, SecurityResample } from '../types/api';
-import { TokenTooltip } from './TokenTooltip';
+import type { SecurityStatus } from '../types/api';
 
 interface Props {
   data: SecurityStatus;
 }
 
 const MAX_ALPHA = 0.55;
+// Entropies below this fraction of the response max stay invisible so a
+// near-uniform-low response doesn't show as a wall of colour.
+const VISIBILITY_FLOOR = 0.05;
 
-function bgFor(severity: number | undefined): string {
-  if (severity === undefined) return 'transparent';
-  const clamped = Math.max(0, Math.min(1, severity));
+function bgForIntensity(intensity: number): string {
+  if (intensity <= 0) return 'transparent';
+  const clamped = Math.max(0, Math.min(1, intensity));
   return `rgba(var(--color-accent-rgb), ${(clamped * MAX_ALPHA).toFixed(3)})`;
 }
 
 function HeatmapToken({
   token,
-  resample,
+  intensity,
 }: {
   token: string;
-  resample: SecurityResample;
+  intensity: number;
 }) {
   return (
-    <TokenTooltip
-      token={token}
-      tooltipBody={
-        <>
-          <div>{resample.old_token} → {resample.new_token}</div>
-          <div style={{ opacity: 0.7 }}>
-            severity {resample.severity.toFixed(2)}
-          </div>
-        </>
-      }
-      triggerStyle={{
-        background: bgFor(resample.severity),
+    <span
+      style={{
+        background: bgForIntensity(intensity),
         padding: '1px 2px',
         borderRadius: '2px',
       }}
-    />
+    >
+      {token}
+    </span>
   );
 }
 
 export function TokenHeatmapPanel({ data }: Props) {
-  const resampleByIndex = useMemo(
-    () =>
-      new Map<number, SecurityResample>(
-        data.resampled.map((r) => [r.index, r]),
-      ),
-    [data.resampled],
-  );
+  const maxEntropy = useMemo(() => {
+    let m = 0;
+    for (const e of data.token_entropies ?? []) if (Number.isFinite(e) && e > m) m = e;
+    return m;
+  }, [data.token_entropies]);
 
   return (
     <div
@@ -59,20 +52,36 @@ export function TokenHeatmapPanel({ data }: Props) {
       }}
     >
       <div
-        className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center justify-between"
+        className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center justify-between gap-3"
         style={{ color: 'var(--color-ink-muted)' }}
       >
         <span>— Token uncertainty heatmap</span>
-        <span style={{ color: 'var(--color-ink-soft)' }}>
-          {data.resampled.length} / {data.tokens.length} tokens flagged
-        </span>
+        {maxEntropy > 0 && (
+          <span
+            className="flex items-center gap-2"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
+            <span>more certain</span>
+            <span
+              aria-hidden
+              style={{
+                display: 'inline-block',
+                width: '64px',
+                height: '8px',
+                background: `linear-gradient(to right, rgba(var(--color-accent-rgb), 0), rgba(var(--color-accent-rgb), ${MAX_ALPHA}))`,
+                border: '1px solid var(--color-rule)',
+              }}
+            />
+            <span>less certain</span>
+          </span>
+        )}
       </div>
-      {data.resampled.length === 0 && (
+      {maxEntropy <= 0 && (
         <div
           className="text-[11.5px] italic mb-2"
           style={{ color: 'var(--color-ink-soft)' }}
         >
-          No uncertain tokens.
+          No uncertainty signal available.
         </div>
       )}
       <div
@@ -80,11 +89,14 @@ export function TokenHeatmapPanel({ data }: Props) {
         style={{ color: 'var(--color-ink-soft)' }}
       >
         {data.tokens.map((tok, i) => {
-          const r = resampleByIndex.get(i);
+          const entropy = data.token_entropies?.[i];
+          const intensity =
+            maxEntropy > 0 && entropy !== undefined ? entropy / maxEntropy : 0;
+          const visible = intensity >= VISIBILITY_FLOOR;
           return (
             <span key={i}>
-              {r && r.severity > 0 ? (
-                <HeatmapToken token={tok} resample={r} />
+              {visible && entropy !== undefined ? (
+                <HeatmapToken token={tok} intensity={intensity} />
               ) : (
                 tok
               )}
