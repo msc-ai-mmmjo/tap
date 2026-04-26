@@ -42,6 +42,19 @@ def _validity_radius(per_head_winners: list[int], target_id: int) -> int:
     return k
 
 
+@dataclass
+class PoEOutput:
+    output_parts: list[str]         # [0] = prompt prefix; [1:] = emitted tokens
+    original_tokens: list[str]      # rejected draft tokens, parallel to resampled_idxs
+    resampled_idxs: list[int]       # positions in output_parts where rejection occurred
+    token_entropies: list[float]    # parallel to output_parts[1:]
+    uncertainty: float | None
+    stability_radii: list[int]      # parallel to output_parts[1:]
+    stability_margins: list[float]  # parallel to output_parts[1:]
+    validity_radii: list[int]       # parallel to resampled_idxs
+    suppression_scores: list[float] # parallel to resampled_idxs
+
+
 class PoE:
     """
     Inference mechanism for multi-head branched Hydra transformer.
@@ -83,7 +96,7 @@ class PoE:
         is_mcq: bool = False,
         temperature: float | None = 0.98,
         messages: list[dict] | None = None,
-    ) -> tuple[list[str], list[str], list[int], list[float], Optional[float]]:
+    ) -> PoEOutput:
         """
         Performs speculative verification with kv-caching.
 
@@ -92,10 +105,7 @@ class PoE:
         :param temperature: global temperature scaling (if not None, sample based token generation).
         :param messages: optional argument for multi-turn chatbot conversation.
 
-        :returns: tuple[List of tokens (str) in generation with 0th entry as prompt,
-            List of original tokens (str) at resampling indices,
-            List of resampling indices (int),
-            Optional uncertainty head confidence (float)]
+        :returns: PoEOutput with per-token stability metrics and per-rejection validity metrics.
         """
         # messages wins when provided so the chat backend can pass full multi-turn
         # history; prompt_text stays as the single-turn path for scripts/experiments.
@@ -143,6 +153,11 @@ class PoE:
 
         # verifier ensemble predictive entropy at each emitted token (nats)
         token_entropies: list[float] = []
+
+        stability_radii: list[int] = []
+        stability_margins: list[float] = []
+        validity_radii: list[int] = []
+        suppression_scores: list[float] = []
 
         # hidden state to residual stream inject for uncertainty
         hidden_unc_state: Optional[torch.Tensor] = None
@@ -216,6 +231,14 @@ class PoE:
                 # H(P_dist) reads as ensemble predictive uncertainty here.
                 step_entropy = float(torch.special.entr(P_dist).sum().item())
 
+                # Shared stability pre-computation for accept and reject branches.
+                per_head_winners = v_logits.argmax(dim=-1)  # (n_verifiers,)
+                if P_dist.size(0) >= 2:
+                    top2 = torch.topk(P_dist, 2).values
+                    s_margin = float((top2[0] - top2[1]).item())
+                else:
+                    s_margin = 0.0
+
                 token_id = int(draft_step_ids[i])
                 p_val, q_val = P_dist[token_id].item(), draft_probs[i][token_id].item()
 
@@ -228,6 +251,12 @@ class PoE:
                     )
                     output_parts.append(cast(str, self.tokenizer.decode([token_id])))
                     token_entropies.append(step_entropy)
+
+                    n_A = int((per_head_winners == token_id).sum().item())
+                    other = per_head_winners[per_head_winners != token_id]
+                    n_B = int(torch.unique(other, return_counts=True)[1].max().item()) if other.numel() > 0 else 0
+                    stability_radii.append(max(0, (n_A - n_B) // 2))
+                    stability_margins.append(s_margin)
 
                     if is_mcq and hidden_unc_state is None:
                         # if we accepted, use the drafter head's hidden state
@@ -259,6 +288,14 @@ class PoE:
                     # store the old draft token which was resampled and its index
                     original_tokens.append(cast(str, self.tokenizer.decode([token_id])))
                     resampled_idxs.append(len(output_parts) - 1)
+
+                    n_A = int((per_head_winners == resampled_id).sum().item())
+                    other = per_head_winners[per_head_winners != resampled_id]
+                    n_B = int(torch.unique(other, return_counts=True)[1].max().item()) if other.numel() > 0 else 0
+                    stability_radii.append(max(0, (n_A - n_B) // 2))
+                    stability_margins.append(s_margin)
+                    validity_radii.append(_validity_radius(per_head_winners.tolist(), token_id))
+                    suppression_scores.append(float(P_dist[token_id].item()))
 
                     if is_mcq and hidden_unc_state is None:
                         # if we rejected, find best verifier head
@@ -307,12 +344,16 @@ class PoE:
                 question_text, full_answer, hidden_unc_state
             )
 
-        return (
-            output_parts,
-            original_tokens,
-            resampled_idxs,
-            token_entropies,
-            uncertainty_score,
+        return PoEOutput(
+            output_parts=output_parts,
+            original_tokens=original_tokens,
+            resampled_idxs=resampled_idxs,
+            token_entropies=token_entropies,
+            uncertainty=uncertainty_score,
+            stability_radii=stability_radii,
+            stability_margins=stability_margins,
+            validity_radii=validity_radii,
+            suppression_scores=suppression_scores,
         )
 
     @torch.no_grad()
