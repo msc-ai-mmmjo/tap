@@ -8,21 +8,33 @@ from app.backend.response_payloads import (
 
 
 def test_fallback_security_shape():
-    assert fallback_security() == {"certified": None, "tokens": [], "resampled": []}
+    assert fallback_security() == {
+        "certified": None,
+        "tokens": [],
+        "resampled": [],
+        "token_entropies": [],
+    }
 
 
 def test_poe_security_echoes_inputs_and_certifies():
     tokens = ["hello", " world"]
     resampled = [{"index": 1, "alternatives": ["foo", "bar"]}]
-    assert poe_security(tokens, resampled) == {
+    token_entropies = [0.1, 0.4]
+    assert poe_security(tokens, resampled, token_entropies) == {
         "certified": True,
         "tokens": tokens,
         "resampled": resampled,
+        "token_entropies": token_entropies,
     }
 
 
 def test_poe_security_with_empty_lists():
-    assert poe_security([], []) == {"certified": True, "tokens": [], "resampled": []}
+    assert poe_security([], [], []) == {
+        "certified": True,
+        "tokens": [],
+        "resampled": [],
+        "token_entropies": [],
+    }
 
 
 def test_fallback_uncertainty_shape():
@@ -51,7 +63,12 @@ def test_fallback_helpers_return_independent_dicts():
     # safety net against someone refactoring these to module-level constants.)
     a = fallback_security()
     a["tokens"].append("dirty")
-    assert fallback_security() == {"certified": None, "tokens": [], "resampled": []}
+    assert fallback_security() == {
+        "certified": None,
+        "tokens": [],
+        "resampled": [],
+        "token_entropies": [],
+    }
 
     b = fallback_uncertainty()
     b["overall"] = 1.0
