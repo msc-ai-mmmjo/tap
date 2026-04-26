@@ -16,6 +16,10 @@ from olmo_tap.experiments.utils.model_builder import (
 
 
 def load_ensemble() -> tuple[HydraTransformer, int]:
+    """
+    Helper function to load our 10 head Hydra with LoRA weights for Security & Robustness
+    (on 9 LLM heads) and Uncertainty on 10th head.
+    """
     # retrieve prod (security) lora_r and other tags
     with open(PROD_WEIGHTS_DIR / "manifest.json") as f:
         manifest = json.load(f)

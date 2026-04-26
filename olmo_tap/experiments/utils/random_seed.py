@@ -1,5 +1,6 @@
-import random
+"""Helper to synchronise all random operations to same random seed."""
 
+import random
 import numpy as np
 import torch
 

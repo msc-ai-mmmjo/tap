@@ -1,4 +1,7 @@
 """
+NOTE: this file is for testing the uncertainty head on a single LLM head. For the 
+equivalent file used for testing on the PoE Hydra aggregation, see ``olmo_tap/final_evals/uncertainty_sweep.py``
+
 Reliability-diagram eval for the uncertainty head.
 
 For each robustness shard (0 through 8), run the uncertainty head over the MedMCQA
