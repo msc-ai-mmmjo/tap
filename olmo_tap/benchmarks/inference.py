@@ -180,10 +180,18 @@ def reset_kv_cache_position(managers: list[KVCacheManager | None], position):
 
 
 def forward_and_sample(model, input_ids):
-    logits = model(input_ids)
+    """Run a forward pass and argmax-sample the next token.
+
+    Skips per-position ``lm_head`` projection on prefill (``last_token_only``
+    on Hydra, ``logits_to_keep=1`` on vanilla Transformer) so TTFT timings
+    are apples-to-apples with PoE's ``residual_forward`` path. Decode steps
+    have ``seq_len=1``, so the flag is a no-op there.
+    """
     if isinstance(model, HydraTransformer):
+        logits = model(input_ids, last_token_only=True)
         return logits[:, 0, -1, :].mean(dim=0).argmax()
     else:
+        logits = model(input_ids, logits_to_keep=1)
         return logits[0, -1, :].argmax()
 
 
