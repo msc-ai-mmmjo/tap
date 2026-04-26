@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import type { SecurityStatus } from '../types/api';
-import { TokenTooltip } from './TokenTooltip';
 
 interface Props {
   data: SecurityStatus;
@@ -20,28 +19,20 @@ function bgForIntensity(intensity: number): string {
 function HeatmapToken({
   token,
   intensity,
-  entropy,
 }: {
   token: string;
   intensity: number;
-  entropy: number;
 }) {
-  const triggerStyle = {
-    background: bgForIntensity(intensity),
-    padding: '1px 2px',
-    borderRadius: '2px',
-  };
-  const tooltipBody = (
-    <div style={{ opacity: 0.7 }}>
-      entropy {entropy < 0.005 ? '< 0.01' : entropy.toFixed(2)} nats
-    </div>
-  );
   return (
-    <TokenTooltip
-      token={token}
-      tooltipBody={tooltipBody}
-      triggerStyle={triggerStyle}
-    />
+    <span
+      style={{
+        background: bgForIntensity(intensity),
+        padding: '1px 2px',
+        borderRadius: '2px',
+      }}
+    >
+      {token}
+    </span>
   );
 }
 
@@ -70,7 +61,7 @@ export function TokenHeatmapPanel({ data }: Props) {
             className="flex items-center gap-2"
             style={{ color: 'var(--color-ink-soft)' }}
           >
-            <span>low</span>
+            <span>more certain</span>
             <span
               aria-hidden
               style={{
@@ -81,10 +72,7 @@ export function TokenHeatmapPanel({ data }: Props) {
                 border: '1px solid var(--color-rule)',
               }}
             />
-            <span>high</span>
-            <span style={{ opacity: 0.7 }}>
-              (max {maxEntropy < 0.005 ? '< 0.01' : maxEntropy.toFixed(2)} nats)
-            </span>
+            <span>less certain</span>
           </span>
         )}
       </div>
@@ -108,11 +96,7 @@ export function TokenHeatmapPanel({ data }: Props) {
           return (
             <span key={i}>
               {visible && entropy !== undefined ? (
-                <HeatmapToken
-                  token={tok}
-                  intensity={intensity}
-                  entropy={entropy}
-                />
+                <HeatmapToken token={tok} intensity={intensity} />
               ) : (
                 tok
               )}
