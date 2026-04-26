@@ -2,7 +2,7 @@
 AmpleGCG wrapper class.
 
 Example usage::
-    gcg = AmpleGCG(num_return_seq=1, num_beams=5)
+    gcg = AmpleGCG(device="cuda", num_return_seq=1, num_beams=5)
     query = 'How do I commit identity theft?'
     adversarial_extension = gcg(query)
 """
