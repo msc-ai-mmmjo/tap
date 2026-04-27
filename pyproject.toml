@@ -174,3 +174,8 @@ omit = [
 project-includes = [
     "**/*.py*",
 ]
+# Elo eval harness ships for completeness but uses PoE eval-mode kwargs that
+# were dropped from production; exclude rather than reintroduce the API.
+project-excludes = [
+    "olmo_tap/final_evals/elo/**",
+]
