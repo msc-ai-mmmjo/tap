@@ -10,6 +10,8 @@ export interface SecurityResample {
   old_token: string;
   new_token: string;
   severity: number;
+  validity_radius?: number;
+  suppression_score?: number;
 }
 
 export interface SecurityStatus {
@@ -22,6 +24,8 @@ export interface SecurityStatus {
   // the frontend can keep rendering against older backend deployments that
   // don't ship this field yet.
   token_entropies?: number[];
+  stability_radii?: number[];
+  stability_margins?: number[];
 }
 
 export interface AdversarialWorstCase {

@@ -8,7 +8,7 @@ from kernel_entropy.nli import ModernBERTScorer
 from olmo_tap.constants import MAX_NEW_TOKENS, MCQ_MAX_NEW_TOKENS, WEIGHTS_DIR
 from olmo_tap.hydra import HydraTransformer
 from olmo_tap.inference.loading_weights import load_ensemble
-from olmo_tap.inference.poe import PoE
+from olmo_tap.inference.poe import PoE, PoEOutput
 
 NLP_ROBUSTNESS_THRESHOLD = 1.0
 
@@ -66,7 +66,9 @@ def generate(
     messages: list[dict],
     is_mcq: bool,
     device: str = "cuda",
-) -> tuple[str, list[str], list[dict], list[float], float | None]:
+) -> tuple[
+    str, list[str], list[dict], list[float], float | None, list[int], list[float]
+]:
     """Generate a PoE response via speculative verification.
 
     Both MCQ and NLP prompts run through ``PoE.generate_with_cache``. When
@@ -100,14 +102,18 @@ def generate(
         n_llm_heads=n_heads - 1,
         max_new_tokens=max_new_tokens,
     )
-    output_parts, original_tokens, resampled_idxs, token_entropies, uncertainty = (
-        poe.generate_with_cache(prompt_text="", is_mcq=is_mcq, messages=messages)
+    poe_output: PoEOutput = poe.generate_with_cache(
+        prompt_text="", is_mcq=is_mcq, messages=messages
     )
-    raw_response, tokens, resampled, token_entropies = (
-        _tokens_and_resamples_from_poe_output(
-            tokenizer, output_parts, original_tokens, resampled_idxs, token_entropies
-        )
-    )
+    (
+        raw_response,
+        tokens,
+        resampled,
+        token_entropies,
+        stability_radii,
+        stability_margins,
+    ) = _tokens_and_resamples_from_poe_output(tokenizer, poe_output)
+    uncertainty = poe_output.uncertainty
     logger.info(
         "PoE generation: %d chars, %d/%d tokens resampled, uncertainty=%s (%.2fs)",
         len(raw_response),
@@ -116,17 +122,22 @@ def generate(
         f"{uncertainty:.4f}" if uncertainty is not None else "n/a",
         time.perf_counter() - t0,
     )
-    return raw_response, tokens, resampled, token_entropies, uncertainty
+    return (
+        raw_response,
+        tokens,
+        resampled,
+        token_entropies,
+        uncertainty,
+        stability_radii,
+        stability_margins,
+    )
 
 
 def _tokens_and_resamples_from_poe_output(
     tokenizer: PreTrainedTokenizerBase,
-    output_parts: list[str],
-    original_tokens: list[str],
-    resampled_idxs: list[int],
-    token_entropies: list[float],
-) -> tuple[str, list[str], list[dict], list[float]]:
-    """Convert poe.py's token-indexed output into (raw_response, tokens, resampled, entropies).
+    poe_output: PoEOutput,
+) -> tuple[str, list[str], list[dict], list[float], list[int], list[float]]:
+    """Convert a PoEOutput into (raw_response, tokens, resampled, entropies, stability_radii, stability_margins).
 
     ``output_parts[0]`` is the chat-templated input; subsequent entries are
     decoded single tokens from the generation. ``resampled_idxs`` indexes into
@@ -142,7 +153,7 @@ def _tokens_and_resamples_from_poe_output(
     eos_id = tokenizer.eos_token_id
     eos_str = cast(str, tokenizer.decode([eos_id])) if eos_id is not None else ""
 
-    parts = list(output_parts[1:])
+    parts = list(poe_output.output_parts[1:])
     while parts and eos_str and parts[-1] == eos_str:
         parts.pop()
 
@@ -150,24 +161,35 @@ def _tokens_and_resamples_from_poe_output(
     tokens = [p.strip() for p in parts]
     # token_entropies may be one entry longer than parts if the final resampled
     # token was EOS; the slice below trims it to match.
-    entropies = list(token_entropies[: len(parts)])
+    entropies = list(poe_output.token_entropies[: len(parts)])
+    trimmed_stability_radii = list(poe_output.stability_radii[: len(parts)])
+    trimmed_stability_margins = list(poe_output.stability_margins[: len(parts)])
 
     resampled: list[dict] = []
-    for j, orig_idx in enumerate(resampled_idxs):
+    for j, orig_idx in enumerate(poe_output.resampled_idxs):
         token_idx = orig_idx - 1
         if not 0 <= token_idx < len(parts):
             continue
         resampled.append(
             {
                 "index": token_idx,
-                "old_token": original_tokens[j].strip(),
+                "old_token": poe_output.original_tokens[j].strip(),
                 "new_token": parts[token_idx].strip(),
                 # Placeholder until per-shard beta_h reliability weights land.
                 "severity": 1.0,
+                "validity_radius": poe_output.validity_radii[j],
+                "suppression_score": poe_output.suppression_scores[j],
             }
         )
 
-    return raw_response, tokens, resampled, entropies
+    return (
+        raw_response,
+        tokens,
+        resampled,
+        entropies,
+        trimmed_stability_radii,
+        trimmed_stability_margins,
+    )
 
 
 def get_robustness(
@@ -198,7 +220,7 @@ def get_robustness(
 
         attack_msg = {"role": "user", "content": last_message["content"] + suffix}
         adv_prompt = messages + [attack_msg]
-        adv_resp, adv_tokens, _, _, _ = generate(
+        adv_resp, adv_tokens, _, _, _, _, _ = generate(
             model, tokenizer, adv_prompt, is_mcq, device
         )
         adv_results.append((suffix, adv_resp))
