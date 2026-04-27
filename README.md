@@ -2,6 +2,12 @@
 
 Exposing LLM uncertainty, unfairness, and other related trustworthiness metrics to users at response time.
 
+## Licence
+
+Copyright 2026 The TAP Authors.
+
+This project is licensed under the [Apache License, Version 2.0](LICENSE). You are free to use, modify, and redistribute the code, including for commercial purposes, provided you keep the copyright and licence notice. The licence also grants an explicit patent licence from contributors, which matters for ML work where method patents are common.
+
 # Contributing guide
 
 <!-- sphinx-start -->
