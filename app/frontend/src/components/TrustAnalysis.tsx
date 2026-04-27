@@ -3,6 +3,7 @@ import { ClaimCard } from './ClaimCard';
 import { AdversarialPreviewPanel } from './AdversarialPreviewPanel';
 import { SecurityTokensPanel } from './SecurityTokensPanel';
 import { TokenHeatmapPanel } from './TokenHeatmapPanel';
+import { StabilityHeatmapPanel } from './StabilityHeatmapPanel';
 
 interface Props {
   data: AnalysisResponse;
@@ -60,6 +61,10 @@ export function TrustAnalysis({ data }: Props) {
 
             {data.security.tokens.length > 0 && (
               <TokenHeatmapPanel data={data.security} />
+            )}
+
+            {data.security.tokens.length > 0 && (
+              <StabilityHeatmapPanel data={data.security} />
             )}
           </div>
         </div>
