@@ -6,12 +6,16 @@ interface Props {
 }
 
 const MAX_ALPHA = 0.55;
+const N_STEPS = 9; // validity radii 0–8
 
-function bgForSuppression(score: number | undefined): string {
-  if (score == null) return 'transparent';
-  // Low suppression score = decisive rejection → brighter highlight
-  const clamped = Math.max(0, Math.min(1, score));
-  return `rgba(var(--color-accent-rgb), ${((1 - clamped) * MAX_ALPHA).toFixed(3)})`;
+// radius 0 (marginal rejection) → transparent; radius 8 (decisive) → brightest
+const VALIDITY_COLORS = Array.from({ length: N_STEPS }, (_, r) =>
+  `rgba(var(--color-accent-rgb), ${((r / (N_STEPS - 1)) * MAX_ALPHA).toFixed(3)})`,
+);
+
+function bgForValidityRadius(radius: number | undefined): string {
+  if (radius == null) return 'transparent';
+  return VALIDITY_COLORS[Math.max(0, Math.min(N_STEPS - 1, Math.round(radius)))];
 }
 
 function ResampledToken({ token, resample }: { token: string; resample: SecurityResample }) {
@@ -27,7 +31,7 @@ function ResampledToken({ token, resample }: { token: string; resample: Security
         </>
       }
       triggerStyle={{
-        background: bgForSuppression(resample.suppression_score),
+        background: bgForValidityRadius(resample.validity_radius),
         padding: '1px 2px',
         borderRadius: '2px',
         textDecoration: 'underline',
