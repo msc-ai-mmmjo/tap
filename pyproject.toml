@@ -37,6 +37,7 @@ ruff = ">=0.8"
 python-dotenv = ">=1.2.2,<2"
 git-lfs = ">=3.7.1,<4"
 nltk = ">=3.9"
+coverage = ">=7.13.5,<8"
 
 # ---------------------------------------------
 # Top-level PyPI Dependencies
@@ -142,6 +143,18 @@ docs-publish = { cmd = "ghp-import -n -p -f -m 'docs: deploy' docs/build/html", 
 # `docs` is intentionally excluded — it needs the heavy cuda deps and
 # CI runs on a CPU-only runner. Build docs locally with `pixi run docs`.
 check = { depends-on = ["lint", "format-check", "typecheck", "test"] }
+
+[tool.coverage.run]
+omit = [
+    "_remote_module_non_scriptable",
+    "*/torch/*",
+]
+
+[tool.coverage.report]
+omit = [
+    "_remote_module_non_scriptable",
+    "*/torch/*",
+]
 
 [tool.pyrefly]
 project-includes = [
