@@ -5,6 +5,15 @@ interface Props {
   data: SecurityStatus;
 }
 
+const MAX_ALPHA = 0.55;
+
+function bgForSuppression(score: number | undefined): string {
+  if (score == null) return 'transparent';
+  // Low suppression score = decisive rejection → brighter highlight
+  const clamped = Math.max(0, Math.min(1, score));
+  return `rgba(var(--color-accent-rgb), ${((1 - clamped) * MAX_ALPHA).toFixed(3)})`;
+}
+
 function ResampledToken({ token, resample }: { token: string; resample: SecurityResample }) {
   return (
     <TokenTooltip
@@ -19,7 +28,9 @@ function ResampledToken({ token, resample }: { token: string; resample: Security
       }
       triggerStyle={{
         color: 'var(--color-accent)',
-        borderBottom: '1px dotted var(--color-accent)',
+        background: bgForSuppression(resample.suppression_score),
+        padding: '1px 2px',
+        borderRadius: '2px',
         textDecoration: 'underline',
         textDecorationStyle: 'solid',
         textUnderlineOffset: '3px',
