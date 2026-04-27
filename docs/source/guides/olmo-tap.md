@@ -1,7 +1,6 @@
-# Running on the ada server
+# olmo_tap package
 
-Guide to running scripts on the `ada` GPU server for experimentation and
-testing.
+Model code, inference pipeline, post-training scripts, and evaluation harnesses for the OhLMo Hydra model that powers TAP.
 
 ```{include} ../../../olmo_tap/README.md
 :start-after: <!-- sphinx-start -->

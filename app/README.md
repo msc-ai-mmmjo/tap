@@ -8,7 +8,7 @@ When OLMo weights are available the backend serves a 10-head Hydra model (9 LLM 
 
 ## Hosted architecture
 
-The backend runs on Modal as a hosted FastAPI app on managed GPUs, and Cloudflare Pages hosts the frontend. Which backend the frontend hits is controlled by `VITE_API_BASE`, so frontend-only work doesn't need a local GPU or a running backend. See the top-level README for the Modal tasks and workspace details; URLs are shared out-of-band.
+The backend runs on Modal as a hosted FastAPI app on managed GPUs, and Cloudflare Pages hosts the frontend at [tap-al9.pages.dev](https://tap-al9.pages.dev/). Which backend the frontend hits is controlled by `VITE_API_BASE`, so frontend-only work doesn't need a local GPU or a running backend. See the top-level README for the Modal tasks and workspace details.
 
 ## Quick start
 
@@ -23,11 +23,8 @@ The backend runs on Modal as a hosted FastAPI app on managed GPUs, and Cloudflar
 ### Run it
 
 ```bash
-# Check which GPU isn't being hogged (say GPU 1)
-nvidia-smi
-
 # Start backend using pixi
-CUDA_VISIBLE_DEVICES=1 pixi run -e cuda app-api
+pixi run -e cuda app-api
 # Runs at http://localhost:8000
 
 # Start frontend (separate terminal)
