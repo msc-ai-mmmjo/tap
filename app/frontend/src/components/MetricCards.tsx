@@ -2,7 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { AnalysisResponse } from '../types/api';
 import { CONFIDENCE_THRESHOLDS, ROBUSTNESS_FLIP_WARN_RATIO } from '../lib/constants';
-import { computeSecurityRisk, meanValidityRadius } from '../lib/security';
+import { computeSecurityRisk, meanValidityRadius, VALIDITY_RADIUS_MAX } from '../lib/security';
 
 interface Props {
   data: AnalysisResponse;
@@ -22,7 +22,7 @@ const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> =
   },
   security: {
     definition:
-      "Defends against training-data tampering (poisoning). Each token is cross-checked by several independent heads in the model; whenever they disagree with the draft, the token is rewritten. A mean validity radius of resampled tokens (number of votes needed to flip the consensus to the rejected token) means a more trustworthy answer.",
+      "Defends against training-data tampering (poisoning). Each token is cross-checked by several independent heads in the model; whenever they disagree with the draft, the token is rewritten. A higher mean validity radius (more head-vote flips would be needed to overturn the rejection) means a more trustworthy answer.",
     paper:
       'Method: Ghitu & Wicker, "Towards Poisoning Robustness Certification for Natural Language Generation".',
   },
@@ -245,17 +245,20 @@ export function MetricCards({ data }: Props) {
       securityCaption = `All ${totalTokens} tokens agreed across heads`;
     } else {
       const meanRadius = meanValidityRadius(resampled);
-      securityValue = `${meanRadius ? meanRadius.toFixed(1) : 'null'}`;
+      securityValue = meanRadius != null ? `${meanRadius.toFixed(1)} / ${VALIDITY_RADIUS_MAX}` : '—';
       const risk = computeSecurityRisk(resampled);
-      if (risk === 'low' || risk === null) {
+      if (risk === null) {
+        securitySeverity = 'na';
+        securityCaption = 'Backend did not report validity radii';
+      } else if (risk === 'low') {
         securitySeverity = 'ok';
-        securityCaption = 'Resamples were decisive; low poisoning risk. Max 5, higher is safer.';
+        securityCaption = 'Resamples were decisive; low poisoning risk.';
       } else if (risk === 'moderate') {
         securitySeverity = 'warn';
-        securityCaption = 'Some marginal resamples detected; verify key claims. Max 5, higher is safer.';
+        securityCaption = 'Some marginal resamples detected; verify key claims.';
       } else {
         securitySeverity = 'bad';
-        securityCaption = 'Low-validity resamples present; treat with caution. Max 5, higher is safer.';
+        securityCaption = 'Low-validity resamples present; treat with caution.';
       }
     }
   }

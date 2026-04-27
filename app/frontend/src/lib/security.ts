@@ -1,6 +1,7 @@
 import type { SecurityResample } from '../types/api';
 
-// Thresholds on the 0–5 validity radius scale (higher = more decisive = lower risk)
+// Validity radius is reported on a 0..MAX scale (higher = more decisive = lower risk)
+export const VALIDITY_RADIUS_MAX = 5;
 export const SECURITY_RISK_THRESHOLDS = { low: 4, moderate: 2 } as const;
 
 /**

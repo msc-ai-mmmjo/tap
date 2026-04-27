@@ -1,4 +1,5 @@
 import type { SecurityStatus, SecurityResample } from '../types/api';
+import { VALIDITY_RADIUS_MAX } from '../lib/security';
 import { TokenTooltip } from './TokenTooltip';
 
 interface Props {
@@ -7,8 +8,8 @@ interface Props {
 
 const MAX_ALPHA = 0.55;
 const MIN_ALPHA = 0.05;
-const N_STEPS = 6; // validity radii 0–5
-const MAX_RADIUS = N_STEPS - 1;
+const MAX_RADIUS = VALIDITY_RADIUS_MAX;
+const N_STEPS = MAX_RADIUS + 1;
 
 // radius 0 (low validity) → brightest; radius 5 (high validity) → faint but visible
 const VALIDITY_COLORS = Array.from({ length: N_STEPS }, (_, r) =>
@@ -85,7 +86,7 @@ export function SecurityTokensPanel({ data }: Props) {
           className="text-[11px] mb-3 mt-1"
           style={{ color: 'var(--color-ink-soft)' }}
         >
-          Underlined tokens were resampled; shading is each token's validity
+          Underlined tokens were resampled; the shade encodes their validity
           radius (0–{MAX_RADIUS}, higher is safer).
         </div>
         {data.resampled.length === 0 && (
