@@ -8,9 +8,9 @@ interface Props {
 const MAX_ALPHA = 0.55;
 const N_STEPS = 9; // validity radii 0–8
 
-// radius 0 (marginal rejection) → transparent; radius 8 (decisive) → brightest
+// radius 0 (low validity) → brightest; radius 8 (high validity) → transparent
 const VALIDITY_COLORS = Array.from({ length: N_STEPS }, (_, r) =>
-  `rgba(var(--color-accent-rgb), ${((r / (N_STEPS - 1)) * MAX_ALPHA).toFixed(3)})`,
+  `rgba(var(--color-accent-rgb), ${((1 - r / (N_STEPS - 1)) * MAX_ALPHA).toFixed(3)})`,
 );
 
 function bgForValidityRadius(radius: number | undefined): string {
@@ -57,12 +57,27 @@ export function SecurityTokensPanel({ data }: Props) {
         }}
       >
         <div
-          className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center justify-between"
+          className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center justify-between gap-3"
           style={{ color: 'var(--color-ink-muted)' }}
         >
           <span>— Security token stream</span>
-          <span style={{ color: 'var(--color-ink-soft)' }}>
-            {data.resampled.length} / {data.tokens.length} resampled
+          <span
+            className="flex items-center gap-2"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
+            <span>{data.resampled.length} / {data.tokens.length} resampled</span>
+            <span>low validity</span>
+            <span
+              aria-hidden
+              style={{
+                display: 'inline-block',
+                width: '64px',
+                height: '8px',
+                background: `linear-gradient(to right, rgba(var(--color-accent-rgb), ${MAX_ALPHA}), rgba(var(--color-accent-rgb), 0))`,
+                border: '1px solid var(--color-rule)',
+              }}
+            />
+            <span>high validity</span>
           </span>
         </div>
         {data.resampled.length === 0 && (
