@@ -21,6 +21,15 @@ function bgForValidityRadius(radius: number | undefined): string {
   return VALIDITY_COLORS[Math.max(0, Math.min(N_STEPS - 1, Math.round(radius)))];
 }
 
+// Legend runs high validity (dim) → low validity (bright), so reverse the colour order
+const LEGEND_GRADIENT = (() => {
+  const reversed = [...VALIDITY_COLORS].reverse();
+  const w = 100 / N_STEPS;
+  return reversed
+    .map((c, i) => `${c} ${(i * w).toFixed(2)}%,${c} ${((i + 1) * w).toFixed(2)}%`)
+    .join(',');
+})();
+
 function ResampledToken({ token, resample }: { token: string; resample: SecurityResample }) {
   return (
     <TokenTooltip
@@ -75,7 +84,7 @@ export function SecurityTokensPanel({ data }: Props) {
                 display: 'inline-block',
                 width: '64px',
                 height: '8px',
-                background: `linear-gradient(to right, rgba(var(--color-accent-rgb), ${MIN_ALPHA}), rgba(var(--color-accent-rgb), ${MAX_ALPHA}))`,
+                background: `linear-gradient(to right, ${LEGEND_GRADIENT})`,
                 border: '1px solid var(--color-rule)',
               }}
             />
