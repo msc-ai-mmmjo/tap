@@ -6,9 +6,9 @@ interface Props {
 }
 
 const MAX_ALPHA = 0.55;
-const N_STEPS = 9; // radii 0–8
+const N_STEPS = 5; // radii 0–4
 
-// radius 0 (unstable) → brightest; radius 8 (stable) → transparent
+// radius 0 (unstable) → brightest; radius 4 (stable) → transparent
 const RADIUS_COLORS = Array.from({ length: N_STEPS }, (_, r) =>
   `rgba(var(--color-accent-rgb), ${((1 - r / (N_STEPS - 1)) * MAX_ALPHA).toFixed(3)})`,
 );

@@ -7,9 +7,9 @@ interface Props {
 
 const MAX_ALPHA = 0.55;
 const MIN_ALPHA = 0.05;
-const N_STEPS = 9; // validity radii 0–8
+const N_STEPS = 6; // validity radii 0–5
 
-// radius 0 (low validity) → brightest; radius 8 (high validity) → faint but visible
+// radius 0 (low validity) → brightest; radius 5 (high validity) → faint but visible
 const VALIDITY_COLORS = Array.from({ length: N_STEPS }, (_, r) =>
   `rgba(var(--color-accent-rgb), ${(MIN_ALPHA + (1 - r / (N_STEPS - 1)) * (MAX_ALPHA - MIN_ALPHA)).toFixed(3)})`,
 );
