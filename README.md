@@ -9,7 +9,8 @@ COMP70079, Department of Computing, Imperial College London. Supervised by Dr Ma
 
 > Exposing LLM uncertainty, unfairness, and other related trustworthiness metrics to users at response time.
 
-🌐 **[Live demo](https://tap-al9.pages.dev/)** &nbsp;·&nbsp; 📚 **[Documentation](https://msc-ai-mmmjo.github.io/tap/)**
+[![Live demo](https://img.shields.io/badge/🌐%20Try%20the%20live%20demo-2ea44f?style=for-the-badge)](https://tap-al9.pages.dev/)
+[![Documentation](https://img.shields.io/badge/📚%20Read%20the%20docs-1f6feb?style=for-the-badge)](https://msc-ai-mmmjo.github.io/tap/)
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/Python-3.13-blue.svg)
