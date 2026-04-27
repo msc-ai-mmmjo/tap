@@ -1,99 +1,52 @@
-# Guide to Running Scripts on the `ada` Server
+# olmo_tap
 
-For experimentation, testing, etc.
+Model code, inference pipeline, post-training scripts, and evaluation harnesses for the OhLMo Hydra model that powers TAP.
 
 <!-- sphinx-start -->
 
-## First-timers' Set-up
+## Orientation
 
-1. Log into a DoC login node; `<num>` can be any of 1 to 5
+`olmo_tap` is the model-side core of TAP. It defines the `HydraTransformer` (a shared trunk with K parallel heads built on top of OLMo-2), trains each head against its own objective on its own data shard, and composes them at decode time via PoE Speculative Verification. Environment setup, weights download, and Git LFS are documented in the [root README](../README.md).
 
-    ```shell
-    ssh <username>@shell<num>.doc.ic.ac.uk
-    ``` 
+## Package map
 
-2. SSH into the ada server, and enter your Imperial password when prompted
+```
+olmo_tap/
+├── hydra.py              HydraTransformer config and module
+├── constants.py          Vocab size, MCQ tokens, KLE params, weight and data paths
+├── inference/            PoE Speculative Verification and weight loading
+├── experiments/          Post-training pipelines for the security, robustness, and uncertainty heads
+├── benchmarks/           Decode throughput and time-to-first-token measurement
+├── final_evals/          Production checkpoint sweeps for robustness and uncertainty
+├── weights/              LoRA shard storage (Git LFS)
+└── data/                 Cached AmpleGCG outputs and attack bank
+```
 
-    ```shell
-    ssh ada
-    ```
+### `inference/`
 
-3. Install pixi on `/vol/bitbucket`
+- `poe.py`, the `PoE` class that performs Speculative Verification across the verifier heads with KV cache bookkeeping per round.
+- `loading_weights.py`, builds a `HydraTransformer`, attaches LoRA adapters, and merges any combination of the prod, robustness, and uncertainty shards.
+- `poe_demo_no_kv.py`, a stripped-down PoE walkthrough without KV caching for debugging.
 
-    ```shell
-    mkdir -p /vol/bitbucket/$USER/.pixi
-    curl -fsSL https://pixi.sh/install.sh | PIXI_HOME=/vol/bitbucket/$USER/.pixi bash
-    ```
+### `experiments/`
 
-    Pin to version 0.63.2 (0.64.0 has bugs)
+Each trust-signal subpackage follows the same layout (`data.py`, `engine.py`, `training.py`, `eval.py`, plus a `run_all.sh` driver where applicable).
 
-    ```shell
-    PIXI_HOME=/vol/bitbucket/$USER/.pixi /vol/bitbucket/$USER/.pixi/bin/pixi self-update --version 0.63.2
-    ```
+- `security/`, disjoint-shard supervised post-training of the nine LLM heads against MedMCQA letter labels.
+- `robustness/`, KL-based post-training that minimises divergence between clean and adversarially suffixed forward passes, with `amplegcg.py` wrapping the AmpleGCG generator and `build_attack_bank.py` precomputing suffixes offline.
+- `uncertainty/`, training of the dedicated uncertainty head against MCQ correctness with residual-stream injection from a frozen LLM head.
+- `hydra_demo.py`, a small end-to-end demo loading the production Hydra and decoding a prompt.
+- `utils/`, shared helpers used across the three pipelines.
 
-4. Add to your shell config and reload
+### `benchmarks/`
 
-    ```shell
-    echo 'export PIXI_HOME="/vol/bitbucket/$USER/.pixi"' >> ~/.bashrc
-    echo 'export PIXI_CACHE_DIR="/vol/bitbucket/$USER/.pixi/cache"' >> ~/.bashrc
-    echo 'export PATH="$PIXI_HOME/bin:$PATH"' >> ~/.bashrc
-    source ~/.bashrc
-    ```
+`harness.py` provides L2-cache-flushing GPU-event timing, `inference.py` defines the configurations swept (baseline OLMo-7B, naive Hydra averaging, PoE at varying gamma), and `plotting.py` produces the figures in `results/`. Reproduces the decode-performance numbers reported in the project report.
 
-    (or `.zshrc` instead of `.bashrc`)
+### `final_evals/`
 
-5. Clone our repo and install dependencies
+- `robustness_sweep.py`, sweeps PoE accuracy and flip rate across robustness LoRA checkpoints over a held-out attack bank.
+- `uncertainty_sweep.py`, sweeps the uncertainty head's calibration (ECE and reliability diagram) across training checkpoints.
 
-    ```shell
-    cd /vol/bitbucket/$USER
-    git clone git@github.com:msc-ai-mmmjo/tap.git
-    cd tap
-    pixi install -e cuda
-    ```
+### `weights/` and `data/`
 
-6. Get model weights (OLMo 2 7B Instruct — our base model)
-
-    ```shell
-    mkdir -p /vol/bitbucket/$USER/olmo2-7b-instruct-weights
-
-    HF_HUB_ENABLE_HF_TRANSFER=1 pixi run -e cuda python -c "
-    from huggingface_hub import snapshot_download
-    snapshot_download(
-        'allenai/OLMo-2-1124-7B-Instruct',
-        local_dir='/vol/bitbucket/$USER/olmo2-7b-instruct-weights',
-        ignore_patterns=['.gitattributes', 'README.md']
-    )
-    print('Done')
-    "
-    ```
-
-7. Update the weights path (`>>` appends to the file, `>` overwrites)
-
-    ```shell
-    echo "OLMO_WEIGHTS_DIR=/vol/bitbucket/$USER/olmo2-7b-instruct-weights" >> .env
-    ```
-
-8. Inspect GPU usage, and run on a free one (e.g. GPU 1)
-
-    ```shell
-    nvidia-smi
-    ```
-
-    ```shell
-    CUDA_VISIBLE_DEVICES=1 pixi run -e cuda python olmo_tap/experiments/hydra_demo.py
-    ```
-
-
-## For those who have done the setup already
-
-1. Log into `ada`
-
-2. Update our repo and dependencies
-
-    ```shell
-    cd /vol/bitbucket/$USER/tap
-    git pull
-    pixi install -e cuda
-    ```
-
-3. Do whatever it is you wanted to
+`weights/` holds the LoRA adapter shards for the prod, robustness, and uncertainty post-training runs as Git LFS objects (run `git lfs pull` to materialise the real `.pt` files). `data/gcg_cache/` holds sharded AmpleGCG outputs used by the robustness training data loader.

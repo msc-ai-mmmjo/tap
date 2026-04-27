@@ -1,197 +1,138 @@
-# Weight, what?
+# Trustworthy Answer Protocol
 
-Exposing LLM uncertainty, unfairness, and other related trustworthiness metrics to users at response time.
+*Post-Training Language Models for Security, Robustness, and Calibrated Uncertainty in Safety-Critical Domains with Response-Time Trust Signals*
+
+Michele Cespa, Mitchell Crabb, Matthys du Toit, Justin Mak, Owain Thorp
+&nbsp;&nbsp;&nbsp;`{mc1125, mc625, mmd25, jtm19, tjt25}@imperial.ac.uk`
+
+COMP70079, Department of Computing, Imperial College London. Supervised by Dr Matthew Wicker.
+
+> Exposing LLM uncertainty, unfairness, and other related trustworthiness metrics to users at response time.
+
+🌐 **[Live demo](https://tap-al9.pages.dev/)** &nbsp;·&nbsp; 📚 **[Documentation](https://msc-ai-mmmjo.github.io/tap/)**
+
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+![Python](https://img.shields.io/badge/Python-3.13-blue.svg)
+
+![Trustworthy Answer Protocol diagnostic readout, showing a chat response from the Hydra model alongside cards for Certainty, Security, and Robustness.](docs/source/_static/hero.png)
+
+## Overview
+
+Large language models now serve everyday queries in settings where wrong answers carry real cost. They hallucinate facts, can be jailbroken into bypassing their safety training, and are vulnerable to data poisoning. The standard chatbot interface compounds the problem by presenting every response as plain text with no signal of confidence, provenance, or robustness.
+
+The Trustworthy Answer Protocol (TAP) pairs every response with three trust signals computed at response time. *Uncertainty* reflects the model's confidence in what it just said, *security* reflects its resistance to data-poisoning attacks, and *robustness* reflects its resistance to adversarial prompting. In this project, we chose medical question answering as a representative safety-critical domain, although the architecture is agnostic to choice of dataset. The product is a research demonstrator rather than a clinical tool.
+
+![OhLMo with PoE Speculative Verification.](docs/source/_static/architecture.png)
+*OhLMo with PoE Speculative Verification. A shared trunk feeds K parallel LoRA-tuned heads (nine inference heads and one dedicated uncertainty head), with a draft head proposing tokens that the remaining heads verify as a Product-of-Experts*
+
+## Main contributions
+
+- **TAP**, an end-to-end system that pairs each response from a post-trained LLM with three trustworthiness signals (calibrated uncertainty, security, robustness), reported at the response level and at finer granularities inside the UI.
+- **OhLMo (Open-hydra Language Model)**, a multi-head extension of OLMo-2-7B-Instruct in which a shared trunk feeds K parallel LoRA-tuned heads. Our deployment uses nine inference heads and one dedicated uncertainty head.
+- **Three new post-training procedures**, one per trust signal. A disjoint-shard security post-train, a KL-based adversarial robustness post-train using AmpleGCG-generated suffixes, and a per-answer uncertainty head trained against MCQ correctness with residual-stream injection.
+- **A Product-of-Experts (PoE) inference pipeline**, which composes the heads at decode time via Speculative Verification and yields a per-token security bound (a one-honest-head guarantee).
+- **End-to-end evaluation** on MedMCQA covering MCQ accuracy, robustness under attack, uncertainty calibration, ablations of head depth and LoRA rank, plus an Elo-based protocol for free-form responses.
+- **A live, open-source deployment**, with a FastAPI backend on Modal serving OhLMo, a React frontend on Cloudflare Pages exposing every trust signal in the UI, and a full release of the codebase, training pipeline, and trained weights under the Apache-2.0 licence.
+
+## Codebase overview
+
+```
+olmo_tap/         OhLMo Hydra model, PoE inference, LoRAs, attack bank, benchmarks
+kernel_entropy/   KLE pipeline and ModernBERT NLI scorer for free-text uncertainty
+app/backend/      FastAPI server, claim decomposition, robustness probe, response payloads
+app/frontend/     React and Vite chat UI with the trust panels
+tests/            Pytest suite
+docs/             Sphinx site sources
+examples/         Small CLI demos for olmo, kle, and nli
+```
+
+## Quick start
+
+The hosted demo at [tap-al9.pages.dev](https://tap-al9.pages.dev/) requires no install and runs on our managed Modal backend. The instructions below cover running TAP locally for development or self-hosting.
+
+### Prerequisites
+
+- [pixi](https://pixi.sh) for environment management.
+- A CUDA 12.4-capable NVIDIA GPU. We test on L40 and A100, and BF16 inference fits comfortably in 24 GB of VRAM.
+- A Hugging Face access token with read access to OLMo-2-7B-Instruct.
+- [Git LFS](https://git-lfs.com), since the LoRA adapter shards under `olmo_tap/weights/` are stored as LFS pointers.
+- (Optional) Access to the gated [AmpleGCG model](https://huggingface.co/osunlp/AmpleGCG-llama2-sourced-llama2-7b-chat) on Hugging Face if you want to regenerate the adversarial attack bank. The repo ships with a cached bank, so the demo runs without it.
+
+### Install
+
+```bash
+git clone https://github.com/msc-ai-mmmjo/tap.git
+cd tap
+pixi install -e cuda
+```
+
+The CUDA environment builds [flash-attn](https://github.com/Dao-AILab/flash-attention) from source on first install, which takes several minutes. The first run also fetches [ModernBERT NLI](https://huggingface.co/tasksource/ModernBERT-large-nli), the scorer used by KLE and per-claim confidence.
+
+### Configure
+
+Copy the env template, then set `HF_TOKEN` and `OLMO_WEIGHTS_DIR` to a writable directory of your choice.
+
+```bash
+cp .env.example .env
+```
+
+Pull the LoRA adapter shards from Git LFS.
+
+```bash
+git lfs pull
+```
+
+Download the OLMo-2-7B-Instruct snapshot into the directory you set above.
+
+```bash
+HF_HUB_ENABLE_HF_TRANSFER=1 pixi run -e cuda python -c "
+from huggingface_hub import snapshot_download
+snapshot_download('allenai/OLMo-2-1124-7B-Instruct', local_dir='$OLMO_WEIGHTS_DIR', ignore_patterns=['.gitattributes', 'README.md'])
+"
+```
+
+### Run
+
+Start the backend.
+
+```bash
+pixi run -e cuda app-api
+```
+
+In a separate terminal, start the frontend.
+
+```bash
+cd app/frontend
+cp .env.example .env
+npm install
+npm run dev
+```
+
+The frontend runs on `http://localhost:5173` by default and is preconfigured to talk to the backend on `http://localhost:8000`. Open the frontend URL and click any of the example queries on the landing page.
+
+### Try the example scripts
+
+Three small CLI demos exercise the model directly without the web UI.
+
+```bash
+pixi run -e cuda olmo "What is the capital of France?"
+pixi run -e cuda kle "What is the most common cause of headache in adults?"
+pixi run -e cuda nli "The patient has hypertension." "The patient has high blood pressure."
+```
+
+`olmo` runs PoE speculative decoding and prints the verified tokens, `kle` runs the full Kernel Language Entropy pipeline over N resampled responses, and `nli` scores semantic similarity between two sentences using ModernBERT.
+
+## Documentation
+
+The Sphinx site at [msc-ai-mmmjo.github.io/tap](https://msc-ai-mmmjo.github.io/tap/) documents the package APIs, the kernel-entropy pipeline, the OhLMo training scripts, and the application stack.
 
 ## Licence
 
 Copyright 2026 The TAP Authors.
 
-This project is licensed under the [Apache License, Version 2.0](LICENSE). You are free to use, modify, and redistribute the code, including for commercial purposes, provided you keep the copyright and licence notice. The licence also grants an explicit patent licence from contributors, which matters for ML work where method patents are common.
+This project is released under the [Apache License, Version 2.0](LICENSE). You are free to use, modify, and redistribute the code, including for commercial purposes, provided you keep the copyright and licence notice. The licence also grants an explicit patent licence from contributors, which matters for ML work where method patents are common.
 
-# Contributing guide
+## Acknowledgements
 
-<!-- sphinx-start -->
+We thank Dr Tom Crossland and Dr Saman Hina for their instruction during the taught component of the course, and Dr Matthew Wicker for his knowledge, guidance, and patience throughout. Dr Wicker also kindly provided access to his lab compute cluster, which allowed us to run testing and training experiments efficiently and without queueing.
 
-## Pixi installation
-
-### Why pixi (vs conda)
-
-Pixi is increasingly preferred by ML researchers for its speed and reproducibility.
-
-| Aspect | Conda/Mamba | Pixi |
-|--------|-------------|------|
-| Environment location | Global (`~/miniconda3/envs/`) | Project-local (`.pixi/envs/`) |
-| Lock file | None native (env.yml is loose) | Built-in, cross-platform |
-| Speed | Slow (conda) / Fast (mamba) | ~10x faster than conda |
-| Reproducibility | Poor (no lock) | Excellent |
-| Task runner | None | Built-in |
-| Global state | Has base env | Clean - no global state |
-| Installation | Needs installer | Single binary |
-
-### Key files
-
-| File | Purpose |
-|------|---------|
-| `pyproject.toml` | Project config + all dependencies + task definitions |
-| `pixi.lock` | Exact versions for reproducibility (auto-generated, commit this) |
-| `.pixi/` | Local environment folder (gitignored, don't commit) |
-
-### Installation (one-time)
-
-```bash
-curl -fsSL https://pixi.sh/install.sh | bash
-```
-
-Restart your terminal after installation, e.g with `exec bash`.
-
-### Running tasks
-
-```bash
-pixi install              # Install dependencies (first time / after pulling)
-pixi run <task>           # Run a task (lint, test, serve, etc.)
-pixi run python script.py # Run any python file
-pixi shell                # Enter activated environment (for IDE/manual commands)
-```
-
-Tasks are defined in `[tool.pixi.tasks]` in `pyproject.toml`.
-
-### Environments
-
-| Environment | Use case |
-|-------------|----------|
-| `default` | CPU-only, used by CI and teammates without GPU |
-| `cuda` | For teammates with NVIDIA GPU (CUDA 12.4) |
-
-Most commands use the default environment automatically. To use CUDA:
-
-```bash
-pixi install -e cuda      # Install the CUDA environment (one-time)
-pixi run -e cuda serve    # Run app with CUDA support
-pixi run -e cuda python train.py
-```
-
-## Git workflow
-
-### New branches
-
-- Create from main: `git checkout -b feat/your-feature main`
-- Naming conventions: `feat/`, `fix/`, `docs/`, `refactor/` prefixes
-- Keep branches focused on one thing
-
-### Syncing with main
-
-Run this regularly (ideally daily) to stay up to date:
-
-```bash
-git checkout main
-git pull --rebase             # Update local main
-pixi install                  # In case dependencies changed
-git checkout feat/my-feature
-git rebase main               # Rebase feature onto updated main
-# Resolve conflicts if any
-```
-
-This keeps local main fresh so new branches always start from the right place.
-
-#### Resolving pixi.lock conflicts
-
-This will happen often - someone else updated dependencies on main while you were working. It is a simple fix:
-
-```bash
-# During rebase, you see: CONFLICT (content): Merge conflict in pixi.lock
-
-# 1. Accept main's version of the lock file
-git checkout --theirs pixi.lock
-
-# 2. Regenerate lock with your dependencies included
-pixi install
-
-# 3. Stage the resolved lock file and continue
-git add pixi.lock
-git rebase --continue
-```
-
-The key insight: `pixi.lock` is auto-generated, so you never manually edit it. Just take theirs and let pixi regenerate it.
-
-### Integrating with pixi
-
-- Always run `pixi install` after pulling/rebasing (dependencies may have changed)
-- Use `pixi run check` before pushing to catch issues early
-
-### PR titles
-
-PRs get squashed when merging into main, so **PR titles should follow conventional commit format**:
-
-```
-type: short description
-```
-
-Types: `feat`, `fix`, `docs`, `refactor`, `test`, `build`, `ci`
-
-Examples:
-- `feat: add uncertainty visualization component`
-- `fix: handle empty response from LLM`
-- `docs: update installation instructions`
-
-Individual commits within a branch don't need to follow this strictly - just keep them reasonably descriptive for your own sanity during development.
-
-## Extra tools
-
-### Linting (ruff)
-
-Catches common errors and style issues.
-
-```bash
-pixi run lint         # Check for issues
-pixi run lint-fix     # Auto-fix what it can
-```
-
-### Formatting (ruff)
-
-Keeps code style consistent across the team.
-
-```bash
-pixi run format       # Format all files
-pixi run format-check # Check without changing (used in CI)
-```
-
-### Type checking (pyrefly)
-
-Catches type errors before runtime. Add type hints to new code.
-
-```bash
-pixi run typecheck
-```
-
-### Testing (pytest)
-
-Put tests in the `tests/` directory. Name test files `test_*.py`.
-
-```bash
-pixi run test
-```
-
-### Run all checks
-
-Before pushing, run everything to avoid CI failures:
-
-```bash
-pixi run check  # Runs lint, format-check, typecheck, test
-```
-
-## Modal deployment
-
-The backend runs on Modal as a hosted FastAPI app on managed GPUs (A100-40GB / L40S fallback). Cloudflare Pages hosts the frontend and points at it via `VITE_API_BASE`. The image definition lives in `app/backend/modal_app.py` and installs the exact same `pixi install --environment cuda --locked` that runs locally, so there's one source of truth for deps.
-
-Deployment currently lives in the `m-crabb` personal Modal workspace (secrets and the weights Volume are scoped there), so redeploys go through him for now. Commands:
-
-```bash
-pixi run modal-serve     # Ephemeral dev URL with live logs, tears down on exit
-pixi run modal-deploy    # Update the stable prod URL (~20-30s with layer cache)
-```
-
-The weights Volume (`tap-olmo-weights`) holds the OLMo-2-7B-Instruct snapshot and the BERT HF cache. Re-populate only when the underlying weights or tokenizer files change:
-
-```bash
-pixi run modal run app/backend/modal_app.py::download_weights
-```
