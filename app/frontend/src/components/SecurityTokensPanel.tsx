@@ -9,7 +9,14 @@ function ResampledToken({ token, resample }: { token: string; resample: Security
   return (
     <TokenTooltip
       token={token}
-      tooltipBody={<>{resample.old_token} → {resample.new_token}</>}
+      tooltipBody={
+        <>
+          {resample.old_token} → {resample.new_token}
+          {resample.validity_radius != null && (
+            <> · validity radius: {resample.validity_radius}</>
+          )}
+        </>
+      }
       triggerStyle={{
         color: 'var(--color-accent)',
         borderBottom: '1px dotted var(--color-accent)',
