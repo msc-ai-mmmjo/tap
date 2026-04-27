@@ -8,6 +8,7 @@ interface Props {
 const MAX_ALPHA = 0.55;
 const MIN_ALPHA = 0.05;
 const N_STEPS = 6; // validity radii 0–5
+const MAX_RADIUS = N_STEPS - 1;
 
 // radius 0 (low validity) → brightest; radius 5 (high validity) → faint but visible
 const VALIDITY_COLORS = Array.from({ length: N_STEPS }, (_, r) =>
@@ -27,7 +28,7 @@ function ResampledToken({ token, resample }: { token: string; resample: Security
         <>
           {resample.old_token} → {resample.new_token}
           {resample.validity_radius != null && (
-            <> · validity radius: {resample.validity_radius}</>
+            <> · validity radius: {resample.validity_radius} / {N_STEPS - 1}</>
           )}
         </>
       }
@@ -58,7 +59,7 @@ export function SecurityTokensPanel({ data }: Props) {
         }}
       >
         <div
-          className="font-mono text-[10px] uppercase tracking-[0.18em] mb-3 flex items-center justify-between gap-3"
+          className="font-mono text-[10px] uppercase tracking-[0.18em] flex items-center justify-between gap-3"
           style={{ color: 'var(--color-ink-muted)' }}
         >
           <span>— Security token stream</span>
@@ -79,6 +80,13 @@ export function SecurityTokensPanel({ data }: Props) {
             />
             <span>low validity</span>
           </span>
+        </div>
+        <div
+          className="text-[11px] mb-3 mt-1"
+          style={{ color: 'var(--color-ink-soft)' }}
+        >
+          Underlined tokens were resampled; shading is each token's validity
+          radius (0–{MAX_RADIUS}, higher is safer).
         </div>
         {data.resampled.length === 0 && (
           <div

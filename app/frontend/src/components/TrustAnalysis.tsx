@@ -3,7 +3,9 @@ import { ClaimCard } from './ClaimCard';
 import { AdversarialPreviewPanel } from './AdversarialPreviewPanel';
 import { SecurityTokensPanel } from './SecurityTokensPanel';
 import { TokenHeatmapPanel } from './TokenHeatmapPanel';
-import { StabilityHeatmapPanel } from './StabilityHeatmapPanel';
+// Stability heatmap was an experiment that didn't make the release cut; keep
+// the import + panel commented so it's easy to re-enable if we revisit.
+// import { StabilityHeatmapPanel } from './StabilityHeatmapPanel';
 
 interface Props {
   data: AnalysisResponse;
@@ -63,9 +65,10 @@ export function TrustAnalysis({ data }: Props) {
               <TokenHeatmapPanel data={data.security} />
             )}
 
-            {data.security.tokens.length > 0 && (
+            {/* Token stability heatmap: experimental, not released. */}
+            {/* {data.security.tokens.length > 0 && (
               <StabilityHeatmapPanel data={data.security} />
-            )}
+            )} */}
           </div>
         </div>
       )}
