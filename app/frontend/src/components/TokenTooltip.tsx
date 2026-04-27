@@ -77,8 +77,9 @@ export function TokenTooltip({ token, tooltipBody, triggerStyle }: Props) {
             style={{
               top: pos.top,
               left: pos.left,
-              background: 'var(--color-tooltip-bg)',
-              color: 'var(--color-tooltip-fg)',
+              background: 'var(--color-card)',
+              color: 'var(--color-ink)',
+              border: '1px solid var(--color-rule)',
             }}
             className="fixed px-2.5 py-1.5 text-[11.5px] font-mono shadow-xl pointer-events-none z-50"
           >

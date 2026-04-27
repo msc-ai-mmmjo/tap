@@ -27,9 +27,6 @@
   --color-warn: #a05a14;
   --color-bad: #b91c1c;
   --color-bad-soft: #efd5d5;
-
-  --color-tooltip-bg: #15171c;
-  --color-tooltip-fg: #f4f1ea;
 }
 
 :root[data-theme="dark"] {
@@ -49,8 +46,6 @@
   --color-bad: #ef5e5e;
   --color-bad-soft: #3a2024;
   --color-rule-on-ink: rgba(0, 0, 0, 0.18);
-  --color-tooltip-bg: #0c0e12;
-  --color-tooltip-fg: #ece8de;
 }
 
 @layer base {

@@ -119,8 +119,9 @@ function InfoTooltip({ info, label }: { info: MetricInfo; label: string }) {
               top: pos?.top ?? -9999,
               left: pos?.left ?? -9999,
               width: 280,
-              background: 'var(--color-ink)',
-              color: 'var(--color-paper)',
+              background: 'var(--color-card)',
+              color: 'var(--color-ink)',
+              border: '1px solid var(--color-rule)',
             }}
             className="fixed px-3.5 py-3 text-[12px] leading-[1.55] shadow-xl pointer-events-none z-50 animate-tooltip-in"
           >
@@ -128,8 +129,8 @@ function InfoTooltip({ info, label }: { info: MetricInfo; label: string }) {
             <div
               className="font-mono text-[10px] uppercase tracking-wider pt-1.5 mt-1.5"
               style={{
-                color: 'var(--color-paper-2)',
-                borderTop: '1px solid var(--color-rule-on-ink)',
+                color: 'var(--color-ink-soft)',
+                borderTop: '1px solid var(--color-rule)',
               }}
             >
               {info.paper}
@@ -248,13 +249,13 @@ export function MetricCards({ data }: Props) {
       const risk = computeSecurityRisk(resampled);
       if (risk === 'low' || risk === null) {
         securitySeverity = 'ok';
-        securityCaption = '(max 8). Resamples were decisive; low poisoning risk';
+        securityCaption = 'Resamples were decisive; low poisoning risk. Max 5, higher is safer.';
       } else if (risk === 'moderate') {
         securitySeverity = 'warn';
-        securityCaption = '(max 8). Some marginal resamples detected; verify key claims';
+        securityCaption = 'Some marginal resamples detected; verify key claims. Max 5, higher is safer.';
       } else {
         securitySeverity = 'bad';
-        securityCaption = '(max 8). Low-validity resamples present; treat with caution';
+        securityCaption = 'Low-validity resamples present; treat with caution. Max 5, higher is safer.';
       }
     }
   }
