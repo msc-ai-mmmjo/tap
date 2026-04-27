@@ -1,9 +1,5 @@
 """
-Builds a HydraOLMo model with:
-- config.heads_depth worth of layers in each Hydra head
-- LoRA params are only allowed in the truncated head
-- NOTE: by convention the 0th head is finetuned, any other instantiated
-head is frozen
+Functions to support loading models for inference and training.
 """
 
 import gc
@@ -21,6 +17,11 @@ from olmo_tap.hydra import HydraTransformer, HydraTransformerConfig
 
 
 def build_base_model(config: HydraLoRAConfig) -> HydraTransformer:
+    """
+    :param config: Config file detailing architecture of model to be loaded
+
+    :returns HydraTransformer: OLMo with base weights
+    """
     factory = (
         HydraTransformerConfig.from_olmo2_7B
         if config.model_size == "7b"
@@ -58,9 +59,12 @@ def build_base_model(config: HydraLoRAConfig) -> HydraTransformer:
     return model
 
 
-def inject_lora(
-    model: HydraTransformer, config: HydraLoRAConfig, head_idx: int = 0
-) -> None:
+def inject_lora(model: HydraTransformer, config: HydraLoRAConfig, head_idx: int = 0):
+    """
+    :param model: HydraTransformer model to inject trainable LoRA weights into.
+    :param config: Config file detailing LoRA params (rank, alpha, target_modules).
+    :param head_idx: Which Hydra index to load trainable LoRA weights into (default 0).
+    """
     # inject LoRA into target modules specified by config
     lora_config = LoraConfig(
         r=config.lora_r,
@@ -86,7 +90,13 @@ def load_and_merge_lora_weights(
     config: HydraLoRAConfig,
     weights_path: Path | str,
     head_idx: int = 0,
-) -> None:
+):
+    """
+    :param model: HydraTransformer model to add trained LoRA weights to.
+    :param config: Config file detailing LoRA params (rank, alpha, target_modules).
+    :param weights_path: Path of saved LoRA weights.
+    :param head_idx: Which Hydra index to add trained LoRA weights to.
+    """
     # inject temporary LoRA to house the incoming weights
     lora_config = LoraConfig(
         r=config.lora_r,

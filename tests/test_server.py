@@ -34,7 +34,13 @@ def test_analyse_returns_expected_shape(client):
     with (
         patch(
             "app.backend.server.generate",
-            return_value=("Paris is the capital of France.", ["Paris", "is"], [], None),
+            return_value=(
+                "Paris is the capital of France.",
+                ["Paris", "is"],
+                [],
+                [0.4, 1.2],
+                None,
+            ),
         ),
         patch("app.backend.server.detect_mcq_bert", return_value=False),
         patch(
@@ -65,6 +71,7 @@ def test_analyse_returns_expected_shape(client):
     assert data["security"]["certified"] is True
     assert data["security"]["tokens"] == ["Paris", "is"]
     assert data["security"]["resampled"] == []
+    assert data["security"]["token_entropies"] == [0.4, 1.2]
     assert "tpa_budget" not in data["security"]
     assert "flagged_tokens" not in data["security"]
     assert "detail" not in data["security"]
@@ -84,7 +91,7 @@ def test_analyse_surfaces_resampled_tokens(client):
     with (
         patch(
             "app.backend.server.generate",
-            return_value=("better answer", tokens, resampled, None),
+            return_value=("better answer", tokens, resampled, [0.8, 0.2], None),
         ),
         patch("app.backend.server.detect_mcq_bert", return_value=False),
         patch(
@@ -106,6 +113,7 @@ def test_analyse_surfaces_resampled_tokens(client):
     assert data["security"]["certified"] is True
     assert data["security"]["tokens"] == tokens
     assert data["security"]["resampled"] == resampled
+    assert data["security"]["token_entropies"] == [0.8, 0.2]
     assert data["uncertainty"] == {"overall": None}
 
 
@@ -123,6 +131,7 @@ def test_analyse_fallback_security_on_hf(client):
     assert data["security"]["certified"] is None
     assert data["security"]["tokens"] == []
     assert data["security"]["resampled"] == []
+    assert data["security"]["token_entropies"] == []
     assert data["uncertainty"] == {"overall": None}
 
 
@@ -134,7 +143,7 @@ def test_analyse_passes_full_message_history(client):
     ]
     with (
         patch(
-            "app.backend.server.generate", return_value=("4.", ["4"], [], None)
+            "app.backend.server.generate", return_value=("4.", ["4"], [], [0.0], None)
         ) as mock_gen,
         patch("app.backend.server.detect_mcq_bert", return_value=False),
         patch(
@@ -157,7 +166,7 @@ def test_analyse_passes_full_message_history(client):
 def test_analyse_mcq_path_uses_bert_flag(client):
     with (
         patch(
-            "app.backend.server.generate", return_value=("B", ["B"], [], 0.77)
+            "app.backend.server.generate", return_value=("B", ["B"], [], [0.0], 0.77)
         ) as mock_gen,
         patch("app.backend.server.detect_mcq_bert", return_value=True),
         patch(

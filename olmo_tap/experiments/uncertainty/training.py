@@ -1,9 +1,13 @@
 """
-HydraTransformer Double-Head LoRA Finetuning Pipeline
+HydraTransformer Double-Head Uncertainty Finetuning Pipeline.
 
-This script finetunes the uncertainty head of the Hydra using the
-LoRA + Prompt mechanism. We use a separate frozen head to perform
-inference.
+Uses the FrozenHeadHandler to cycle through frozen LLM heads, each loaded with OLMo base +
+prod security LoRA + robustness LoRA. Uncertainty head is trained to predict confidence
+score of the multiple choice answer.
+
+Intended Usage (run from tap root)::
+    # cycles through randomly selected heads for 100 steps each
+    pixi run python -m experiments.uncertainty.training --num-epochs 5 --swap-freq 100
 """
 
 import argparse

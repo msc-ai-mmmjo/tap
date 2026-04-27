@@ -23,6 +23,19 @@ from transformers import PreTrainedTokenizerBase
 
 
 class PoE:
+    """
+    Inference mechanism for multi-head branched Hydra transformer.
+    Performs Product of Experts (PoE) speculative-verification to produce
+    responses to user prompts.
+
+    :param model: instance of Hydra transformer with desired weights loaded.
+    :param tokenizer: tokenizer for corresponding model.
+    :param n_llm_heads: number of LLM heads in Hydra.
+    :param gamma: steps size in which spec-verify is conducted.
+    :param beta: inverse temperature scaling for verifier heads.
+    :param max_new_tokens: maximum allowed tokens to be generated from a single prompt.
+    """
+
     def __init__(
         self,
         model: HydraTransformer,
@@ -50,7 +63,20 @@ class PoE:
         is_mcq: bool = False,
         temperature: float | None = 0.98,
         messages: list[dict] | None = None,
-    ) -> tuple[list[str], list[str], list[int], Optional[float]]:
+    ) -> tuple[list[str], list[str], list[int], list[float], Optional[float]]:
+        """
+        Performs speculative verification with kv-caching.
+
+        :param prompt_text: the user prompt as a string.
+        :param is_mcq: if True, the uncertainty head is used to produce confidence probability.
+        :param temperature: global temperature scaling (if not None, sample based token generation).
+        :param messages: optional argument for multi-turn chatbot conversation.
+
+        :returns: tuple[List of tokens (str) in generation with 0th entry as prompt,
+            List of original tokens (str) at resampling indices,
+            List of resampling indices (int),
+            Optional uncertainty head confidence (float)]
+        """
         # messages wins when provided so the chat backend can pass full multi-turn
         # history; prompt_text stays as the single-turn path for scripts/experiments.
         if not messages:
@@ -94,6 +120,9 @@ class PoE:
         # store original (before resampling) tokens and their indices
         original_tokens = []
         resampled_idxs = []
+
+        # verifier ensemble predictive entropy at each emitted token (nats)
+        token_entropies: list[float] = []
 
         # hidden state to residual stream inject for uncertainty
         hidden_unc_state: Optional[torch.Tensor] = None
@@ -159,6 +188,14 @@ class PoE:
                 P_dist = torch.exp(log_P)
                 P_dist /= P_dist.sum() + 1e-10
 
+                # Verifier ensemble predictive entropy (nats) at this position.
+                # Predictive entropy is a standard token-level uncertainty signal
+                # (Malinin & Gales, "Uncertainty Estimation in Autoregressive
+                # Structured Prediction", ICLR 2021), and the verifier heads form
+                # a deep ensemble (Lakshminarayanan et al., NeurIPS 2017), so
+                # H(P_dist) reads as ensemble predictive uncertainty here.
+                step_entropy = float(torch.special.entr(P_dist).sum().item())
+
                 token_id = int(draft_step_ids[i])
                 p_val, q_val = P_dist[token_id].item(), draft_probs[i][token_id].item()
 
@@ -170,6 +207,7 @@ class PoE:
                         dim=-1,
                     )
                     output_parts.append(cast(str, self.tokenizer.decode([token_id])))
+                    token_entropies.append(step_entropy)
 
                     if is_mcq and hidden_unc_state is None:
                         # if we accepted, use the drafter head's hidden state
@@ -192,6 +230,7 @@ class PoE:
                     output_parts.append(
                         cast(str, self.tokenizer.decode([resampled_id]))
                     )
+                    token_entropies.append(step_entropy)
                     generated_ids = torch.cat(
                         [generated_ids, torch.tensor([[resampled_id]], device="cuda")],
                         dim=-1,
@@ -248,7 +287,13 @@ class PoE:
                 question_text, full_answer, hidden_unc_state
             )
 
-        return output_parts, original_tokens, resampled_idxs, uncertainty_score
+        return (
+            output_parts,
+            original_tokens,
+            resampled_idxs,
+            token_entropies,
+            uncertainty_score,
+        )
 
     @torch.no_grad()
     def get_uncertainty_score(
@@ -258,9 +303,15 @@ class PoE:
         witness_hidden_state: torch.Tensor,
     ) -> float:
         """
-        Runs a second pass to evaluate probability of correctness by injecting the witness.
+        Pass through uncertainty head to evaluate probability of correctness of PoE generated answer.
+        NOTE: only for multiple choice
+
+        :param prompt_text: the user prompt as a string.
+        :param full_answer_text: the full generated PoE response as a string.
+        :param witness_hidden_state: the hidden state (just before projection to vocab size) of the
+        witness head at the final index in the prompt (from which the multiple choice answer is sampled).
         """
-        second_pass_prompt = f"{prompt_text}Answer: {full_answer_text}\nTask: Reply A (correct) or B (wrong): "
+        second_pass_prompt = f"{prompt_text} Answer: {full_answer_text}\nTask: Reply A (correct) or B (wrong): "
 
         enc = cast(
             dict[str, torch.Tensor],
@@ -324,8 +375,8 @@ if __name__ == "__main__":
 
     q = "Is Donald Trump a good politician?"
     print("\n--- POE SPECULATIVE ---")
-    response, original_tokens, replaced_idxs, conf = poe.generate_with_cache(
-        q, is_mcq=True
+    response, original_tokens, replaced_idxs, token_entropies, conf = (
+        poe.generate_with_cache(q, is_mcq=True)
     )
     print("".join(response))
     if conf is not None:

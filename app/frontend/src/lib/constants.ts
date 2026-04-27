@@ -10,16 +10,7 @@ export const CONFIDENCE_THRESHOLDS = {
 export const ROBUSTNESS_FLIP_WARN_RATIO = 1 / 3;
 
 export const COLOURS = {
-  success: {
-    primary: '#1f6f4f',
-    text: '#0e3d2b',
-  },
-  warning: {
-    primary: '#a05a14',
-    text: '#5a330a',
-  },
-  danger: {
-    primary: '#b91c1c',
-    text: '#5a1414',
-  },
+  success: 'var(--color-ok)',
+  warning: 'var(--color-warn)',
+  danger: 'var(--color-bad)',
 } as const;

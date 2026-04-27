@@ -1,7 +1,9 @@
 """
-Train a single security head on one MedMCQA shard via LoRA SFT.
+HydraTransformer Security Finetuning Pipeline.
 
-Usage:
+Loads base OLMo weights then injects fresh LoRA for security training on MedMCQA.
+
+Intended Usage (run from tap root)::
     # quick test on shard 0
     pixi run python -m experiments.security.training --shard-id 0 --num-epochs 3
 

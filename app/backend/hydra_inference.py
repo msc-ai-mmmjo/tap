@@ -16,14 +16,12 @@ logger = logging.getLogger(__name__)
 
 MODEL_NAME = "Hydra"
 
-# TODO Per Michele's comment, we should play with this to see if we can get option +
-# some short explanation and refactor relevant inference pipeline e.g. robustness
-# to reflect that. From some tests I performed if it was left to free flow it would
-# just give dictionary definitions of each option.
-# I also wonder what happens if it gets an MCQ with no letter? Unsure what would happen
 MCQ_SYSTEM_PROMPT = (
-    "Respond with only the letter of the correct option (e.g. A, B, C, or D). "
-    "Do not add any explanation."
+    "Output your chosen option on its own first, then optionally a brief explanation.\n"
+    "- For lettered options, output just the single letter.\n"
+    "- For yes/no questions, output just 'yes' or 'no'.\n"
+    "- For other listed options, output just the option text exactly as given.\n"
+    "Then on a new line you may add one short sentence of explanation."
 )
 
 NLP_SYSTEM_PROMPT = (
@@ -68,17 +66,20 @@ def generate(
     messages: list[dict],
     is_mcq: bool,
     device: str = "cuda",
-) -> tuple[str, list[str], list[dict], float | None]:
+) -> tuple[str, list[str], list[dict], list[float], float | None]:
     """Generate a PoE response via speculative verification.
 
     Both MCQ and NLP prompts run through ``PoE.generate_with_cache``. When
-    ``is_mcq`` is true, a short system nudge is prepended, the token budget is
-    capped at ``MCQ_MAX_NEW_TOKENS`` so the model emits a bare letter, and the
-    PoE class captures a witness hidden state on the first accepted/rejected
-    token and returns a ``p_correct`` scalar from a dedicated uncertainty head.
+    ``is_mcq`` is true, a short system nudge is prepended and the token budget
+    is capped at ``MCQ_MAX_NEW_TOKENS`` so the model leads with the chosen
+    option and may add a brief explanation. The PoE class captures a witness
+    hidden state on the first accepted/rejected token and returns a
+    ``p_correct`` scalar from a dedicated uncertainty head.
 
-    :returns: ``(raw_response, tokens, resampled, uncertainty)`` where
-        ``uncertainty`` is a float ``p_correct`` for MCQ and ``None`` for NLP.
+    :returns: ``(raw_response, tokens, resampled, token_entropies, uncertainty)``
+        where ``token_entropies`` is the per-token verifier ensemble predictive
+        entropy in nats (parallel to ``tokens``) and ``uncertainty`` is a float
+        ``p_correct`` for MCQ and ``None`` for NLP.
     """
     n_heads = len(model.heads)
 
@@ -99,11 +100,13 @@ def generate(
         n_llm_heads=n_heads - 1,
         max_new_tokens=max_new_tokens,
     )
-    output_parts, original_tokens, resampled_idxs, uncertainty = (
+    output_parts, original_tokens, resampled_idxs, token_entropies, uncertainty = (
         poe.generate_with_cache(prompt_text="", is_mcq=is_mcq, messages=messages)
     )
-    raw_response, tokens, resampled = _tokens_and_resamples_from_poe_output(
-        tokenizer, output_parts, original_tokens, resampled_idxs
+    raw_response, tokens, resampled, token_entropies = (
+        _tokens_and_resamples_from_poe_output(
+            tokenizer, output_parts, original_tokens, resampled_idxs, token_entropies
+        )
     )
     logger.info(
         "PoE generation: %d chars, %d/%d tokens resampled, uncertainty=%s (%.2fs)",
@@ -113,7 +116,7 @@ def generate(
         f"{uncertainty:.4f}" if uncertainty is not None else "n/a",
         time.perf_counter() - t0,
     )
-    return raw_response, tokens, resampled, uncertainty
+    return raw_response, tokens, resampled, token_entropies, uncertainty
 
 
 def _tokens_and_resamples_from_poe_output(
@@ -121,16 +124,20 @@ def _tokens_and_resamples_from_poe_output(
     output_parts: list[str],
     original_tokens: list[str],
     resampled_idxs: list[int],
-) -> tuple[str, list[str], list[dict]]:
-    """Convert poe.py's token-indexed output into (raw_response, tokens, resampled).
+    token_entropies: list[float],
+) -> tuple[str, list[str], list[dict], list[float]]:
+    """Convert poe.py's token-indexed output into (raw_response, tokens, resampled, entropies).
 
     ``output_parts[0]`` is the chat-templated input; subsequent entries are
     decoded single tokens from the generation. ``resampled_idxs`` indexes into
     ``output_parts``; ``original_tokens[j]`` is the rejected draft token at
-    ``resampled_idxs[j]``. Trailing EOS entries are trimmed from both the
-    emitted token stream and any resample records that would land on them.
-    Each token's outer whitespace is stripped so the frontend can join tokens
-    with a single space for display without double-spacing BPE continuations.
+    ``resampled_idxs[j]``. ``token_entropies`` is parallel to
+    ``output_parts[1:]`` and gives the verifier ensemble predictive entropy
+    (nats) at each emitted token. Trailing EOS entries are trimmed from both
+    the emitted token stream and any resample records that would land on them;
+    entropies are truncated to match. Each token's outer whitespace is stripped
+    so the frontend can join tokens with a single space for display without
+    double-spacing BPE continuations.
     """
     eos_id = tokenizer.eos_token_id
     eos_str = cast(str, tokenizer.decode([eos_id])) if eos_id is not None else ""
@@ -141,6 +148,9 @@ def _tokens_and_resamples_from_poe_output(
 
     raw_response = "".join(parts)
     tokens = [p.strip() for p in parts]
+    # token_entropies may be one entry longer than parts if the final resampled
+    # token was EOS; the slice below trims it to match.
+    entropies = list(token_entropies[: len(parts)])
 
     resampled: list[dict] = []
     for j, orig_idx in enumerate(resampled_idxs):
@@ -157,7 +167,7 @@ def _tokens_and_resamples_from_poe_output(
             }
         )
 
-    return raw_response, tokens, resampled
+    return raw_response, tokens, resampled, entropies
 
 
 def get_robustness(
@@ -165,6 +175,7 @@ def get_robustness(
     tokenizer: PreTrainedTokenizerBase,
     messages: list[dict],
     original_resp: str,
+    original_tokens: list[str],
     is_mcq: bool,
     adv_suffix_bank: list[str],
     bert_model: Any,
@@ -187,11 +198,17 @@ def get_robustness(
 
         attack_msg = {"role": "user", "content": last_message["content"] + suffix}
         adv_prompt = messages + [attack_msg]
-        adv_resp, _, _, _ = generate(model, tokenizer, adv_prompt, is_mcq, device)
+        adv_resp, adv_tokens, _, _, _ = generate(
+            model, tokenizer, adv_prompt, is_mcq, device
+        )
         adv_results.append((suffix, adv_resp))
 
         if is_mcq:
-            if original_resp.strip().upper() != adv_resp.strip().upper():
+            # Compare the first generated token -- per MCQ_SYSTEM_PROMPT that token
+            # is the chosen option, so any flip there is an answer change.
+            orig_first = original_tokens[0].lower() if original_tokens else ""
+            adv_first = adv_tokens[0].lower() if adv_tokens else ""
+            if orig_first != adv_first:
                 logger.info("Adversarial suffix '%s' caused MCQ answer change!", suffix)
                 num_flipped += 1
                 if mcq_first_flip is None:

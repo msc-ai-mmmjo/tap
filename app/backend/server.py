@@ -11,6 +11,7 @@ from transformers import TokenizersBackend
 
 from app.backend.adversarial_suffixes import DUMMY_ADV_SUFFIXES
 from app.backend.bert_inference import load_bert
+from app.backend.claim_confidence import compute_claim_confidences
 from app.backend.claim_splitter import decompose_into_claims
 from app.backend.constants import HF_FALLBACK_MODEL as HF_MODEL, HF_TOKEN
 from app.backend.hydra_inference import (
@@ -19,7 +20,6 @@ from app.backend.hydra_inference import (
     load_hydra,
     MODEL_NAME,
 )
-from app.backend.mock_metrics import mock_claim_confidence
 from app.backend.question_classifier import detect_mcq_bert
 from app.backend.response_payloads import (
     fallback_robustness,
@@ -116,12 +116,11 @@ def _classify_mcq(last_user_msg: str) -> bool | None:
 @app.post("/api/analyse")
 async def analyse(request: ChatRequest, hf: bool = False):
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
-    logger.info("Latest user message: %s", messages[-1]["content"])
 
-    last_user_msg = next(
-        (m["content"] for m in reversed(messages) if m["role"] == "user"), ""
-    )
-    is_mcq = _classify_mcq(last_user_msg)
+    latest_user_msg = messages[-1]["content"]
+    logger.info("Latest user message: %s", latest_user_msg)
+
+    is_mcq = _classify_mcq(latest_user_msg)
     logger.info("BERT MCQ classification: %s", is_mcq)
 
     hydra: HydraTransformer | None = _models.get("hydra")
@@ -135,24 +134,25 @@ async def analyse(request: ChatRequest, hf: bool = False):
         robustness = fallback_robustness()
     else:
         model_name = MODEL_NAME
-        raw_response, tokens, resampled, p_correct = generate(
+        raw_response, tokens, resampled, token_entropies, p_correct = generate(
             hydra,
             hydra_tokenizer,
             messages,
             is_mcq=bool(is_mcq),
             device=_device,
         )
-        security = poe_security(tokens, resampled)
+        security = poe_security(tokens, resampled, token_entropies)
         uncertainty = poe_uncertainty(p_correct)
 
         bert_model = _models.get("bert")
         bert_tokenizer = _tokenizers.get("bert")
 
+        # Uncertainty for NLP
         if not is_mcq and bert_model is not None and bert_tokenizer is not None:
             try:
                 kle_responses: list[str] = []
                 for _ in range(KLE_N_SAMPLES):
-                    raw, _t, _r, _p = generate(
+                    raw, _t, _r, _e, _p = generate(
                         hydra,
                         hydra_tokenizer,
                         messages,
@@ -173,6 +173,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
                 logger.exception("KLE computation failed; falling back")
                 uncertainty = fallback_uncertainty()
 
+        # Robustness
         if not is_mcq and (bert_model is None or bert_tokenizer is None):
             robustness = fallback_robustness()
         else:
@@ -181,6 +182,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
                 hydra_tokenizer,
                 list(messages),
                 original_resp=raw_response,
+                original_tokens=tokens,
                 is_mcq=bool(is_mcq),
                 adv_suffix_bank=DUMMY_ADV_SUFFIXES,
                 bert_model=bert_model,
@@ -190,22 +192,34 @@ async def analyse(request: ChatRequest, hf: bool = False):
 
     logger.info("Generation complete (%d chars)", len(raw_response))
 
-    claims_text = decompose_into_claims(raw_response)
-    claims = []
-    scores = []
-    for text in claims_text:
-        metrics = mock_claim_confidence(text)
-        scores.append(metrics["confidence"])
-        claims.append(
-            {
-                "text": text,
-                "confidence": metrics["confidence"],
-                "confidence_level": metrics["level"],
-                "guidance": metrics["guidance"],
-            }
-        )
+    bert_model = _models.get("bert")
+    bert_tokenizer = _tokenizers.get("bert")
 
-    overall = round(sum(scores) / len(scores), 2) if scores else 0.0
+    claims: list[dict] = []
+    overall: float | None = None
+    if bert_model is not None and bert_tokenizer is not None:
+        try:
+            claims_text = decompose_into_claims(raw_response)
+            metrics_list = compute_claim_confidences(
+                raw_response, claims_text, bert_model, bert_tokenizer
+            )
+            claims = [
+                {
+                    "text": text,
+                    "confidence": m["confidence"],
+                    "confidence_level": m["level"],
+                    "guidance": m["guidance"],
+                }
+                for text, m in zip(claims_text, metrics_list)
+            ]
+            if metrics_list:
+                overall = round(
+                    sum(m["confidence"] for m in metrics_list) / len(metrics_list), 2
+                )
+        except Exception:
+            logger.exception("Claim ledger unavailable; returning empty claims")
+            claims = []
+            overall = None
 
     return {
         "claims": claims,

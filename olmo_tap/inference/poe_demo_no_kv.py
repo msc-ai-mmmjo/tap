@@ -1,5 +1,5 @@
 """
-Implements the Spec-Decode PoE method detailed here: https://www.overleaf.com/7351696474ggfyybskyttm#e97251
+Implements the Spec-Decode PoE method detailed here: https://www.overleaf.com/read/cjnxtpqjbbcx#4f6a0e
 This provides a security guarantee that no harmful token is ever sampled provided there exists at least
 1 honest head in the jury which assigns negligible probability mass to the harmful token.
 

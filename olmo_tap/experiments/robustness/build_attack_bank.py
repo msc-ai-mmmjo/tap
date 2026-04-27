@@ -119,9 +119,7 @@ def phase_2_generate_suffixes(
 
     ds = load_dataset("openlifescienceai/medmcqa", split="validation")
 
-    gcg = AmpleGCG(device="cuda", num_return_seq=num_return_seq)
-    gcg.gen_config.num_beams = num_beams
-    gcg.gen_config.num_beam_groups = num_beams
+    gcg = AmpleGCG(device="cuda", num_return_seq=num_return_seq, num_beams=num_beams)
 
     t0 = time.time()
     for seed_idx in range(start_seed, len(val_indices)):

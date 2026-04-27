@@ -6,11 +6,28 @@ request orchestration and model lifecycle; these helpers depend on neither.
 
 
 def fallback_security() -> dict:
-    return {"certified": None, "tokens": [], "resampled": []}
+    return {
+        "certified": None,
+        "tokens": [],
+        "resampled": [],
+        "token_entropies": [],
+    }
 
 
-def poe_security(tokens: list[str], resampled: list[dict]) -> dict:
-    return {"certified": True, "tokens": tokens, "resampled": resampled}
+def poe_security(
+    tokens: list[str],
+    resampled: list[dict],
+    token_entropies: list[float],
+) -> dict:
+    # token_entropies is conceptually an uncertainty signal, not a security one.
+    # We park it on the security payload because the heatmap already consumes
+    # `tokens` from here, so co-locating avoids cross-payload plumbing for now.
+    return {
+        "certified": True,
+        "tokens": tokens,
+        "resampled": resampled,
+        "token_entropies": token_entropies,
+    }
 
 
 def fallback_uncertainty() -> dict:

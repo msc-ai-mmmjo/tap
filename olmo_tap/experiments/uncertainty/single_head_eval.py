@@ -1,13 +1,16 @@
 """
+NOTE: this file is for testing the uncertainty head on a single LLM head. For the 
+equivalent file used for testing on the PoE Hydra aggregation, see ``olmo_tap/final_evals/uncertainty_sweep.py``
+
 Reliability-diagram eval for the uncertainty head.
 
-For each robustness shard (0..8), run the uncertainty head over the MedMCQA
+For each robustness shard (0 through 8), run the uncertainty head over the MedMCQA
 validation fold via the two-pass procedure from engine.py::train, bin the
 predicted Q into equal-width bins, compute the empirical accuracy P per bin,
 and plot P vs Q with the y=x diagonal. Drops one PNG per shard.
 
-Usage:
-    pixi run -e cuda python -m olmo_tap.experiments.uncertainty.eval \\
+Intended Usage::
+    pixi run -e cuda python -m olmo_tap.experiments.uncertainty.single_head_eval \\
         --checkpoint olmo_tap/weights/uncertainty/checkpoint_final.pt
 """
 
