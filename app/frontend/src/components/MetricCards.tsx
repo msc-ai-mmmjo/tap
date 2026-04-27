@@ -238,13 +238,13 @@ export function MetricCards({ data }: Props) {
     securitySeverity = 'na';
     securityCaption = 'Fallback: no PoE guarantee';
   } else {
-    const meanRadius = meanValidityRadius(resampled);
-    if (resampledCount === 0 || meanRadius === null) {
+    if (resampledCount === 0) {
       securityValue = 'No swaps';
       securitySeverity = 'ok';
       securityCaption = `All ${totalTokens} tokens agreed across heads`;
     } else {
-      securityValue = `${meanRadius/8} avg. swap validity`;
+      const meanRadius = meanValidityRadius(resampled);
+      securityValue = `${meanRadius} avg. swap validity`;
       const risk = computeSecurityRisk(resampled);
       if (risk === 'low' || risk === null) {
         securitySeverity = 'ok';
