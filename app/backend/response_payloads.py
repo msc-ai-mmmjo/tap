@@ -18,6 +18,8 @@ def poe_security(
     tokens: list[str],
     resampled: list[dict],
     token_entropies: list[float],
+    stability_radii: list[int],
+    stability_margins: list[float],
 ) -> dict:
     # token_entropies is conceptually an uncertainty signal, not a security one.
     # We park it on the security payload because the heatmap already consumes
@@ -27,6 +29,8 @@ def poe_security(
         "tokens": tokens,
         "resampled": resampled,
         "token_entropies": token_entropies,
+        "stability_radii": stability_radii,
+        "stability_margins": stability_margins,
     }
 
 

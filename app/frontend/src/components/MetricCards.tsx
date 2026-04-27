@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { AnalysisResponse } from '../types/api';
 import { CONFIDENCE_THRESHOLDS, ROBUSTNESS_FLIP_WARN_RATIO } from '../lib/constants';
+import { computeSecurityRisk, meanValidityRadius, VALIDITY_RADIUS_MAX } from '../lib/security';
 
 interface Props {
   data: AnalysisResponse;
@@ -21,7 +22,7 @@ const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> =
   },
   security: {
     definition:
-      "Defends against training-data tampering (poisoning). Each token is cross-checked by several independent heads in the model; whenever they disagree with the draft, the token is rewritten. Fewer rewrites means stronger agreement across heads, and a more trustworthy answer.",
+      "Defends against training-data tampering (poisoning). Each token is cross-checked by several independent heads in the model; whenever they disagree with the draft, the token is rewritten. A higher mean validity radius (more head-vote flips would be needed to overturn the rejection) means a more trustworthy answer.",
     paper:
       'Method: Ghitu & Wicker, "Towards Poisoning Robustness Certification for Natural Language Generation".',
   },
@@ -118,8 +119,9 @@ function InfoTooltip({ info, label }: { info: MetricInfo; label: string }) {
               top: pos?.top ?? -9999,
               left: pos?.left ?? -9999,
               width: 280,
-              background: 'var(--color-ink)',
-              color: 'var(--color-paper)',
+              background: 'var(--color-card)',
+              color: 'var(--color-ink)',
+              border: '1px solid var(--color-rule)',
             }}
             className="fixed px-3.5 py-3 text-[12px] leading-[1.55] shadow-xl pointer-events-none z-50 animate-tooltip-in"
           >
@@ -127,8 +129,8 @@ function InfoTooltip({ info, label }: { info: MetricInfo; label: string }) {
             <div
               className="font-mono text-[10px] uppercase tracking-wider pt-1.5 mt-1.5"
               style={{
-                color: 'var(--color-paper-2)',
-                borderTop: '1px solid var(--color-rule-on-ink)',
+                color: 'var(--color-ink-soft)',
+                borderTop: '1px solid var(--color-rule)',
               }}
             >
               {info.paper}
@@ -237,16 +239,27 @@ export function MetricCards({ data }: Props) {
     securitySeverity = 'na';
     securityCaption = 'Fallback: no PoE guarantee';
   } else {
-    securityValue = `${resampledCount} swap${resampledCount !== 1 ? 's' : ''}`;
     if (resampledCount === 0) {
+      securityValue = 'No swaps';
       securitySeverity = 'ok';
       securityCaption = `All ${totalTokens} tokens agreed across heads`;
-    } else if (resampledCount <= 3) {
-      securitySeverity = 'warn';
-      securityCaption = `${resampledCount} of ${totalTokens} tokens resampled, minor disagreement`;
     } else {
-      securitySeverity = 'bad';
-      securityCaption = `${resampledCount} of ${totalTokens} tokens resampled, heavy disagreement`;
+      const meanRadius = meanValidityRadius(resampled);
+      securityValue = meanRadius != null ? `${meanRadius.toFixed(1)} / ${VALIDITY_RADIUS_MAX.toFixed(1)}` : '—';
+      const risk = computeSecurityRisk(resampled);
+      if (risk === null) {
+        securitySeverity = 'na';
+        securityCaption = 'Backend did not report validity radii';
+      } else if (risk === 'low') {
+        securitySeverity = 'ok';
+        securityCaption = 'Resamples were decisive; low poisoning risk.';
+      } else if (risk === 'moderate') {
+        securitySeverity = 'warn';
+        securityCaption = 'Some marginal resamples detected; verify key claims.';
+      } else {
+        securitySeverity = 'bad';
+        securityCaption = 'Low-validity resamples present; treat with caution.';
+      }
     }
   }
 
