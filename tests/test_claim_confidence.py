@@ -6,12 +6,42 @@ pytest.importorskip("torch")
 
 import torch
 
-from app.backend.claim_confidence import compute_claim_confidences
+from app.backend.claim_confidence import compute_claim_confidences, score_to_metrics
 
 
 def _fake_probs(rows: list[tuple[float, float, float]]) -> torch.Tensor:
     """Build a (N, 3) NLI probability tensor with columns [entailment, neutral, contradiction]."""
     return torch.tensor(rows, dtype=torch.float32)
+
+
+def test_score_to_metrics_high_at_threshold():
+    m = score_to_metrics(0.80)
+    assert m["level"] == "high"
+    assert m["confidence"] == 0.80
+    assert m["guidance"] == ""
+
+
+def test_score_to_metrics_moderate_band():
+    m = score_to_metrics(0.70)
+    assert m["level"] == "moderate"
+    assert m["confidence"] == 0.70
+    assert m["guidance"] == "Verify with clinical reference"
+
+
+def test_score_to_metrics_moderate_at_lower_threshold():
+    assert score_to_metrics(0.65)["level"] == "moderate"
+
+
+def test_score_to_metrics_low_just_below_moderate():
+    # 0.64 sits just below the 0.65 moderate threshold (after rounding to 2 dp).
+    m = score_to_metrics(0.64)
+    assert m["level"] == "low"
+    assert m["guidance"].startswith("Cross-check")
+
+
+def test_score_to_metrics_rounds_confidence_to_two_dp():
+    assert score_to_metrics(0.123456)["confidence"] == 0.12
+    assert score_to_metrics(0.999)["confidence"] == 1.0
 
 
 def test_empty_claims_returns_empty_list():
