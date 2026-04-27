@@ -1,3 +1,28 @@
+"""
+FastAPI entrypoint for the Trustworthy Answer Protocol (TAP) backend.
+
+Wires together the four scoring stages exposed by ``/api/analyse``:
+
+1. **Generation** -- :func:`app.backend.hydra_inference.generate` runs the Hydra
+   PoE ensemble; if the ensemble is unavailable the request falls through to
+   the HF Inference API via :func:`call_hf_model`.
+2. **Security** -- per-token PoE acceptance / verifier-ensemble entropy /
+   stability radii are returned by :func:`app.backend.hydra_inference.generate`
+   and packaged via :func:`app.backend.response_payloads.poe_security`.
+3. **Uncertainty** -- ``p_correct`` from the uncertainty head for MCQ; for NLP
+   we run :data:`olmo_tap.constants.KLE_N_SAMPLES` extra samples and convert
+   their NLI similarity matrix into a Kernel Language Entropy certainty score.
+4. **Robustness** -- :func:`app.backend.hydra_inference.get_robustness` retries
+   the prompt with each adversarial suffix in :data:`ADV_SUFFIXES` and reports
+   how many flipped the answer.
+
+The two heavyweight models (Hydra + ModernBERT-NLI) are loaded once during
+the FastAPI lifespan and stashed in module-level dicts so request handlers
+can grab them without re-loading. On Modal the ``@modal.enter()`` hook in
+:mod:`app.backend.modal_app` preloads Hydra into the same dicts before the
+ASGI app boots; the lifespan detects this and skips the duplicate load.
+"""
+
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -45,6 +70,17 @@ _device: str = "cuda"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    FastAPI lifespan that loads (or re-uses preloaded) Hydra and BERT models.
+
+    On Modal the ``@modal.enter()`` hook in :mod:`app.backend.modal_app` has
+    already populated ``_models["hydra"]`` before this runs; the duplicate
+    load would otherwise add ~30s of cold-start. BERT is always loaded here
+    because Modal's preload only warms Hydra.
+
+    :param app: FastAPI application instance (unused but required by the
+        lifespan protocol).
+    """
     global _device
     _device = os.getenv("DEVICE", "cuda")
     logger.info("Starting up - device=%s", _device)
@@ -83,11 +119,27 @@ app.add_middleware(
 
 
 class Message(BaseModel):
+    """
+    Single chat-completions message.
+
+    :param role: One of ``"system"``, ``"user"``, ``"assistant"`` (matches the
+        OpenAI / HF chat-completions schema).
+    :param content: Raw text content for that role.
+    """
+
     role: str
     content: str
 
 
 class ChatRequest(BaseModel):
+    """
+    Request body for :func:`analyse`.
+
+    :param messages: Multi-turn chat history, oldest message first. The last
+        element must have ``role == "user"`` and is the prompt that gets
+        scored for uncertainty / security / robustness.
+    """
+
     messages: list[Message]
 
 
@@ -106,6 +158,18 @@ def call_hf_model(messages: list[dict]) -> str:
 
 
 def _classify_mcq(last_user_msg: str) -> bool | None:
+    """
+    Classify the latest user message as MCQ or open-ended via BERT NLI.
+
+    Wraps :func:`app.backend.question_classifier.detect_mcq_bert` and returns
+    ``None`` when BERT failed to load at startup so the caller can degrade
+    gracefully (no MCQ system prompt, NLP code paths only).
+
+    :param last_user_msg: Raw text of the most recent user turn.
+
+    :returns: ``True`` if multiple-choice, ``False`` if open-ended,
+        ``None`` if BERT is unavailable.
+    """
     bert_model = _models.get("bert")
     bert_tokenizer = _tokenizers.get("bert")
     if bert_model is None or bert_tokenizer is None:
@@ -115,6 +179,31 @@ def _classify_mcq(last_user_msg: str) -> bool | None:
 
 @app.post("/api/analyse")
 async def analyse(request: ChatRequest, hf: bool = False):
+    """
+    Score a chat prompt for security, uncertainty, robustness and per-claim
+    confidence.
+
+    Generation runs through the Hydra PoE ensemble unless ``hf=True`` is
+    passed (or the ensemble failed to load), in which case the HF Inference
+    API is used as a fallback and security / uncertainty / robustness are
+    returned as ``unavailable``-style payloads.
+
+    The claim ledger is independent of the generation backend: it always
+    decomposes ``raw_response`` and scores each claim with NLI self-entailment
+    when BERT is available. KLE-based uncertainty for NLP queries is computed
+    here (not inside ``generate``) because it requires :data:`KLE_N_SAMPLES`
+    extra forward passes.
+
+    :param request: Chat history; the last user turn is the prompt.
+    :param hf: Force the HF Inference API path even when Hydra is healthy.
+        Useful for A/B comparisons against the unverified baseline.
+
+    :returns: Dict with keys ``claims``, ``overall_confidence``,
+        ``uncertainty``, ``security``, ``robustness``, ``raw_response``,
+        ``model``, ``is_mcq``. See
+        :mod:`app.backend.response_payloads` for the security/uncertainty/
+        robustness sub-schemas.
+    """
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
 
     latest_user_msg = messages[-1]["content"]
@@ -245,4 +334,38 @@ async def analyse(request: ChatRequest, hf: bool = False):
 
 @app.get("/api/health")
 async def health():
+    """
+    Lightweight liveness probe used by Cloudflare Pages, uptime checks and
+    Modal's health monitor.
+
+    :returns: ``{"status": "ok"}``. Does not touch model state, so a 200 here
+        only means the ASGI process is up; readiness for Hydra requests is
+        implicit in successful ``/api/analyse`` calls.
+    """
     return {"status": "ok"}
+
+
+if __name__ == "__main__":
+    # Local smoke test:
+    #   pixi run -e cuda python -m app.backend.server
+    # Hits the in-process ASGI app via TestClient so no uvicorn / port is
+    # needed. The lifespan still fires, so this exercises the same model-
+    # loading path as a real ``modal serve`` deployment.
+    from fastapi.testclient import TestClient
+
+    with TestClient(app) as client:
+        health_resp = client.get("/api/health")
+        print("Health:", health_resp.json())
+
+        analyse_resp = client.post(
+            "/api/analyse",
+            json={
+                "messages": [
+                    {"role": "user", "content": "Is paracetamol safe in pregnancy?"}
+                ]
+            },
+        )
+        body = analyse_resp.json()
+        print("Model:", body["model"])
+        print("Is MCQ:", body["is_mcq"])
+        print("Response:", body["raw_response"][:200])

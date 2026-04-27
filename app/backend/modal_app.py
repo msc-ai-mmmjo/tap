@@ -1,4 +1,21 @@
-"""Modal deployment wrapper for the Hydra inference backend."""
+"""
+Modal deployment wrapper for the Hydra inference backend.
+
+Two Modal entry points live here:
+
+- :func:`download_weights` (one-off) -- populates the ``tap-olmo-weights``
+  Volume with OLMo-2-7B weights and a warm HF cache for ModernBERT-NLI.
+  Run once per weights bump via ``modal run app/backend/modal_app.py::download_weights``.
+- :class:`HydraBackend` (always-on, GPU-backed) -- preloads Hydra in the
+  ``@modal.enter()`` hook (so the FastAPI lifespan can skip the load) and
+  serves :data:`app.backend.server.app` as an ASGI app.
+
+The container image is built from the project's ``pixi.lock`` so the
+runtime CUDA/torch/flash-attn stack matches local dev exactly. The
+``CONDA_OVERRIDE_CUDA=12.4`` env var is required because the build
+container has no GPU and pixi's ``__cuda`` virtual package check would
+otherwise fail; runtime containers get a real GPU from Modal.
+"""
 
 import os
 
@@ -70,10 +87,18 @@ app = modal.App("tap-backend", image=image)
     timeout=60 * 60,
 )
 def download_weights() -> None:
-    """One-off. Populates the Volume with OLMo-2-7B weights and the BERT HF cache.
+    """
+    One-off Modal job that populates the weights Volume.
 
-    Runs both downloads in a single function so one ``weights_vol.commit()``
-    makes the lot available to subsequent containers.
+    Downloads OLMo-2-7B from the HF Hub and warms the ModernBERT-NLI cache
+    by calling :func:`app.backend.bert_inference.load_bert` inside the
+    container. Both downloads happen in a single function so one
+    ``weights_vol.commit()`` at the end makes the lot available to all
+    subsequent containers.
+
+    Invoke with::
+
+        modal run app/backend/modal_app.py::download_weights
     """
     from huggingface_hub import snapshot_download
 
@@ -106,8 +131,26 @@ def download_weights() -> None:
     max_containers=3,
 )
 class HydraBackend:
+    """
+    Always-on Modal class that serves the FastAPI app on a GPU container.
+
+    GPU preference is ``H100`` first then ``A100-40GB`` (see
+    :data:`project_modal_gpu_choice` for the benchmarking rationale).
+    ``scaledown_window=300`` keeps a warm container around for 5 minutes
+    after the last request, masking cold-starts during interactive use.
+    """
+
     @modal.enter()
     def preload(self) -> None:
+        """
+        Modal lifecycle hook that runs once per fresh container.
+
+        Loads Hydra into :data:`app.backend.server._models` *before* the
+        ASGI lifespan starts, so the lifespan detects the preloaded model
+        and skips the duplicate load (~30s saving). The env vars are set
+        before the imports because :mod:`olmo_tap.constants` and
+        :mod:`app.backend.constants` read them at module load time.
+        """
         # Set env before imports: olmo_tap.constants and app.backend.constants
         # read WEIGHTS_DIR and HF_CACHE_DIR at module load time.
         os.environ.setdefault("OLMO_WEIGHTS_DIR", MODEL_DIR)
@@ -126,7 +169,15 @@ class HydraBackend:
 
     @modal.asgi_app()
     def fastapi_app(self):
-        # Lifespan sees the preloaded hydra and skips it, then loads BERT from the Volume cache.
+        """
+        Return the FastAPI ASGI app for Modal to serve.
+
+        The lifespan sees the Hydra model preloaded by :meth:`preload` and
+        skips it, then loads BERT from the Volume-backed HF cache.
+
+        :returns: The :class:`fastapi.FastAPI` instance defined in
+            :mod:`app.backend.server`.
+        """
         from app.backend.server import app as fastapi_app
 
         return fastapi_app

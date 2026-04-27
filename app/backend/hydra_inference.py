@@ -1,3 +1,27 @@
+"""
+Thin adapters that bridge the FastAPI request layer with
+:mod:`olmo_tap.inference.poe`.
+
+This module is the single entry point through which the deployed backend
+talks to the Hydra PoE ensemble. Three concerns are handled here, none of
+which belong inside the research-side PoE class:
+
+- **Model construction** -- :func:`load_hydra` builds the 10-head ensemble
+  (9 LLM verifiers + 1 uncertainty head) with the production LoRAs merged in
+  and the chat tokenizer attached.
+- **System-prompt routing** -- MCQ vs NLP prompts get different system
+  messages and token budgets (:data:`MCQ_SYSTEM_PROMPT` /
+  :data:`NLP_SYSTEM_PROMPT`).
+- **Output reshaping** -- :func:`_tokens_and_resamples_from_poe_output`
+  trims trailing EOS, strips token whitespace and converts the rejection
+  bookkeeping into the per-token records the frontend renders.
+
+A separate :func:`get_robustness` function reuses :func:`generate` to retry
+the prompt under a bank of adversarial suffixes and reports how many flipped
+the answer (MCQ: first-token diff; NLP: NLI similarity below
+:data:`NLP_ROBUSTNESS_THRESHOLD`).
+"""
+
 import logging
 import time
 from typing import Any, cast
@@ -36,7 +60,21 @@ NLP_SYSTEM_PROMPT = (
 def load_hydra(
     device: str = "cuda",
 ) -> tuple[HydraTransformer, TokenizersBackend] | tuple[None, None]:
-    """Load the 10-head hydra (9 LLM + 1 uncertainty) with prod security + robustness LoRAs merged."""
+    """
+    Load the production Hydra ensemble and its tokenizer.
+
+    The model has 10 heads (9 LLM verifiers + 1 uncertainty head) with the
+    security and robustness LoRAs already merged into the LLM heads. Returns
+    ``(None, None)`` instead of raising when :data:`WEIGHTS_DIR` is missing
+    or the underlying ``load_ensemble`` call fails, so the FastAPI lifespan
+    can fall back to the HF Inference API path without crashing the process.
+
+    :param device: Torch device for the loaded weights. Note: PoE itself
+        currently hardcodes ``cuda``; this argument is honoured by the
+        loader but ignored downstream.
+
+    :returns: ``(model, tokenizer)`` on success, ``(None, None)`` on failure.
+    """
     t0 = time.perf_counter()
 
     if not WEIGHTS_DIR:
@@ -69,19 +107,39 @@ def generate(
 ) -> tuple[
     str, list[str], list[dict], list[float], float | None, list[int], list[float]
 ]:
-    """Generate a PoE response via speculative verification.
+    """
+    Generate a PoE response via speculative verification.
 
-    Both MCQ and NLP prompts run through ``PoE.generate_with_cache``. When
-    ``is_mcq`` is true, a short system nudge is prepended and the token budget
-    is capped at ``MCQ_MAX_NEW_TOKENS`` so the model leads with the chosen
+    Both MCQ and NLP prompts run through
+    :meth:`olmo_tap.inference.poe.PoE.generate_with_cache`. When ``is_mcq``
+    is true, a short system nudge is prepended and the token budget is
+    capped at :data:`MCQ_MAX_NEW_TOKENS` so the model leads with the chosen
     option and may add a brief explanation. The PoE class captures a witness
     hidden state on the first accepted/rejected token and returns a
     ``p_correct`` scalar from a dedicated uncertainty head.
 
-    :returns: ``(raw_response, tokens, resampled, token_entropies, uncertainty)``
-        where ``token_entropies`` is the per-token verifier ensemble predictive
-        entropy in nats (parallel to ``tokens``) and ``uncertainty`` is a float
-        ``p_correct`` for MCQ and ``None`` for NLP.
+    :param model: The Hydra ensemble loaded by :func:`load_hydra`.
+    :param tokenizer: Matching chat tokenizer.
+    :param messages: Multi-turn chat history (oldest first); the system
+        prompt is prepended automatically.
+    :param is_mcq: Selects the MCQ prompt + token budget and turns on the
+        uncertainty-head pass (``p_correct`` is computed only for MCQ).
+    :param device: Torch device. Currently ignored downstream because PoE
+        hardcodes ``cuda``; kept for forward compatibility.
+
+    :returns: 7-tuple ``(raw_response, tokens, resampled, token_entropies,
+        uncertainty, stability_radii, stability_margins)``.
+
+        - ``raw_response``: decoded response text (no system / chat tags).
+        - ``tokens``: list of decoded single-token strings (whitespace stripped).
+        - ``resampled``: list of dicts (one per rejected draft token) with
+          keys ``index``, ``old_token``, ``new_token``, ``severity``,
+          ``validity_radius``, ``suppression_score``.
+        - ``token_entropies``: verifier-ensemble predictive entropy (nats),
+          parallel to ``tokens``.
+        - ``uncertainty``: ``p_correct`` float for MCQ, ``None`` for NLP.
+        - ``stability_radii`` / ``stability_margins``: per-token stability
+          metrics, parallel to ``tokens``.
     """
     n_heads = len(model.heads)
 
@@ -137,18 +195,30 @@ def _tokens_and_resamples_from_poe_output(
     tokenizer: PreTrainedTokenizerBase,
     poe_output: PoEOutput,
 ) -> tuple[str, list[str], list[dict], list[float], list[int], list[float]]:
-    """Convert a PoEOutput into (raw_response, tokens, resampled, entropies, stability_radii, stability_margins).
+    """
+    Reshape a :class:`olmo_tap.inference.poe.PoEOutput` into the per-token
+    records the FastAPI layer returns.
 
     ``output_parts[0]`` is the chat-templated input; subsequent entries are
-    decoded single tokens from the generation. ``resampled_idxs`` indexes into
-    ``output_parts``; ``original_tokens[j]`` is the rejected draft token at
-    ``resampled_idxs[j]``. ``token_entropies`` is parallel to
+    decoded single tokens from the generation. ``resampled_idxs`` indexes
+    into ``output_parts``; ``original_tokens[j]`` is the rejected draft
+    token at ``resampled_idxs[j]``. ``token_entropies`` is parallel to
     ``output_parts[1:]`` and gives the verifier ensemble predictive entropy
-    (nats) at each emitted token. Trailing EOS entries are trimmed from both
-    the emitted token stream and any resample records that would land on them;
-    entropies are truncated to match. Each token's outer whitespace is stripped
-    so the frontend can join tokens with a single space for display without
-    double-spacing BPE continuations.
+    (nats) at each emitted token. Trailing EOS entries are trimmed from
+    both the emitted token stream and any resample records that would land
+    on them; entropies are truncated to match. Each token's outer whitespace
+    is stripped so the frontend can join tokens with a single space for
+    display without double-spacing BPE continuations.
+
+    :param tokenizer: Same tokenizer used during generation, needed to
+        decode the EOS string for trimming.
+    :param poe_output: Raw output from
+        :meth:`olmo_tap.inference.poe.PoE.generate_with_cache`.
+
+    :returns: 6-tuple ``(raw_response, tokens, resampled, entropies,
+        stability_radii, stability_margins)`` matching :func:`generate`'s
+        public schema (minus the uncertainty scalar, which the caller pulls
+        from ``poe_output.uncertainty`` directly).
     """
     eos_id = tokenizer.eos_token_id
     eos_str = cast(str, tokenizer.decode([eos_id])) if eos_id is not None else ""
@@ -204,7 +274,46 @@ def get_robustness(
     bert_tokenizer: Any,
     device: str = "cuda",
 ) -> dict:
-    """Return a robustness report by testing adversarial suffixes against the original response."""
+    """
+    Score adversarial robustness by retrying the prompt with each suffix.
+
+    For every suffix in ``adv_suffix_bank`` the original prompt is rerun
+    through :func:`generate` with the suffix appended to the final user
+    turn. The criterion for "flipped" depends on the prompt type:
+
+    - **MCQ**: flip iff the first emitted token differs from the clean
+      answer (the system prompt forces the chosen option to be the first
+      token, see :data:`MCQ_SYSTEM_PROMPT`).
+    - **NLP**: flip iff NLI similarity between clean and adversarial
+      response is at or below :data:`NLP_ROBUSTNESS_THRESHOLD`. The full
+      ``(N+1)`` responses are scored in a single batched
+      :class:`kernel_entropy.nli.ModernBERTScorer` call against the clean
+      baseline (``2*(N-1)`` inferences instead of full pairwise).
+
+    The "worst-case" entry surfaced for the UI preview panel is the first
+    flipped suffix (MCQ) or the suffix with lowest NLI similarity (NLP).
+
+    :param model: Hydra ensemble.
+    :param tokenizer: Matching chat tokenizer.
+    :param messages: Multi-turn chat history. The final user message has
+        each suffix appended in turn; the original list is mutated only by
+        the initial ``pop()``.
+    :param original_resp: The clean (unsuffixed) response, used as the NLI
+        reference for NLP flips.
+    :param original_tokens: Decoded tokens of the clean response, used for
+        the MCQ first-token comparison.
+    :param is_mcq: Selects the MCQ vs NLP flip criterion.
+    :param adv_suffix_bank: Suffix strings to test, typically the top-k
+        from :data:`app.backend.adversarial_suffixes.ADV_SUFFIXES`.
+    :param bert_model: ModernBERT-NLI model for the NLP path. Unused for
+        MCQ.
+    :param bert_tokenizer: Matching tokenizer for ``bert_model``.
+    :param device: Torch device passed through to :func:`generate`.
+
+    :returns: Dict ``{"type", "attempts", "flipped", "worst_case"}`` where
+        ``worst_case`` is ``None`` if no suffix flipped (MCQ) or the bank
+        was empty (NLP).
+    """
     last_message = messages.pop()
 
     num_flipped = 0
@@ -296,3 +405,23 @@ def get_robustness(
         "flipped": num_flipped,
         "worst_case": worst_case,
     }
+
+
+if __name__ == "__main__":
+    # Single-prompt smoke test on a real GPU box:
+    #   pixi run -e cuda python -m app.backend.hydra_inference
+    # Mirrors what /api/analyse does (minus BERT-side claim and KLE scoring),
+    # so this is a quick way to verify a fresh weights checkout produces
+    # sensible PoE output before booting the full FastAPI app.
+    logging.basicConfig(level=logging.INFO)
+
+    model, tokenizer = load_hydra(device="cuda")
+    if model is None or tokenizer is None:
+        raise SystemExit("Hydra failed to load -- check WEIGHTS_DIR")
+
+    prompt = [{"role": "user", "content": "Is paracetamol safe in pregnancy?"}]
+    raw, tokens, resampled, entropies, p_correct, _, _ = generate(
+        model, tokenizer, prompt, is_mcq=False
+    )
+    print("\nResponse:", raw)
+    print(f"Tokens: {len(tokens)}, resampled: {len(resampled)}, p_correct: {p_correct}")
