@@ -1,5 +1,4 @@
-import { useMemo } from 'react';
-import type { SecurityStatus, SecurityResample } from '../types/api';
+import type { SecurityStatus } from '../types/api';
 import { TokenTooltip } from './TokenTooltip';
 
 interface Props {
@@ -16,12 +15,6 @@ function bgForMargin(margin: number): string {
 
 export function StabilityHeatmapPanel({ data }: Props) {
   if (!data.stability_radii || !data.stability_margins) return null;
-
-  const rejectionByIndex = useMemo(() => {
-    const m = new Map<number, SecurityResample>();
-    for (const r of data.resampled) m.set(r.index, r);
-    return m;
-  }, [data.resampled]);
 
   return (
     <div
@@ -61,36 +54,17 @@ export function StabilityHeatmapPanel({ data }: Props) {
         {data.tokens.map((tok, i) => {
           const margin = data.stability_margins![i] ?? 0;
           const radius = data.stability_radii![i] ?? 0;
-          const rejection = rejectionByIndex.get(i);
-
-          const chipStyle: React.CSSProperties = {
-            background: bgForMargin(margin),
-            padding: '1px 2px',
-            borderRadius: '2px',
-            ...(rejection
-              ? {
-                  textDecoration: 'underline',
-                  textDecorationStyle: 'dotted',
-                  textUnderlineOffset: '3px',
-                }
-              : {}),
-          };
-
-          const tooltipBody = rejection ? (
-            <>
-              radius: {radius} · suppression:{' '}
-              {rejection.suppression_score?.toFixed(3) ?? '—'} · {rejection.old_token} → {tok}
-            </>
-          ) : (
-            <>radius: {radius}</>
-          );
 
           return (
             <span key={i}>
               <TokenTooltip
                 token={tok}
-                tooltipBody={tooltipBody}
-                triggerStyle={chipStyle}
+                tooltipBody={<>radius: {radius}</>}
+                triggerStyle={{
+                  background: bgForMargin(margin),
+                  padding: '1px 2px',
+                  borderRadius: '2px',
+                }}
               />
               {i < data.tokens.length - 1 ? ' ' : ''}
             </span>
