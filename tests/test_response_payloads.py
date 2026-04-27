@@ -20,20 +20,26 @@ def test_poe_security_echoes_inputs_and_certifies():
     tokens = ["hello", " world"]
     resampled = [{"index": 1, "alternatives": ["foo", "bar"]}]
     token_entropies = [0.1, 0.4]
-    assert poe_security(tokens, resampled, token_entropies) == {
+    stability_radii = [3, 1]
+    stability_margins = [0.6, 0.2]
+    assert poe_security(tokens, resampled, token_entropies, stability_radii, stability_margins) == {
         "certified": True,
         "tokens": tokens,
         "resampled": resampled,
         "token_entropies": token_entropies,
+        "stability_radii": stability_radii,
+        "stability_margins": stability_margins,
     }
 
 
 def test_poe_security_with_empty_lists():
-    assert poe_security([], [], []) == {
+    assert poe_security([], [], [], [], []) == {
         "certified": True,
         "tokens": [],
         "resampled": [],
         "token_entropies": [],
+        "stability_radii": [],
+        "stability_margins": [],
     }
 
 
