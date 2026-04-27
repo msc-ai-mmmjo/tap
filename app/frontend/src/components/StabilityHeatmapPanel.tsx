@@ -6,15 +6,26 @@ interface Props {
 }
 
 const MAX_ALPHA = 0.55;
+const N_STEPS = 9; // radii 0–8
 
-function bgForMargin(margin: number): string {
-  const clamped = Math.max(0, Math.min(1, margin));
-  // Low margin (contested) → bright; high margin (stable) → dim
-  return `rgba(var(--color-accent-rgb), ${((1 - clamped) * MAX_ALPHA).toFixed(3)})`;
+// radius 0 (unstable) → brightest; radius 8 (stable) → transparent
+const RADIUS_COLORS = Array.from({ length: N_STEPS }, (_, r) =>
+  `rgba(var(--color-accent-rgb), ${((1 - r / (N_STEPS - 1)) * MAX_ALPHA).toFixed(3)})`,
+);
+
+function bgForRadius(radius: number): string {
+  return RADIUS_COLORS[Math.max(0, Math.min(N_STEPS - 1, Math.round(radius)))];
 }
 
+const LEGEND_GRADIENT = (() => {
+  const w = 100 / N_STEPS;
+  return RADIUS_COLORS.map(
+    (c, i) => `${c} ${(i * w).toFixed(2)}%,${c} ${((i + 1) * w).toFixed(2)}%`,
+  ).join(',');
+})();
+
 export function StabilityHeatmapPanel({ data }: Props) {
-  if (!data.stability_radii || !data.stability_margins) return null;
+  if (!data.stability_radii) return null;
 
   return (
     <div
@@ -40,7 +51,7 @@ export function StabilityHeatmapPanel({ data }: Props) {
               display: 'inline-block',
               width: '64px',
               height: '8px',
-              background: `linear-gradient(to right, rgba(var(--color-accent-rgb), 0), rgba(var(--color-accent-rgb), ${MAX_ALPHA}))`,
+              background: `linear-gradient(to right, ${LEGEND_GRADIENT})`,
               border: '1px solid var(--color-rule)',
             }}
           />
@@ -52,7 +63,6 @@ export function StabilityHeatmapPanel({ data }: Props) {
         style={{ color: 'var(--color-ink-soft)' }}
       >
         {data.tokens.map((tok, i) => {
-          const margin = data.stability_margins![i] ?? 0;
           const radius = data.stability_radii![i] ?? 0;
 
           return (
@@ -61,7 +71,7 @@ export function StabilityHeatmapPanel({ data }: Props) {
                 token={tok}
                 tooltipBody={<>radius: {radius}</>}
                 triggerStyle={{
-                  background: bgForMargin(margin),
+                  background: bgForRadius(radius),
                   padding: '1px 2px',
                   borderRadius: '2px',
                 }}
