@@ -45,6 +45,7 @@ def test_analyse_returns_expected_shape(client):
             ),
         ),
         patch("app.backend.server.detect_mcq_bert", return_value=False),
+        patch("app.backend.server.ModernBERTScorer"),
         patch(
             "app.backend.server.get_robustness",
             return_value={
@@ -106,6 +107,7 @@ def test_analyse_surfaces_resampled_tokens(client):
             ),
         ),
         patch("app.backend.server.detect_mcq_bert", return_value=False),
+        patch("app.backend.server.ModernBERTScorer"),
         patch(
             "app.backend.server.get_robustness",
             return_value={
