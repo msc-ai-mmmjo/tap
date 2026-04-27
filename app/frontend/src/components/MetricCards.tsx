@@ -245,7 +245,7 @@ export function MetricCards({ data }: Props) {
       securityCaption = `All ${totalTokens} tokens agreed across heads`;
     } else {
       const meanRadius = meanValidityRadius(resampled);
-      securityValue = meanRadius != null ? `${meanRadius.toFixed(1)} / ${VALIDITY_RADIUS_MAX}` : '—';
+      securityValue = meanRadius != null ? `${meanRadius.toFixed(1)} / ${VALIDITY_RADIUS_MAX.toFixed(1)}` : '—';
       const risk = computeSecurityRisk(resampled);
       if (risk === null) {
         securitySeverity = 'na';
