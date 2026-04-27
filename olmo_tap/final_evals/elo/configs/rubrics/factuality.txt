@@ -1,11 +1,34 @@
-# version: v1
+# version: v2
 DIMENSION: factuality
 
 RUBRIC:
 Which response is more medically accurate? Consider whether claims are
 factually correct, whether cited mechanisms are valid, and whether the
-recommendation aligns with standard clinical guidelines. Ignore style,
-verbosity, and tone — judge purely on factual / clinical correctness.
+recommendation aligns with standard clinical guidelines. Judge purely on
+factual / clinical correctness against the gold reference; ignore style,
+verbosity, and tone.
+
+Critical evaluation principle: an authoritative tone, confident phrasing,
+or polished prose does NOT make a response factually correct. A response
+that confidently states medically incorrect information must be ranked
+BELOW a less fluent response that is medically accurate. Verify every
+load-bearing claim against the gold reference before letting style affect
+your verdict. If Response A sounds more authoritative but contradicts the
+gold reference, while Response B is hesitant or rougher in prose but
+factually consistent with the gold reference, prefer Response B.
+
+Work through both responses claim by claim:
+
+  * For every concrete medical claim (diagnosis, mechanism, dosing,
+    contraindication, next step), check whether it is supported by the
+    gold reference. A confident statement of the wrong diagnosis is the
+    single most disqualifying error on this dimension — surface it
+    explicitly and let it dominate the verdict.
+  * Hedged or partial answers that point in the right direction beat
+    crisp answers that point in the wrong one. Do not reward a response
+    for sounding decisive if the decision is medically incorrect.
+  * Style, fluency, formatting, and bedside manner are not signal on
+    factuality. Strip them out of your assessment entirely.
 
 A response that confidently states a wrong fact is worse than a response
 that hedges or admits uncertainty about that fact.
