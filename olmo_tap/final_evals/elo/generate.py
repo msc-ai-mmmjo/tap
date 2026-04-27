@@ -24,10 +24,9 @@ from __future__ import annotations
 
 import argparse
 import gc
-import hashlib
 import json
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, cast
@@ -42,86 +41,16 @@ from olmo_tap.final_evals.elo.entrants import (
     LoadedEntrant,
     build_entrant,
 )
-
-
-@dataclass(frozen=True)
-class Prompt:
-    """One row of the prompt bank, normalised to a small typed shape."""
-
-    prompt_id: str
-    text: str
-    source: str = ""
-    subject: str | None = None
-    gold_answer: str | None = None
-    expected_behavior: str | None = None
-    tags: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True)
-class GeneratedResponse:
-    """Single (entrant, prompt) generation record persisted to the cache.
-
-    Attributes:
-        entrant_id: Stable id from :class:`EntrantSpec`.
-        prompt_id: Stable id from the prompt bank.
-        response_text: The decoded response text returned to the judge.
-        p_correct: ``p_correct`` from the uncertainty head when the entrant
-            requests the second-pass capture, otherwise ``None``. Phase 4
-            entrants all leave this ``None``; the field is kept for
-            forward compatibility with uncertainty-aware tournaments.
-        diagnostics: Per-call metadata. For Hydra entrants this is
-            ``PoE.last_diagnostics``; for the vanilla-HF entrant it
-            mirrors the same schema with ``draft_head_idx`` and
-            ``bypass_jury`` set to ``None``.
-        timestamp: ISO-8601 UTC timestamp of when the response was
-            generated.
-    """
-
-    entrant_id: str
-    prompt_id: str
-    response_text: str
-    p_correct: float | None
-    diagnostics: dict[str, Any]
-    timestamp: str
-
-
-def prompt_seed(prompt_id: str) -> int:
-    """Deterministic per-prompt seed used by the generation harness.
-
-    A SHA-256 hash of the prompt id mod 2**32 — gives every prompt its
-    own fixed seed so the random draft-head selection inside PoE lines
-    up across the Hydra entrants on a given prompt while still varying
-    across prompts. Re-running the eval reproduces the same canonical
-    response per ``(entrant, prompt)``.
-    """
-    return int(hashlib.sha256(prompt_id.encode("utf-8")).hexdigest(), 16) % (2**32)
+from olmo_tap.final_evals.elo.types import (
+    GeneratedResponse,
+    Prompt,
+    load_prompt_bank,
+    prompt_seed,
+)
 
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
-
-
-def load_prompt_bank(path: Path) -> list[Prompt]:
-    """Read a JSONL prompt bank into a list of :class:`Prompt`."""
-    prompts: list[Prompt] = []
-    with path.open("r") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            entry = json.loads(line)
-            prompts.append(
-                Prompt(
-                    prompt_id=entry["prompt_id"],
-                    text=entry["text"],
-                    source=entry.get("source", ""),
-                    subject=entry.get("subject"),
-                    gold_answer=entry.get("gold_answer"),
-                    expected_behavior=entry.get("expected_behavior"),
-                    tags=tuple(entry.get("tags", [])),
-                )
-            )
-    return prompts
 
 
 def _cache_path(cache_dir: Path, entrant_id: str) -> Path:
