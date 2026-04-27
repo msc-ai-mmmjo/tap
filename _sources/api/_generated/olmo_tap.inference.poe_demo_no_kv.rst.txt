@@ -1,0 +1,12 @@
+olmo\_tap.inference.poe\_demo\_no\_kv
+=====================================
+
+.. automodule:: olmo_tap.inference.poe_demo_no_kv
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      poe_generate_visual_diff
+   

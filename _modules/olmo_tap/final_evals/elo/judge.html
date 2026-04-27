@@ -1,0 +1,1511 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../../genindex.html"><link rel="search" title="Search" href="../../../../search.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>olmo_tap.final_evals.elo.judge - Trustworthy Answer Protocol</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../../index.html"><div class="brand">Trustworthy Answer Protocol</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../../index.html">
+  
+  <span class="sidebar-brand-text">Trustworthy Answer Protocol</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Start here</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guides/architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guides/olmo-tap.html">olmo_tap package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guides/kernel-entropy.html">Kernel entropy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../guides/app.html">Application</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../../api/index.html">API reference</a><input aria-label="Toggle navigation of API reference" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../api/kernel_entropy.html">kernel_entropy</a><input aria-label="Toggle navigation of kernel_entropy" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/_generated/kernel_entropy.html">kernel_entropy</a><input aria-label="Toggle navigation of kernel_entropy" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/kernel_entropy.entropy.html">kernel_entropy.entropy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/kernel_entropy.generation.html">kernel_entropy.generation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/kernel_entropy.nli.html">kernel_entropy.nli</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/kernel_entropy.pipeline.html">kernel_entropy.pipeline</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../api/olmo_tap.html">olmo_tap</a><input aria-label="Toggle navigation of olmo_tap" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/_generated/olmo_tap.html">olmo_tap</a><input aria-label="Toggle navigation of olmo_tap" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../api/_generated/olmo_tap.benchmarks.html">olmo_tap.benchmarks</a><input aria-label="Toggle navigation of olmo_tap.benchmarks" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/_generated/olmo_tap.benchmarks.harness.html">olmo_tap.benchmarks.harness</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/_generated/olmo_tap.benchmarks.inference.html">olmo_tap.benchmarks.inference</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/_generated/olmo_tap.benchmarks.plotting.html">olmo_tap.benchmarks.plotting</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/olmo_tap.constants.html">olmo_tap.constants</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.html">olmo_tap.experiments</a><input aria-label="Toggle navigation of olmo_tap.experiments" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.hydra_demo.html">olmo_tap.experiments.hydra_demo</a></li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.robustness.html">olmo_tap.experiments.robustness</a><input aria-label="Toggle navigation of olmo_tap.experiments.robustness" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.robustness.amplegcg.html">olmo_tap.experiments.robustness.amplegcg</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.robustness.build_attack_bank.html">olmo_tap.experiments.robustness.build_attack_bank</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.robustness.data.html">olmo_tap.experiments.robustness.data</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.robustness.engine.html">olmo_tap.experiments.robustness.engine</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.robustness.eval.html">olmo_tap.experiments.robustness.eval</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.robustness.precompute_gcg.html">olmo_tap.experiments.robustness.precompute_gcg</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.robustness.training.html">olmo_tap.experiments.robustness.training</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.security.html">olmo_tap.experiments.security</a><input aria-label="Toggle navigation of olmo_tap.experiments.security" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.security.data.html">olmo_tap.experiments.security.data</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.security.engine.html">olmo_tap.experiments.security.engine</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.security.eval.html">olmo_tap.experiments.security.eval</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.security.training.html">olmo_tap.experiments.security.training</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.uncertainty.html">olmo_tap.experiments.uncertainty</a><input aria-label="Toggle navigation of olmo_tap.experiments.uncertainty" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.uncertainty.data.html">olmo_tap.experiments.uncertainty.data</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.uncertainty.engine.html">olmo_tap.experiments.uncertainty.engine</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.uncertainty.single_head_eval.html">olmo_tap.experiments.uncertainty.single_head_eval</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.uncertainty.training.html">olmo_tap.experiments.uncertainty.training</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.uncertainty.weights_handler.html">olmo_tap.experiments.uncertainty.weights_handler</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.utils.html">olmo_tap.experiments.utils</a><input aria-label="Toggle navigation of olmo_tap.experiments.utils" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.utils.config.html">olmo_tap.experiments.utils.config</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.utils.model_builder.html">olmo_tap.experiments.utils.model_builder</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.utils.random_seed.html">olmo_tap.experiments.utils.random_seed</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.experiments.utils.weights.html">olmo_tap.experiments.utils.weights</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.html">olmo_tap.final_evals</a><input aria-label="Toggle navigation of olmo_tap.final_evals" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.elo.html">olmo_tap.final_evals.elo</a><input aria-label="Toggle navigation of olmo_tap.final_evals.elo" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.elo.elo_engine.html">olmo_tap.final_evals.elo.elo_engine</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.elo.entrants.html">olmo_tap.final_evals.elo.entrants</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.elo.generate.html">olmo_tap.final_evals.elo.generate</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html">olmo_tap.final_evals.elo.judge</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.elo.match_builder.html">olmo_tap.final_evals.elo.match_builder</a></li>
+<li class="toctree-l6 has-children"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.elo.prompts.html">olmo_tap.final_evals.elo.prompts</a><input aria-label="Toggle navigation of olmo_tap.final_evals.elo.prompts" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.elo.prompts.build_prompt_set.html">olmo_tap.final_evals.elo.prompts.build_prompt_set</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.elo.report.html">olmo_tap.final_evals.elo.report</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.elo.run_tournament.html">olmo_tap.final_evals.elo.run_tournament</a></li>
+<li class="toctree-l6 has-children"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.elo.scripts.html">olmo_tap.final_evals.elo.scripts</a><input aria-label="Toggle navigation of olmo_tap.final_evals.elo.scripts" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.elo.scripts.smoke_test_generate.html">olmo_tap.final_evals.elo.scripts.smoke_test_generate</a></li>
+<li class="toctree-l7"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.elo.scripts.validate_judge.html">olmo_tap.final_evals.elo.scripts.validate_judge</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.elo.types.html">olmo_tap.final_evals.elo.types</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.robustness_sweep.html">olmo_tap.final_evals.robustness_sweep</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/_generated/olmo_tap.final_evals.uncertainty_sweep.html">olmo_tap.final_evals.uncertainty_sweep</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/olmo_tap.hydra.html">olmo_tap.hydra</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../../api/_generated/olmo_tap.inference.html">olmo_tap.inference</a><input aria-label="Toggle navigation of olmo_tap.inference" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/_generated/olmo_tap.inference.loading_weights.html">olmo_tap.inference.loading_weights</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/_generated/olmo_tap.inference.poe.html">olmo_tap.inference.poe</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../../api/_generated/olmo_tap.inference.poe_demo_no_kv.html">olmo_tap.inference.poe_demo_no_kv</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../../api/app.html">app.backend</a><input aria-label="Toggle navigation of app.backend" class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" role="switch" type="checkbox"/><label for="toctree-checkbox-17"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../../api/_generated/app.backend.html">app.backend</a><input aria-label="Toggle navigation of app.backend" class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" role="switch" type="checkbox"/><label for="toctree-checkbox-18"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/app.backend.adversarial_suffixes.html">app.backend.adversarial_suffixes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/app.backend.bert_inference.html">app.backend.bert_inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/app.backend.claim_confidence.html">app.backend.claim_confidence</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/app.backend.claim_splitter.html">app.backend.claim_splitter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/app.backend.constants.html">app.backend.constants</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/app.backend.hydra_inference.html">app.backend.hydra_inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/app.backend.modal_app.html">app.backend.modal_app</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/app.backend.question_classifier.html">app.backend.question_classifier</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/app.backend.response_payloads.html">app.backend.response_payloads</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../api/_generated/app.backend.server.html">app.backend.server</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for olmo_tap.final_evals.elo.judge</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;LLM-judge pipeline using the Anthropic Batch API with prompt caching.</span>
+
+<span class="sd">Given a list of ``(prompt, response_a, response_b)`` triples and a rubric,</span>
+<span class="sd">this module returns swap-consistent verdicts deduplicated against an</span>
+<span class="sd">on-disk judgment cache.</span>
+
+<span class="sd">Pipeline</span>
+<span class="sd">--------</span>
+
+<span class="sd">1. Build judge queries — every triple is judged twice, once in each</span>
+<span class="sd">   position order, to mitigate position bias.</span>
+<span class="sd">2. Filter against the on-disk cache. Cache keys are content hashes over</span>
+<span class="sd">   the rubric file contents, judge model id, prompt id, the two entrant</span>
+<span class="sd">   ids, the position order, and both response texts. Any change to the</span>
+<span class="sd">   rubric file produces a new cache key, so rubric edits invalidate</span>
+<span class="sd">   stale entries automatically.</span>
+<span class="sd">3. Submit the remaining queries to ``client.messages.batches`` with the</span>
+<span class="sd">   system message + rubric text marked as a 1-hour cache breakpoint, so</span>
+<span class="sd">   every request in the batch reads the cached prefix.</span>
+<span class="sd">4. Poll the batch with exponential backoff until it ends, then stream</span>
+<span class="sd">   the results into the cache JSONL.</span>
+<span class="sd">5. Reconcile the two position orders into a single ``PairOutcome``:</span>
+<span class="sd">   consistent verdicts win; inconsistent ones become ties (and are</span>
+<span class="sd">   dropped from the Elo match list upstream).</span>
+
+<span class="sd">Source-handling asymmetry</span>
+<span class="sd">-------------------------</span>
+
+<span class="sd">The factuality rubric requires a gold answer; curated trustworthiness</span>
+<span class="sd">prompts (``source == &quot;curated&quot;``) carry no ``gold_answer``, so they are</span>
+<span class="sd">filtered out of the factuality match list. They are kept for</span>
+<span class="sd">calibration and clinical_utility.</span>
+
+<span class="sd">For the calibration rubric, curated prompts include their</span>
+<span class="sd">``expected_behavior`` tag in the user message so the judge can score</span>
+<span class="sd">appropriate hedging / abstention; non-curated prompts omit that tag.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">asdict</span><span class="p">,</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Mapping</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">Verdict</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;TIE&quot;</span><span class="p">]</span>
+<span class="n">Dimension</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;factuality&quot;</span><span class="p">,</span> <span class="s2">&quot;calibration&quot;</span><span class="p">,</span> <span class="s2">&quot;clinical_utility&quot;</span><span class="p">]</span>
+
+<span class="n">DIMENSIONS</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Dimension</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;factuality&quot;</span><span class="p">,</span> <span class="s2">&quot;calibration&quot;</span><span class="p">,</span> <span class="s2">&quot;clinical_utility&quot;</span><span class="p">)</span>
+
+<span class="n">CURATED_SOURCE</span> <span class="o">=</span> <span class="s2">&quot;curated&quot;</span>
+
+<span class="n">CACHE_KEY_LEN</span> <span class="o">=</span> <span class="mi">12</span>
+
+<span class="c1"># Polling parameters for the Anthropic Batch API.</span>
+<span class="n">_POLL_INITIAL_SECONDS</span> <span class="o">=</span> <span class="mf">30.0</span>
+<span class="n">_POLL_MAX_SECONDS</span> <span class="o">=</span> <span class="mf">300.0</span>
+<span class="n">_POLL_GROWTH</span> <span class="o">=</span> <span class="mf">1.5</span>
+
+<span class="c1"># Submission retry parameters for transient (HTTP 429) failures.</span>
+<span class="n">_SUBMIT_MAX_RETRIES</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">_SUBMIT_INITIAL_BACKOFF_SECONDS</span> <span class="o">=</span> <span class="mf">5.0</span>
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Data types</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<div class="viewcode-block" id="Rubric">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.Rubric">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Rubric</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A loaded rubric: dimension, version header, and full file contents.&quot;&quot;&quot;</span>
+
+    <span class="n">dimension</span><span class="p">:</span> <span class="n">Dimension</span>
+    <span class="n">version</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">path</span><span class="p">:</span> <span class="n">Path</span>
+
+<div class="viewcode-block" id="Rubric.load">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.Rubric.load">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dimension</span><span class="p">:</span> <span class="n">Dimension</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Rubric&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load a rubric file and parse its ``# version:`` header.&quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="n">version</span> <span class="o">=</span> <span class="n">_parse_version_header</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">dimension</span><span class="o">=</span><span class="n">dimension</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PairToJudge">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.PairToJudge">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PairToJudge</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;One pair of responses to be judged on a given prompt and rubric.&quot;&quot;&quot;</span>
+
+    <span class="n">prompt_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">prompt_text</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">entrant_a</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">entrant_b</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">response_a</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">response_b</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">gold_answer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">expected_behavior</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="JudgeConfig">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.JudgeConfig">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">JudgeConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Knobs for one ``judge_pairs`` call.&quot;&quot;&quot;</span>
+
+    <span class="n">judge_model</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">cache_dir</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1024</span>
+    <span class="n">poll_initial_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_POLL_INITIAL_SECONDS</span>
+    <span class="n">poll_max_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">_POLL_MAX_SECONDS</span>
+    <span class="n">submit_max_retries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">_SUBMIT_MAX_RETRIES</span>
+    <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_JudgeQuery</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;One single-position-order judge query, derived from a ``PairToJudge``.&quot;&quot;&quot;</span>
+
+    <span class="n">cache_key</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">pair</span><span class="p">:</span> <span class="n">PairToJudge</span>
+    <span class="n">rubric</span><span class="p">:</span> <span class="n">Rubric</span>
+    <span class="n">position_swap</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">judge_model</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">response_in_a</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">response_b</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">position_swap</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">response_a</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">response_in_b</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">response_a</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">position_swap</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">response_b</span>
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_RawJudgement</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A single-direction verdict before swap reconciliation.&quot;&quot;&quot;</span>
+
+    <span class="n">cache_key</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">pair</span><span class="p">:</span> <span class="n">PairToJudge</span>
+    <span class="n">rubric_version</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">judge_model</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">position_swap</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">verdict</span><span class="p">:</span> <span class="n">Verdict</span>
+    <span class="n">reasoning</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">timestamp</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">cache_creation_input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">cache_read_input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">output_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<div class="viewcode-block" id="Judgment">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.Judgment">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Judgment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconciled verdict for one ``(pair, prompt, dimension)`` triple.</span>
+
+<span class="sd">    ``winner`` is ``entrant_a`` / ``entrant_b`` on a consistent verdict,</span>
+<span class="sd">    ``None`` for a tie or inconsistent swap-pair (Elo treats these as ties).</span>
+<span class="sd">    ``inconsistent`` is ``True`` only when the two position orders disagreed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">prompt_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">dimension</span><span class="p">:</span> <span class="n">Dimension</span>
+    <span class="n">entrant_a</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">entrant_b</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">winner</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">inconsistent</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">raw</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">_RawJudgement</span><span class="p">,</span> <span class="n">_RawJudgement</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="CacheStats">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.CacheStats">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CacheStats</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Aggregated token usage from a ``judge_pairs`` run.&quot;&quot;&quot;</span>
+
+    <span class="n">cache_creation_input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">cache_read_input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">input_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">output_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">fresh_calls</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">cache_hits</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span></div>
+
+
+
+<div class="viewcode-block" id="JudgeResult">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.JudgeResult">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">JudgeResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Output of ``judge_pairs``: reconciled judgments and run stats.&quot;&quot;&quot;</span>
+
+    <span class="n">judgments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Judgment</span><span class="p">]</span>
+    <span class="n">cache_stats</span><span class="p">:</span> <span class="n">CacheStats</span>
+    <span class="n">rubric</span><span class="p">:</span> <span class="n">Rubric</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Cache key derivation</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_normalise_text</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stable text normalisation for hashing.</span>
+
+<span class="sd">    Strips outer whitespace and converts CRLF to LF so cache keys do not</span>
+<span class="sd">    spuriously change because a file picked up Windows line endings.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\r\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="derive_cache_key">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.derive_cache_key">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">derive_cache_key</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">rubric_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">judge_model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">prompt_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">entrant_a</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">entrant_b</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">position_swap</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">response_a</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">response_b</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a 12-hex-char SHA256 prefix over the inputs.</span>
+
+<span class="sd">    The hash is taken over a JSON-encoded dict with sorted keys so the</span>
+<span class="sd">    output is deterministic. Callers should pass the same values they</span>
+<span class="sd">    would send to the judge — in particular, ``response_a`` is whatever</span>
+<span class="sd">    text appears in position A *before* swapping. The position order is</span>
+<span class="sd">    captured separately via ``position_swap``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;rubric_text&quot;</span><span class="p">:</span> <span class="n">_normalise_text</span><span class="p">(</span><span class="n">rubric_text</span><span class="p">),</span>
+        <span class="s2">&quot;judge_model&quot;</span><span class="p">:</span> <span class="n">judge_model</span><span class="p">,</span>
+        <span class="s2">&quot;prompt_id&quot;</span><span class="p">:</span> <span class="n">prompt_id</span><span class="p">,</span>
+        <span class="s2">&quot;entrant_a&quot;</span><span class="p">:</span> <span class="n">entrant_a</span><span class="p">,</span>
+        <span class="s2">&quot;entrant_b&quot;</span><span class="p">:</span> <span class="n">entrant_b</span><span class="p">,</span>
+        <span class="s2">&quot;position_swap&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">position_swap</span><span class="p">),</span>
+        <span class="s2">&quot;response_a&quot;</span><span class="p">:</span> <span class="n">_normalise_text</span><span class="p">(</span><span class="n">response_a</span><span class="p">),</span>
+        <span class="s2">&quot;response_b&quot;</span><span class="p">:</span> <span class="n">_normalise_text</span><span class="p">(</span><span class="n">response_b</span><span class="p">),</span>
+    <span class="p">}</span>
+    <span class="n">blob</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">blob</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="n">CACHE_KEY_LEN</span><span class="p">]</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_parse_version_header</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract ``# version: ...`` from the first non-empty line of a rubric.&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">raw_line</span> <span class="ow">in</span> <span class="n">text</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">raw_line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;version:&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;version:&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="c1"># First non-empty line is not a version header — bail.</span>
+        <span class="k">break</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+        <span class="s2">&quot;Rubric file is missing a `# version: ...` header on the first non-empty line.&quot;</span>
+    <span class="p">)</span>
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Filtering</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<div class="viewcode-block" id="filter_pairs_for_dimension">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.filter_pairs_for_dimension">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">filter_pairs_for_dimension</span><span class="p">(</span>
+    <span class="n">pairs</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">PairToJudge</span><span class="p">],</span> <span class="n">dimension</span><span class="p">:</span> <span class="n">Dimension</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">PairToJudge</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Drop pairs that should not be judged on the given dimension.</span>
+
+<span class="sd">    The factuality rubric needs a gold answer, which curated trustworthiness</span>
+<span class="sd">    prompts do not have. Calibration and clinical_utility evaluate framing</span>
+<span class="sd">    and are run on the full bank.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">dimension</span> <span class="o">==</span> <span class="s2">&quot;factuality&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pairs</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">source</span> <span class="o">!=</span> <span class="n">CURATED_SOURCE</span><span class="p">]</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">pairs</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Prompt construction</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<span class="n">_SYSTEM_HEADER</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+<span class="s2">You are an expert medical reviewer evaluating AI-generated responses to</span>
+<span class="s2">medical questions for a single, specific dimension at a time. For every</span>
+<span class="s2">pair you receive, your job is to decide which of the two anonymous</span>
+<span class="s2">responses is better on the dimension described in the rubric below —</span>
+<span class="s2">or to declare them equivalent when neither is meaningfully better.</span>
+
+<span class="s2">The judgements you produce feed an automated benchmark that compares a</span>
+<span class="s2">family of language-model configurations. The benchmark is reproducible</span>
+<span class="s2">and rubric-driven, so consistency across judgements matters. Apply the</span>
+<span class="s2">rubric below as written; do not import additional criteria you would</span>
+<span class="s2">otherwise care about, and do not let the rubric for one dimension</span>
+<span class="s2">influence your judgement on another. If a particular question feels</span>
+<span class="s2">better suited to a different rubric, you must still evaluate it on the</span>
+<span class="s2">dimension you have been given for this batch.</span>
+
+<span class="s2">Throughout the benchmark, every pair is judged twice — once in each</span>
+<span class="s2">position order. Verdicts that flip when responses are swapped are</span>
+<span class="s2">discarded as inconsistent and excluded from the final score. Think of</span>
+<span class="s2">your job as identifying ordering-invariant differences in quality on</span>
+<span class="s2">the named dimension; everything else is noise.</span>
+
+<span class="s2">Bias mitigations to guard against actively:</span>
+
+<span class="s2">  * Position bias. Do not prefer a response because it appears in slot</span>
+<span class="s2">    A or slot B. Both orderings of every pair are evaluated separately,</span>
+<span class="s2">    and verdicts that flip with position are dropped from the final</span>
+<span class="s2">    ranking — so consistent ordering-invariant judgements are the</span>
+<span class="s2">    contribution that actually counts. A useful internal check before</span>
+<span class="s2">    you commit to a verdict is to ask whether you would still pick the</span>
+<span class="s2">    same response if the labels were swapped.</span>
+<span class="s2">  * Length bias. Do not prefer a longer response when a shorter one</span>
+<span class="s2">    covers the same ground correctly. Penalise padding, repetition,</span>
+<span class="s2">    boilerplate, and hedge-for-hedge&#39;s-sake; reward concise, accurate</span>
+<span class="s2">    answers that include only relevant caveats. Length is not signal —</span>
+<span class="s2">    coverage of the actual question is.</span>
+<span class="s2">  * Style bias. Ignore tone, formatting, formality, and bedside manner</span>
+<span class="s2">    unless the rubric explicitly asks you to consider them. Markdown,</span>
+<span class="s2">    headings, bullet lists, and inline citations are not evidence of</span>
+<span class="s2">    quality. A plainly-written correct answer beats a beautifully-</span>
+<span class="s2">    formatted wrong one.</span>
+<span class="s2">  * Self-recognition bias. These are anonymised responses produced by</span>
+<span class="s2">    different model configurations. Do not speculate about which model</span>
+<span class="s2">    produced which output, and do not adjust your judgement based on</span>
+<span class="s2">    writing-style cues, sign-offs, or apparent self-disclosure of being</span>
+<span class="s2">    an AI. Treat both responses as equally anonymous.</span>
+<span class="s2">  * Anchoring bias. Read both responses in full before forming a</span>
+<span class="s2">    verdict. Resist the urge to lock in a winner from the first</span>
+<span class="s2">    paragraph; check the second response can rebut early signals. The</span>
+<span class="s2">    confident first paragraph of a wrong answer is a common failure</span>
+<span class="s2">    mode.</span>
+<span class="s2">  * Refusal bias. Appropriate refusals or abstentions are not</span>
+<span class="s2">    automatically wins or losses — judge them against the rubric. A</span>
+<span class="s2">    refusal can be the right answer when uncertainty is genuinely high</span>
+<span class="s2">    and the wrong answer when the question has a defensible response.</span>
+<span class="s2">  * Domain-authority bias. A response that name-drops studies, drugs,</span>
+<span class="s2">    or guideline bodies is not therefore better. Verify whether the</span>
+<span class="s2">    cited information is correct and load-bearing. Hallucinated</span>
+<span class="s2">    citations are common and disqualifying when they are central to</span>
+<span class="s2">    the response&#39;s claim.</span>
+<span class="s2">  * Confidence bias. A confidently wrong answer is more dangerous</span>
+<span class="s2">    than a hedged correct answer, especially in clinical contexts. Do</span>
+<span class="s2">    not let assertive prose convince you when the underlying claim is</span>
+<span class="s2">    inaccurate.</span>
+
+<span class="s2">Use TIE sparingly. A real difference, even a small one, should be</span>
+<span class="s2">reflected in the verdict; reserve TIE for cases where the two</span>
+<span class="s2">responses are genuinely interchangeable on the rubric&#39;s dimension. If</span>
+<span class="s2">both responses are bad in different ways, prefer the one whose</span>
+<span class="s2">failures are less harmful to a clinician acting on the response, then</span>
+<span class="s2">explain that reasoning. If both are bad in the same way, choose TIE.</span>
+
+<span class="s2">What you should consider:</span>
+
+<span class="s2">  * Specificity and accuracy of factual claims, mechanisms, dosing,</span>
+<span class="s2">    timeframes, contraindications, and risk descriptions — to the</span>
+<span class="s2">    extent that the rubric for this batch cares about them.</span>
+<span class="s2">  * Whether the response addresses the question that was actually</span>
+<span class="s2">    asked rather than a related question or a generic template. A</span>
+<span class="s2">    well-written answer to the wrong question is still wrong.</span>
+<span class="s2">  * Whether hedges and caveats are calibrated to genuine uncertainty</span>
+<span class="s2">    in clinical practice rather than sprinkled defensively. A confident</span>
+<span class="s2">    statement of a well-established fact is not a calibration failure;</span>
+<span class="s2">    an unhedged claim about a contested or unsettled question is.</span>
+<span class="s2">  * Whether actionable guidance (next steps, monitoring, escalation)</span>
+<span class="s2">    is present where the rubric values it. Vague advice (&quot;see a</span>
+<span class="s2">    specialist&quot;) with no specifics about who, when, or why is weaker</span>
+<span class="s2">    than concrete next steps tied to the clinical situation.</span>
+<span class="s2">  * Whether contraindications, drug interactions, or red-flag symptoms</span>
+<span class="s2">    that are obviously relevant to the question are surfaced rather</span>
+<span class="s2">    than buried or omitted.</span>
+<span class="s2">  * Whether the response distinguishes what is well-established from</span>
+<span class="s2">    what is contested, especially where guidelines have changed</span>
+<span class="s2">    recently or where there is meaningful clinical equipoise.</span>
+
+<span class="s2">What you should ignore:</span>
+
+<span class="s2">  * Surface markers of effort: word count, presence of disclaimers,</span>
+<span class="s2">    fluency of prose, punctuation, capitalisation.</span>
+<span class="s2">  * Whether the responder identifies as an AI or hedges about being</span>
+<span class="s2">    one. That metacommentary is orthogonal to medical quality and</span>
+<span class="s2">    should not affect your verdict either way.</span>
+<span class="s2">  * The ordering of points within a response. A correct answer at the</span>
+<span class="s2">    end is just as valid as a correct answer at the start.</span>
+<span class="s2">  * Whether a response includes safety boilerplate (e.g. &quot;consult your</span>
+<span class="s2">    doctor&quot;). Such boilerplate is neither a positive nor a negative</span>
+<span class="s2">    on its own — only on whether the rubric values it.</span>
+<span class="s2">  * Personal preferences about phrasing, terminology, or which of two</span>
+<span class="s2">    equally valid clinical approaches is preferred when the literature</span>
+<span class="s2">    supports both.</span>
+
+<span class="s2">Output protocol:</span>
+
+<span class="s2">  1. Produce a step-by-step analysis comparing the two responses on</span>
+<span class="s2">     the rubric&#39;s dimension. Be concrete: name specific claims you</span>
+<span class="s2">     found accurate, vague, hedged, missing, or wrong, and quote or</span>
+<span class="s2">     paraphrase the relevant passage. Avoid restating the question.</span>
+<span class="s2">  2. If you notice a flip between your initial and final read, name it</span>
+<span class="s2">     explicitly and explain what changed your mind.</span>
+<span class="s2">  3. End your reply with exactly one line of the form</span>
+<span class="s2">     `VERDICT: A`, `VERDICT: B`, or `VERDICT: TIE`. The verdict line</span>
+<span class="s2">     must be the final non-empty line of your reply, and nothing</span>
+<span class="s2">     should follow it. Do not add markdown, bullet markers, or</span>
+<span class="s2">     explanatory parentheticals on the verdict line.</span>
+
+<span class="s2">When the rubric describes a dimension where one response is clearly</span>
+<span class="s2">worse — for example, a response containing hallucinated anatomy or</span>
+<span class="s2">fabricated drug names against a coherent and accurate alternative —</span>
+<span class="s2">your verdict should reflect that decisively rather than retreating to</span>
+<span class="s2">TIE in the name of fairness. Conversely, when the two responses are</span>
+<span class="s2">substantively equivalent on the named dimension and only differ in</span>
+<span class="s2">style or surface features, TIE is the right answer.</span>
+
+<span class="s2">The rubric for this batch is below. Read it once before you begin and</span>
+<span class="s2">refer back to it whenever your judgement starts to drift toward</span>
+<span class="s2">criteria the rubric does not name.</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="build_system_message">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.build_system_message">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_system_message</span><span class="p">(</span><span class="n">rubric</span><span class="p">:</span> <span class="n">Rubric</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compose the cacheable system message: a fixed header plus rubric text.</span>
+
+<span class="sd">    The full rubric file (including its version header) is embedded so that</span>
+<span class="sd">    any byte-level edit to the rubric invalidates the prompt cache, matching</span>
+<span class="sd">    the cache-key behaviour. The header is intentionally substantive so the</span>
+<span class="sd">    cached prefix exceeds the API&#39;s minimum cacheable token count, making</span>
+<span class="sd">    prompt caching economically meaningful within a batch.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_SYSTEM_HEADER</span><span class="si">}</span><span class="se">\n</span><span class="s2">----- RUBRIC -----</span><span class="se">\n</span><span class="si">{</span><span class="n">rubric</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="build_user_message">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.build_user_message">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_user_message</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="n">_JudgeQuery</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compose the per-pair user message. Not cached — varies every request.&quot;&quot;&quot;</span>
+    <span class="n">lines</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Medical question:&quot;</span><span class="p">)</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">prompt_text</span><span class="p">)</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">query</span><span class="o">.</span><span class="n">rubric</span><span class="o">.</span><span class="n">dimension</span> <span class="o">==</span> <span class="s2">&quot;factuality&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">query</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">gold_answer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Factuality query for prompt </span><span class="si">{</span><span class="n">query</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">prompt_id</span><span class="si">!r}</span><span class="s2"> is missing &quot;</span>
+                <span class="s2">&quot;a gold_answer; curated prompts should be filtered out before &quot;</span>
+                <span class="s2">&quot;building factuality queries.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">&quot;Gold reference (for your use only — do not reveal to the responses &quot;</span>
+            <span class="s2">&quot;under review):&quot;</span>
+        <span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">gold_answer</span><span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">query</span><span class="o">.</span><span class="n">rubric</span><span class="o">.</span><span class="n">dimension</span> <span class="o">==</span> <span class="s2">&quot;calibration&quot;</span>
+        <span class="ow">and</span> <span class="n">query</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">source</span> <span class="o">==</span> <span class="n">CURATED_SOURCE</span>
+        <span class="ow">and</span> <span class="n">query</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">expected_behavior</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;For this prompt, the expected response pattern is &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">query</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">expected_behavior</span><span class="si">}</span><span class="s2">`.&quot;</span>
+        <span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Response A:&quot;</span><span class="p">)</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">response_in_a</span><span class="p">)</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Response B:&quot;</span><span class="p">)</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">response_in_b</span><span class="p">)</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="s2">&quot;Reason step by step about each response on this dimension, then on &quot;</span>
+        <span class="s2">&quot;a final line output exactly one of: VERDICT: A, VERDICT: B, VERDICT: TIE.&quot;</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_request_params</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="n">_JudgeQuery</span><span class="p">,</span> <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build the ``params`` dict for one batch request.</span>
+
+<span class="sd">    The system block carries a 1-hour cache_control breakpoint so the</span>
+<span class="sd">    rubric prefix is shared across every request in the batch. The user</span>
+<span class="sd">    message is unique per request and is not cached.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="n">query</span><span class="o">.</span><span class="n">judge_model</span><span class="p">,</span>
+        <span class="s2">&quot;max_tokens&quot;</span><span class="p">:</span> <span class="n">max_tokens</span><span class="p">,</span>
+        <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="n">build_system_message</span><span class="p">(</span><span class="n">query</span><span class="o">.</span><span class="n">rubric</span><span class="p">),</span>
+                <span class="s2">&quot;cache_control&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;ephemeral&quot;</span><span class="p">,</span> <span class="s2">&quot;ttl&quot;</span><span class="p">:</span> <span class="s2">&quot;1h&quot;</span><span class="p">},</span>
+            <span class="p">}</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">build_user_message</span><span class="p">(</span><span class="n">query</span><span class="p">),</span>
+            <span class="p">}</span>
+        <span class="p">],</span>
+    <span class="p">}</span>
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Disk cache</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<div class="viewcode-block" id="cache_path_for">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.cache_path_for">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cache_path_for</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">dimension</span><span class="p">:</span> <span class="n">Dimension</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">cache_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;judgments_</span><span class="si">{</span><span class="n">dimension</span><span class="si">}</span><span class="s2">.jsonl&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="load_cache">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.load_cache">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_cache</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">dimension</span><span class="p">:</span> <span class="n">Dimension</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the JSONL cache for one dimension into a ``cache_key -&gt; record`` dict.</span>
+
+<span class="sd">    If the same cache_key appears twice (legacy / concurrent-write artefact),</span>
+<span class="sd">    the later entry wins.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">cache_path_for</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">,</span> <span class="n">dimension</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="n">cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">with</span> <span class="n">path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">raw_line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">raw_line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">line</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">record</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Skipping malformed cache line in </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cache_key&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span>
+    <span class="k">return</span> <span class="n">cache</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">append_cache_record</span><span class="p">(</span>
+    <span class="n">cache_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">dimension</span><span class="p">:</span> <span class="n">Dimension</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Append a single record to the dimension&#39;s cache JSONL.&quot;&quot;&quot;</span>
+    <span class="n">cache_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">cache_path_for</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">,</span> <span class="n">dimension</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">path</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+        <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+        <span class="n">fh</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_record_to_raw</span><span class="p">(</span>
+    <span class="n">record</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">pair</span><span class="p">:</span> <span class="n">PairToJudge</span><span class="p">,</span> <span class="n">rubric</span><span class="p">:</span> <span class="n">Rubric</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_RawJudgement</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reconstruct a ``_RawJudgement`` from a cached record + the live pair.&quot;&quot;&quot;</span>
+    <span class="n">metadata</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">return</span> <span class="n">_RawJudgement</span><span class="p">(</span>
+        <span class="n">cache_key</span><span class="o">=</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;cache_key&quot;</span><span class="p">],</span>
+        <span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span>
+        <span class="n">rubric_version</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;rubric_version&quot;</span><span class="p">,</span> <span class="n">rubric</span><span class="o">.</span><span class="n">version</span><span class="p">),</span>
+        <span class="n">judge_model</span><span class="o">=</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;judge_model&quot;</span><span class="p">],</span>
+        <span class="n">position_swap</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;position_swap&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)),</span>
+        <span class="n">verdict</span><span class="o">=</span><span class="n">_coerce_verdict</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">&quot;verdict&quot;</span><span class="p">]),</span>
+        <span class="n">reasoning</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reasoning&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="n">timestamp</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;timestamp&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_raw_to_record</span><span class="p">(</span><span class="n">raw</span><span class="p">:</span> <span class="n">_RawJudgement</span><span class="p">,</span> <span class="n">dimension</span><span class="p">:</span> <span class="n">Dimension</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;cache_key&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">cache_key</span><span class="p">,</span>
+        <span class="s2">&quot;rubric_version&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">rubric_version</span><span class="p">,</span>
+        <span class="s2">&quot;judge_model&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">judge_model</span><span class="p">,</span>
+        <span class="s2">&quot;verdict&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">verdict</span><span class="p">,</span>
+        <span class="s2">&quot;reasoning&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">reasoning</span><span class="p">,</span>
+        <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
+        <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;dimension&quot;</span><span class="p">:</span> <span class="n">dimension</span><span class="p">,</span>
+            <span class="s2">&quot;prompt_id&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">,</span>
+            <span class="s2">&quot;entrant_a&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">entrant_a</span><span class="p">,</span>
+            <span class="s2">&quot;entrant_b&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">entrant_b</span><span class="p">,</span>
+            <span class="s2">&quot;position_swap&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">position_swap</span><span class="p">,</span>
+            <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+            <span class="s2">&quot;cache_creation_input_tokens&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">cache_creation_input_tokens</span><span class="p">,</span>
+            <span class="s2">&quot;cache_read_input_tokens&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">cache_read_input_tokens</span><span class="p">,</span>
+            <span class="s2">&quot;input_tokens&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">input_tokens</span><span class="p">,</span>
+            <span class="s2">&quot;output_tokens&quot;</span><span class="p">:</span> <span class="n">raw</span><span class="o">.</span><span class="n">output_tokens</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Verdict parsing &amp; swap reconciliation</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_coerce_verdict</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Verdict</span><span class="p">:</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">text</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;TIE&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">text</span>  <span class="c1"># type: ignore[return-value]</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unrecognised verdict value: </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="parse_verdict">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.parse_verdict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_verdict</span><span class="p">(</span><span class="n">reply_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Verdict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pull the final ``VERDICT: X`` line out of the model&#39;s reply.</span>
+
+<span class="sd">    Falls back to ``TIE`` if the model emits something we cannot parse —</span>
+<span class="sd">    callers that want stricter behaviour should inspect the reasoning</span>
+<span class="sd">    text directly.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">reply_text</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+        <span class="n">upper</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">upper</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;VERDICT:&quot;</span><span class="p">):</span>
+            <span class="n">tail</span> <span class="o">=</span> <span class="n">upper</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">candidate</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;TIE&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">tail</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">candidate</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="n">candidate</span>  <span class="c1"># type: ignore[return-value]</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Could not parse a verdict from judge reply; defaulting to TIE.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;TIE&quot;</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_swapped_verdict_to_entrant</span><span class="p">(</span>
+    <span class="n">verdict</span><span class="p">:</span> <span class="n">Verdict</span><span class="p">,</span> <span class="n">position_swap</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">pair</span><span class="p">:</span> <span class="n">PairToJudge</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Translate a position-local verdict to a concrete entrant id.</span>
+
+<span class="sd">    With ``position_swap=False`` the slots map straight through;</span>
+<span class="sd">    with ``position_swap=True`` slot A holds entrant_b and slot B holds</span>
+<span class="sd">    entrant_a, so the entrant ids must be swapped accordingly. Ties</span>
+<span class="sd">    return ``None``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">verdict</span> <span class="o">==</span> <span class="s2">&quot;TIE&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">position_swap</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pair</span><span class="o">.</span><span class="n">entrant_a</span> <span class="k">if</span> <span class="n">verdict</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span> <span class="k">else</span> <span class="n">pair</span><span class="o">.</span><span class="n">entrant_b</span>
+    <span class="k">return</span> <span class="n">pair</span><span class="o">.</span><span class="n">entrant_b</span> <span class="k">if</span> <span class="n">verdict</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span> <span class="k">else</span> <span class="n">pair</span><span class="o">.</span><span class="n">entrant_a</span>
+
+
+<div class="viewcode-block" id="reconcile_swap">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.reconcile_swap">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">reconcile_swap</span><span class="p">(</span>
+    <span class="n">forward</span><span class="p">:</span> <span class="n">_RawJudgement</span><span class="p">,</span> <span class="n">swapped</span><span class="p">:</span> <span class="n">_RawJudgement</span><span class="p">,</span> <span class="n">dimension</span><span class="p">:</span> <span class="n">Dimension</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Judgment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Combine the two position-ordered raw judgements into one ``Judgment``.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">forward</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">prompt_id</span> <span class="o">!=</span> <span class="n">swapped</span><span class="o">.</span><span class="n">pair</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot reconcile raw judgements from different prompts.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">forward</span><span class="o">.</span><span class="n">position_swap</span> <span class="o">==</span> <span class="n">swapped</span><span class="o">.</span><span class="n">position_swap</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Both raw judgements share the same position_swap flag; &quot;</span>
+            <span class="s2">&quot;expected one forward and one swapped.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">forward_winner</span> <span class="o">=</span> <span class="n">_swapped_verdict_to_entrant</span><span class="p">(</span>
+        <span class="n">forward</span><span class="o">.</span><span class="n">verdict</span><span class="p">,</span> <span class="n">forward</span><span class="o">.</span><span class="n">position_swap</span><span class="p">,</span> <span class="n">forward</span><span class="o">.</span><span class="n">pair</span>
+    <span class="p">)</span>
+    <span class="n">swapped_winner</span> <span class="o">=</span> <span class="n">_swapped_verdict_to_entrant</span><span class="p">(</span>
+        <span class="n">swapped</span><span class="o">.</span><span class="n">verdict</span><span class="p">,</span> <span class="n">swapped</span><span class="o">.</span><span class="n">position_swap</span><span class="p">,</span> <span class="n">swapped</span><span class="o">.</span><span class="n">pair</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">forward_winner</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">forward_winner</span> <span class="o">==</span> <span class="n">swapped_winner</span><span class="p">:</span>
+        <span class="n">winner</span> <span class="o">=</span> <span class="n">forward_winner</span>
+        <span class="n">inconsistent</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">elif</span> <span class="n">forward_winner</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">swapped_winner</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">winner</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">inconsistent</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># One says A wins, the other says B wins (or one ties and the other</span>
+        <span class="c1"># picks a side) — collapse to a tie and flag inconsistency.</span>
+        <span class="n">winner</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">inconsistent</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">pair</span> <span class="o">=</span> <span class="n">forward</span><span class="o">.</span><span class="n">pair</span>
+    <span class="n">raw_pair</span> <span class="o">=</span> <span class="p">(</span><span class="n">forward</span><span class="p">,</span> <span class="n">swapped</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">forward</span><span class="o">.</span><span class="n">position_swap</span> <span class="k">else</span> <span class="p">(</span><span class="n">swapped</span><span class="p">,</span> <span class="n">forward</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Judgment</span><span class="p">(</span>
+        <span class="n">prompt_id</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">,</span>
+        <span class="n">dimension</span><span class="o">=</span><span class="n">dimension</span><span class="p">,</span>
+        <span class="n">entrant_a</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">entrant_a</span><span class="p">,</span>
+        <span class="n">entrant_b</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">entrant_b</span><span class="p">,</span>
+        <span class="n">winner</span><span class="o">=</span><span class="n">winner</span><span class="p">,</span>
+        <span class="n">inconsistent</span><span class="o">=</span><span class="n">inconsistent</span><span class="p">,</span>
+        <span class="n">raw</span><span class="o">=</span><span class="n">raw_pair</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Anthropic batch submission</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_make_anthropic_client</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">JudgeConfig</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Construct an Anthropic SDK client; fail loudly if no key is configured.&quot;&quot;&quot;</span>
+    <span class="n">api_key</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">api_key</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ANTHROPIC_API_KEY&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">api_key</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="s2">&quot;ANTHROPIC_API_KEY is not set. Add it to your .env file (see &quot;</span>
+            <span class="s2">&quot;.env.example) or pass api_key explicitly to JudgeConfig.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># The anthropic SDK only ships in the default pixi env (the judge runs</span>
+    <span class="c1"># without a GPU); the cuda env used for typechecking does not have it,</span>
+    <span class="c1"># so we resolve it dynamically to keep static-analysis green.</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">anthropic</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="s2">&quot;anthropic&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># pragma: no cover - install error path</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="s2">&quot;The `anthropic` package is required for judge_pairs; install it &quot;</span>
+            <span class="s2">&quot;via the default pixi env.&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+    <span class="k">return</span> <span class="n">anthropic</span><span class="o">.</span><span class="n">Anthropic</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_batch_requests</span><span class="p">(</span>
+    <span class="n">queries</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">_JudgeQuery</span><span class="p">],</span> <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert each query into a Batch API request dict.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;custom_id&quot;</span><span class="p">:</span> <span class="n">query</span><span class="o">.</span><span class="n">cache_key</span><span class="p">,</span>
+            <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="n">_build_request_params</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="n">max_tokens</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="n">queries</span>
+    <span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_submit_batch_with_retry</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">requests</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span> <span class="n">max_retries</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Submit a batch, retrying on transient rate-limit errors.&quot;&quot;&quot;</span>
+    <span class="n">backoff</span> <span class="o">=</span> <span class="n">_SUBMIT_INITIAL_BACKOFF_SECONDS</span>
+    <span class="n">last_exc</span><span class="p">:</span> <span class="ne">Exception</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_retries</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">client</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">batches</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="n">requests</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># pragma: no cover - transient network paths</span>
+            <span class="n">last_exc</span> <span class="o">=</span> <span class="n">exc</span>
+            <span class="n">status_code</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="s2">&quot;status_code&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">status_code</span> <span class="o">!=</span> <span class="mi">429</span> <span class="ow">or</span> <span class="n">attempt</span> <span class="o">==</span> <span class="n">max_retries</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Batch submission rate-limited (attempt </span><span class="si">%d</span><span class="s2">/</span><span class="si">%d</span><span class="s2">); sleeping </span><span class="si">%.1f</span><span class="s2">s&quot;</span><span class="p">,</span>
+                <span class="n">attempt</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="n">max_retries</span><span class="p">,</span>
+                <span class="n">backoff</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">backoff</span><span class="p">)</span>
+            <span class="n">backoff</span> <span class="o">*=</span> <span class="mi">2</span>
+    <span class="c1"># Defensive — the loop should either return or raise above.</span>
+    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+        <span class="s2">&quot;Batch submission failed without a captured exception&quot;</span>
+    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">last_exc</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_poll_batch</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">JudgeConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Poll until the batch ends, growing the sleep interval geometrically.&quot;&quot;&quot;</span>
+    <span class="n">delay</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">poll_initial_seconds</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">batch</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">batches</span><span class="o">.</span><span class="n">retrieve</span><span class="p">(</span><span class="n">batch_id</span><span class="p">)</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="s2">&quot;processing_status&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Batch </span><span class="si">%s</span><span class="s2"> status: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">,</span> <span class="n">status</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;ended&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">batch</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;canceled&quot;</span><span class="p">,</span> <span class="s2">&quot;expired&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Batch </span><span class="si">{</span><span class="n">batch_id</span><span class="si">}</span><span class="s2"> terminated with status </span><span class="si">{</span><span class="n">status</span><span class="si">!r}</span><span class="s2">; &quot;</span>
+                <span class="s2">&quot;see the Anthropic console for details.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+        <span class="n">delay</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">poll_max_seconds</span><span class="p">,</span> <span class="n">delay</span> <span class="o">*</span> <span class="n">_POLL_GROWTH</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_extract_reply_text</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pull plain text out of a Messages API response.&quot;&quot;&quot;</span>
+    <span class="n">chunks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">,</span> <span class="p">[])</span> <span class="ow">or</span> <span class="p">[]:</span>
+        <span class="n">block_type</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+            <span class="n">block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">block_type</span> <span class="o">==</span> <span class="s2">&quot;text&quot;</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="s2">&quot;text&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+                <span class="n">block</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;text&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">text</span><span class="p">:</span>
+                <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chunks</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_process_batch_results</span><span class="p">(</span>
+    <span class="n">client</span><span class="p">,</span>
+    <span class="n">batch_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">queries_by_key</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">_JudgeQuery</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">_RawJudgement</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stream batch results into ``_RawJudgement`` records.</span>
+
+<span class="sd">    Returns ``(judgements, failed_custom_ids)`` — failed entries are</span>
+<span class="sd">    skipped so the caller can re-run them next time.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">raw</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">_RawJudgement</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">failed</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">client</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">batches</span><span class="o">.</span><span class="n">results</span><span class="p">(</span><span class="n">batch_id</span><span class="p">):</span>
+        <span class="n">custom_id</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="s2">&quot;custom_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">custom_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">custom_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">queries_by_key</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Batch </span><span class="si">%s</span><span class="s2"> returned unknown custom_id </span><span class="si">%r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">,</span> <span class="n">custom_id</span>
+            <span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="n">queries_by_key</span><span class="p">[</span><span class="n">custom_id</span><span class="p">]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="s2">&quot;result&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">result_type</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">result_type</span> <span class="o">!=</span> <span class="s2">&quot;succeeded&quot;</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;Batch </span><span class="si">%s</span><span class="s2">: request </span><span class="si">%s</span><span class="s2"> failed with type=</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">batch_id</span><span class="p">,</span>
+                <span class="n">custom_id</span><span class="p">,</span>
+                <span class="n">result_type</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">failed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">custom_id</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">reply_text</span> <span class="o">=</span> <span class="n">_extract_reply_text</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">reply_text</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                <span class="s2">&quot;Batch </span><span class="si">%s</span><span class="s2">: request </span><span class="si">%s</span><span class="s2"> returned an empty reply&quot;</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">,</span> <span class="n">custom_id</span>
+            <span class="p">)</span>
+            <span class="n">failed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">custom_id</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">verdict</span> <span class="o">=</span> <span class="n">parse_verdict</span><span class="p">(</span><span class="n">reply_text</span><span class="p">)</span>
+        <span class="n">usage</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="s2">&quot;usage&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">raw</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">_RawJudgement</span><span class="p">(</span>
+                <span class="n">cache_key</span><span class="o">=</span><span class="n">custom_id</span><span class="p">,</span>
+                <span class="n">pair</span><span class="o">=</span><span class="n">query</span><span class="o">.</span><span class="n">pair</span><span class="p">,</span>
+                <span class="n">rubric_version</span><span class="o">=</span><span class="n">query</span><span class="o">.</span><span class="n">rubric</span><span class="o">.</span><span class="n">version</span><span class="p">,</span>
+                <span class="n">judge_model</span><span class="o">=</span><span class="n">query</span><span class="o">.</span><span class="n">judge_model</span><span class="p">,</span>
+                <span class="n">position_swap</span><span class="o">=</span><span class="n">query</span><span class="o">.</span><span class="n">position_swap</span><span class="p">,</span>
+                <span class="n">verdict</span><span class="o">=</span><span class="n">verdict</span><span class="p">,</span>
+                <span class="n">reasoning</span><span class="o">=</span><span class="n">reply_text</span><span class="p">,</span>
+                <span class="n">timestamp</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(</span><span class="n">timespec</span><span class="o">=</span><span class="s2">&quot;seconds&quot;</span><span class="p">),</span>
+                <span class="n">cache_creation_input_tokens</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span>
+                    <span class="n">usage</span><span class="p">,</span> <span class="s2">&quot;cache_creation_input_tokens&quot;</span><span class="p">,</span> <span class="mi">0</span>
+                <span class="p">)</span>
+                <span class="ow">or</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="n">cache_read_input_tokens</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">usage</span><span class="p">,</span> <span class="s2">&quot;cache_read_input_tokens&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="n">input_tokens</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">usage</span><span class="p">,</span> <span class="s2">&quot;input_tokens&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="n">output_tokens</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">usage</span><span class="p">,</span> <span class="s2">&quot;output_tokens&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">raw</span><span class="p">,</span> <span class="n">failed</span>
+
+
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+<span class="c1"># Public API</span>
+<span class="c1"># --------------------------------------------------------------------------- #</span>
+
+
+<div class="viewcode-block" id="judge_pairs">
+<a class="viewcode-back" href="../../../../api/_generated/olmo_tap.final_evals.elo.judge.html#olmo_tap.final_evals.elo.judge.judge_pairs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">judge_pairs</span><span class="p">(</span>
+    <span class="n">pairs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PairToJudge</span><span class="p">],</span>
+    <span class="n">rubric</span><span class="p">:</span> <span class="n">Rubric</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">JudgeConfig</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">client</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JudgeResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Judge ``pairs`` on ``rubric`` and return reconciled judgments.</span>
+
+<span class="sd">    Loads the on-disk cache for the rubric&#39;s dimension, filters out any</span>
+<span class="sd">    pair-orderings already judged, submits the rest as one Anthropic</span>
+<span class="sd">    batch with the rubric prefix marked as a 1-hour cache breakpoint,</span>
+<span class="sd">    polls until the batch ends, writes new entries to the cache, and</span>
+<span class="sd">    reconciles each pair&#39;s two position orders into one ``Judgment``.</span>
+
+<span class="sd">    ``client`` is optional — passing one in is convenient for tests.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">filtered_pairs</span> <span class="o">=</span> <span class="n">filter_pairs_for_dimension</span><span class="p">(</span><span class="n">pairs</span><span class="p">,</span> <span class="n">rubric</span><span class="o">.</span><span class="n">dimension</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">filtered_pairs</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;judge_pairs(</span><span class="si">%s</span><span class="s2">): no pairs to judge after filtering&quot;</span><span class="p">,</span> <span class="n">rubric</span><span class="o">.</span><span class="n">dimension</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">JudgeResult</span><span class="p">(</span><span class="n">judgments</span><span class="o">=</span><span class="p">[],</span> <span class="n">cache_stats</span><span class="o">=</span><span class="n">CacheStats</span><span class="p">(),</span> <span class="n">rubric</span><span class="o">=</span><span class="n">rubric</span><span class="p">)</span>
+
+    <span class="n">cache</span> <span class="o">=</span> <span class="n">load_cache</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">,</span> <span class="n">rubric</span><span class="o">.</span><span class="n">dimension</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="s2">&quot;Loaded </span><span class="si">%d</span><span class="s2"> cached judgments for </span><span class="si">%s</span><span class="s2">; total queries to plan: </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">cache</span><span class="p">),</span>
+        <span class="n">rubric</span><span class="o">.</span><span class="n">dimension</span><span class="p">,</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">filtered_pairs</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">queries</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">_JudgeQuery</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">cached_raw_by_key</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">_RawJudgement</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">filtered_pairs</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">swap</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
+            <span class="n">response_a</span> <span class="o">=</span> <span class="n">pair</span><span class="o">.</span><span class="n">response_a</span>
+            <span class="n">response_b</span> <span class="o">=</span> <span class="n">pair</span><span class="o">.</span><span class="n">response_b</span>
+            <span class="n">cache_key</span> <span class="o">=</span> <span class="n">derive_cache_key</span><span class="p">(</span>
+                <span class="n">rubric_text</span><span class="o">=</span><span class="n">rubric</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+                <span class="n">judge_model</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">judge_model</span><span class="p">,</span>
+                <span class="n">prompt_id</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">,</span>
+                <span class="n">entrant_a</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">entrant_a</span><span class="p">,</span>
+                <span class="n">entrant_b</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">entrant_b</span><span class="p">,</span>
+                <span class="n">position_swap</span><span class="o">=</span><span class="n">swap</span><span class="p">,</span>
+                <span class="n">response_a</span><span class="o">=</span><span class="n">response_a</span><span class="p">,</span>
+                <span class="n">response_b</span><span class="o">=</span><span class="n">response_b</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="n">_JudgeQuery</span><span class="p">(</span>
+                <span class="n">cache_key</span><span class="o">=</span><span class="n">cache_key</span><span class="p">,</span>
+                <span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span>
+                <span class="n">rubric</span><span class="o">=</span><span class="n">rubric</span><span class="p">,</span>
+                <span class="n">position_swap</span><span class="o">=</span><span class="n">swap</span><span class="p">,</span>
+                <span class="n">judge_model</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">judge_model</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">cached_record</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cache_key</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cached_record</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">cached_raw_by_key</span><span class="p">[</span><span class="n">cache_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">_record_to_raw</span><span class="p">(</span>
+                    <span class="n">cached_record</span><span class="p">,</span> <span class="n">pair</span><span class="p">,</span> <span class="n">rubric</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">queries</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+    <span class="n">stats</span> <span class="o">=</span> <span class="n">CacheStats</span><span class="p">(</span><span class="n">cache_hits</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">cached_raw_by_key</span><span class="p">))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="s2">&quot;Cache hits: </span><span class="si">%d</span><span class="s2">; fresh queries to submit: </span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">cached_raw_by_key</span><span class="p">),</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">queries</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">fresh_raw</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">_RawJudgement</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">queries</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">client</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">client</span> <span class="o">=</span> <span class="n">_make_anthropic_client</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="n">fresh_raw</span> <span class="o">=</span> <span class="n">_run_batch</span><span class="p">(</span><span class="n">queries</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">client</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">raw</span> <span class="ow">in</span> <span class="n">fresh_raw</span><span class="p">:</span>
+            <span class="n">append_cache_record</span><span class="p">(</span>
+                <span class="n">config</span><span class="o">.</span><span class="n">cache_dir</span><span class="p">,</span>
+                <span class="n">rubric</span><span class="o">.</span><span class="n">dimension</span><span class="p">,</span>
+                <span class="n">_raw_to_record</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">rubric</span><span class="o">.</span><span class="n">dimension</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">cache_creation_input_tokens</span> <span class="o">+=</span> <span class="n">raw</span><span class="o">.</span><span class="n">cache_creation_input_tokens</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">cache_read_input_tokens</span> <span class="o">+=</span> <span class="n">raw</span><span class="o">.</span><span class="n">cache_read_input_tokens</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">input_tokens</span> <span class="o">+=</span> <span class="n">raw</span><span class="o">.</span><span class="n">input_tokens</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">output_tokens</span> <span class="o">+=</span> <span class="n">raw</span><span class="o">.</span><span class="n">output_tokens</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">fresh_calls</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="n">fresh_by_key</span> <span class="o">=</span> <span class="p">{</span><span class="n">raw</span><span class="o">.</span><span class="n">cache_key</span><span class="p">:</span> <span class="n">raw</span> <span class="k">for</span> <span class="n">raw</span> <span class="ow">in</span> <span class="n">fresh_raw</span><span class="p">}</span>
+    <span class="n">raw_by_key</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">_RawJudgement</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">cached_raw_by_key</span><span class="p">,</span> <span class="o">**</span><span class="n">fresh_by_key</span><span class="p">}</span>
+
+    <span class="n">judgments</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Judgment</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">filtered_pairs</span><span class="p">:</span>
+        <span class="n">forward_key</span> <span class="o">=</span> <span class="n">derive_cache_key</span><span class="p">(</span>
+            <span class="n">rubric_text</span><span class="o">=</span><span class="n">rubric</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">judge_model</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">judge_model</span><span class="p">,</span>
+            <span class="n">prompt_id</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">,</span>
+            <span class="n">entrant_a</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">entrant_a</span><span class="p">,</span>
+            <span class="n">entrant_b</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">entrant_b</span><span class="p">,</span>
+            <span class="n">position_swap</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">response_a</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">response_a</span><span class="p">,</span>
+            <span class="n">response_b</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">response_b</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">swapped_key</span> <span class="o">=</span> <span class="n">derive_cache_key</span><span class="p">(</span>
+            <span class="n">rubric_text</span><span class="o">=</span><span class="n">rubric</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">judge_model</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">judge_model</span><span class="p">,</span>
+            <span class="n">prompt_id</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">,</span>
+            <span class="n">entrant_a</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">entrant_a</span><span class="p">,</span>
+            <span class="n">entrant_b</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">entrant_b</span><span class="p">,</span>
+            <span class="n">position_swap</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">response_a</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">response_a</span><span class="p">,</span>
+            <span class="n">response_b</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">response_b</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">forward</span> <span class="o">=</span> <span class="n">raw_by_key</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">forward_key</span><span class="p">)</span>
+        <span class="n">swapped</span> <span class="o">=</span> <span class="n">raw_by_key</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">swapped_key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">forward</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">swapped</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Skipping reconciliation for prompt </span><span class="si">%s</span><span class="s2"> on </span><span class="si">%s</span><span class="s2">: missing </span><span class="si">%s</span><span class="s2"> verdict&quot;</span><span class="p">,</span>
+                <span class="n">pair</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">,</span>
+                <span class="n">rubric</span><span class="o">.</span><span class="n">dimension</span><span class="p">,</span>
+                <span class="s2">&quot;forward&quot;</span> <span class="k">if</span> <span class="n">forward</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;swapped&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">judgments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reconcile_swap</span><span class="p">(</span><span class="n">forward</span><span class="p">,</span> <span class="n">swapped</span><span class="p">,</span> <span class="n">rubric</span><span class="o">.</span><span class="n">dimension</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">JudgeResult</span><span class="p">(</span><span class="n">judgments</span><span class="o">=</span><span class="n">judgments</span><span class="p">,</span> <span class="n">cache_stats</span><span class="o">=</span><span class="n">stats</span><span class="p">,</span> <span class="n">rubric</span><span class="o">=</span><span class="n">rubric</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_run_batch</span><span class="p">(</span>
+    <span class="n">queries</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">_JudgeQuery</span><span class="p">],</span> <span class="n">config</span><span class="p">:</span> <span class="n">JudgeConfig</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Any</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">_RawJudgement</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Submit, poll, and collect one batch of judge queries.&quot;&quot;&quot;</span>
+    <span class="n">requests</span> <span class="o">=</span> <span class="n">_build_batch_requests</span><span class="p">(</span><span class="n">queries</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">max_tokens</span><span class="p">)</span>
+    <span class="n">queries_by_key</span> <span class="o">=</span> <span class="p">{</span><span class="n">q</span><span class="o">.</span><span class="n">cache_key</span><span class="p">:</span> <span class="n">q</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">queries</span><span class="p">}</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Submitting batch with </span><span class="si">%d</span><span class="s2"> requests&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">requests</span><span class="p">))</span>
+    <span class="n">batch</span> <span class="o">=</span> <span class="n">_submit_batch_with_retry</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">requests</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">submit_max_retries</span><span class="p">)</span>
+    <span class="n">batch_id</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">batch_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Anthropic batch creation returned no id&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Batch submitted: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">)</span>
+
+    <span class="n">_poll_batch</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+    <span class="n">raw</span><span class="p">,</span> <span class="n">failed</span> <span class="o">=</span> <span class="n">_process_batch_results</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">,</span> <span class="n">queries_by_key</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">failed</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+            <span class="s2">&quot;Batch </span><span class="si">%s</span><span class="s2">: </span><span class="si">%d</span><span class="s2">/</span><span class="si">%d</span><span class="s2"> requests failed; re-run to retry these.&quot;</span><span class="p">,</span>
+            <span class="n">batch_id</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">failed</span><span class="p">),</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">requests</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">raw</span>
+
+
+<span class="c1"># Public re-exports for tests and downstream callers.</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;CURATED_SOURCE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;DIMENSIONS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;CacheStats&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Dimension&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Judgment&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;JudgeConfig&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;JudgeResult&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;PairToJudge&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Rubric&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Verdict&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;build_system_message&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;build_user_message&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cache_path_for&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;derive_cache_key&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;filter_pairs_for_dimension&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;judge_pairs&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;load_cache&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;parse_verdict&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;reconcile_swap&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<span class="c1"># Internal exports — useful for tests, not part of the stable surface.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_make_raw_for_test</span><span class="p">(</span>
+    <span class="n">pair</span><span class="p">:</span> <span class="n">PairToJudge</span><span class="p">,</span>
+    <span class="n">rubric</span><span class="p">:</span> <span class="n">Rubric</span><span class="p">,</span>
+    <span class="n">judge_model</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">position_swap</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">verdict</span><span class="p">:</span> <span class="n">Verdict</span><span class="p">,</span>
+    <span class="n">reasoning</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_RawJudgement</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a ``_RawJudgement`` from primitive inputs (test helper).&quot;&quot;&quot;</span>
+    <span class="n">cache_key</span> <span class="o">=</span> <span class="n">derive_cache_key</span><span class="p">(</span>
+        <span class="n">rubric_text</span><span class="o">=</span><span class="n">rubric</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+        <span class="n">judge_model</span><span class="o">=</span><span class="n">judge_model</span><span class="p">,</span>
+        <span class="n">prompt_id</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">,</span>
+        <span class="n">entrant_a</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">entrant_a</span><span class="p">,</span>
+        <span class="n">entrant_b</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">entrant_b</span><span class="p">,</span>
+        <span class="n">position_swap</span><span class="o">=</span><span class="n">position_swap</span><span class="p">,</span>
+        <span class="n">response_a</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">response_a</span><span class="p">,</span>
+        <span class="n">response_b</span><span class="o">=</span><span class="n">pair</span><span class="o">.</span><span class="n">response_b</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_RawJudgement</span><span class="p">(</span>
+        <span class="n">cache_key</span><span class="o">=</span><span class="n">cache_key</span><span class="p">,</span>
+        <span class="n">pair</span><span class="o">=</span><span class="n">pair</span><span class="p">,</span>
+        <span class="n">rubric_version</span><span class="o">=</span><span class="n">rubric</span><span class="o">.</span><span class="n">version</span><span class="p">,</span>
+        <span class="n">judge_model</span><span class="o">=</span><span class="n">judge_model</span><span class="p">,</span>
+        <span class="n">position_swap</span><span class="o">=</span><span class="n">position_swap</span><span class="p">,</span>
+        <span class="n">verdict</span><span class="o">=</span><span class="n">verdict</span><span class="p">,</span>
+        <span class="n">reasoning</span><span class="o">=</span><span class="n">reasoning</span><span class="p">,</span>
+        <span class="n">timestamp</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(</span><span class="n">timespec</span><span class="o">=</span><span class="s2">&quot;seconds&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_judgment_as_dict</span><span class="p">(</span><span class="n">judgment</span><span class="p">:</span> <span class="n">Judgment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;JSON-friendly view of a ``Judgment`` (handy for run logs).&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;prompt_id&quot;</span><span class="p">:</span> <span class="n">judgment</span><span class="o">.</span><span class="n">prompt_id</span><span class="p">,</span>
+        <span class="s2">&quot;dimension&quot;</span><span class="p">:</span> <span class="n">judgment</span><span class="o">.</span><span class="n">dimension</span><span class="p">,</span>
+        <span class="s2">&quot;entrant_a&quot;</span><span class="p">:</span> <span class="n">judgment</span><span class="o">.</span><span class="n">entrant_a</span><span class="p">,</span>
+        <span class="s2">&quot;entrant_b&quot;</span><span class="p">:</span> <span class="n">judgment</span><span class="o">.</span><span class="n">entrant_b</span><span class="p">,</span>
+        <span class="s2">&quot;winner&quot;</span><span class="p">:</span> <span class="n">judgment</span><span class="o">.</span><span class="n">winner</span><span class="p">,</span>
+        <span class="s2">&quot;inconsistent&quot;</span><span class="p">:</span> <span class="n">judgment</span><span class="o">.</span><span class="n">inconsistent</span><span class="p">,</span>
+        <span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">asdict</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">judgment</span><span class="o">.</span><span class="n">raw</span><span class="p">],</span>
+    <span class="p">}</span>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, The TAP Authors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../../../_static/documentation_options.js?v=01f34227"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=f281be69"></script>
+    </body>
+</html>

@@ -1,0 +1,14 @@
+olmo\_tap.final\_evals.elo.scripts
+==================================
+
+.. automodule:: olmo_tap.final_evals.elo.scripts
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   smoke_test_generate
+   validate_judge

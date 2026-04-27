@@ -1,0 +1,12 @@
+app.backend.bert\_inference
+===========================
+
+.. automodule:: app.backend.bert_inference
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      load_bert
+   

@@ -8,4 +8,5 @@ how these packages fit together.
 
 kernel_entropy
 olmo_tap
+app
 ```

@@ -1,0 +1,15 @@
+olmo\_tap.final\_evals
+======================
+
+.. automodule:: olmo_tap.final_evals
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   elo
+   robustness_sweep
+   uncertainty_sweep

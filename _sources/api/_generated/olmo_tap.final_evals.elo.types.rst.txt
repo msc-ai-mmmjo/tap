@@ -1,0 +1,20 @@
+olmo\_tap.final\_evals.elo.types
+================================
+
+.. automodule:: olmo_tap.final_evals.elo.types
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      load_prompt_bank
+      prompt_seed
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      GeneratedResponse
+      Prompt
+   

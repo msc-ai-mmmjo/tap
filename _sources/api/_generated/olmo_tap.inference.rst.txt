@@ -1,0 +1,15 @@
+olmo\_tap.inference
+===================
+
+.. automodule:: olmo_tap.inference
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   loading_weights
+   poe
+   poe_demo_no_kv

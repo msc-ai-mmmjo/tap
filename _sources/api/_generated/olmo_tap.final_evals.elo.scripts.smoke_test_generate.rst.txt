@@ -1,0 +1,12 @@
+olmo\_tap.final\_evals.elo.scripts.smoke\_test\_generate
+========================================================
+
+.. automodule:: olmo_tap.final_evals.elo.scripts.smoke_test_generate
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      main
+   

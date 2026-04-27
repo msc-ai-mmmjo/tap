@@ -1,0 +1,22 @@
+app.backend.server
+==================
+
+.. automodule:: app.backend.server
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      analyse
+      call_hf_model
+      health
+      lifespan
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ChatRequest
+      Message
+   

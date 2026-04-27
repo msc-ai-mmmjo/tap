@@ -1,0 +1,14 @@
+olmo\_tap.final\_evals.elo.report
+=================================
+
+.. automodule:: olmo_tap.final_evals.elo.report
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      render_sensitivity_heatmap
+      write_results_json
+      write_run_manifest
+   

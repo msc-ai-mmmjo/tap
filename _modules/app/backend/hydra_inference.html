@@ -1,0 +1,824 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="../../../genindex.html"><link rel="search" title="Search" href="../../../search.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>app.backend.hydra_inference - Trustworthy Answer Protocol</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../../index.html"><div class="brand">Trustworthy Answer Protocol</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../../index.html">
+  
+  <span class="sidebar-brand-text">Trustworthy Answer Protocol</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Start here</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guides/architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../guides/olmo-tap.html">olmo_tap package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guides/kernel-entropy.html">Kernel entropy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../guides/app.html">Application</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../../../api/index.html">API reference</a><input aria-label="Toggle navigation of API reference" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../api/kernel_entropy.html">kernel_entropy</a><input aria-label="Toggle navigation of kernel_entropy" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/_generated/kernel_entropy.html">kernel_entropy</a><input aria-label="Toggle navigation of kernel_entropy" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/kernel_entropy.entropy.html">kernel_entropy.entropy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/kernel_entropy.generation.html">kernel_entropy.generation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/kernel_entropy.nli.html">kernel_entropy.nli</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/kernel_entropy.pipeline.html">kernel_entropy.pipeline</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../api/olmo_tap.html">olmo_tap</a><input aria-label="Toggle navigation of olmo_tap" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/_generated/olmo_tap.html">olmo_tap</a><input aria-label="Toggle navigation of olmo_tap" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/_generated/olmo_tap.benchmarks.html">olmo_tap.benchmarks</a><input aria-label="Toggle navigation of olmo_tap.benchmarks" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/_generated/olmo_tap.benchmarks.harness.html">olmo_tap.benchmarks.harness</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/_generated/olmo_tap.benchmarks.inference.html">olmo_tap.benchmarks.inference</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/_generated/olmo_tap.benchmarks.plotting.html">olmo_tap.benchmarks.plotting</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/olmo_tap.constants.html">olmo_tap.constants</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.html">olmo_tap.experiments</a><input aria-label="Toggle navigation of olmo_tap.experiments" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.hydra_demo.html">olmo_tap.experiments.hydra_demo</a></li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.robustness.html">olmo_tap.experiments.robustness</a><input aria-label="Toggle navigation of olmo_tap.experiments.robustness" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.robustness.amplegcg.html">olmo_tap.experiments.robustness.amplegcg</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.robustness.build_attack_bank.html">olmo_tap.experiments.robustness.build_attack_bank</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.robustness.data.html">olmo_tap.experiments.robustness.data</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.robustness.engine.html">olmo_tap.experiments.robustness.engine</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.robustness.eval.html">olmo_tap.experiments.robustness.eval</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.robustness.precompute_gcg.html">olmo_tap.experiments.robustness.precompute_gcg</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.robustness.training.html">olmo_tap.experiments.robustness.training</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.security.html">olmo_tap.experiments.security</a><input aria-label="Toggle navigation of olmo_tap.experiments.security" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.security.data.html">olmo_tap.experiments.security.data</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.security.engine.html">olmo_tap.experiments.security.engine</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.security.eval.html">olmo_tap.experiments.security.eval</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.security.training.html">olmo_tap.experiments.security.training</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.uncertainty.html">olmo_tap.experiments.uncertainty</a><input aria-label="Toggle navigation of olmo_tap.experiments.uncertainty" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.uncertainty.data.html">olmo_tap.experiments.uncertainty.data</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.uncertainty.engine.html">olmo_tap.experiments.uncertainty.engine</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.uncertainty.single_head_eval.html">olmo_tap.experiments.uncertainty.single_head_eval</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.uncertainty.training.html">olmo_tap.experiments.uncertainty.training</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.uncertainty.weights_handler.html">olmo_tap.experiments.uncertainty.weights_handler</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.utils.html">olmo_tap.experiments.utils</a><input aria-label="Toggle navigation of olmo_tap.experiments.utils" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.utils.config.html">olmo_tap.experiments.utils.config</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.utils.model_builder.html">olmo_tap.experiments.utils.model_builder</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.utils.random_seed.html">olmo_tap.experiments.utils.random_seed</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.experiments.utils.weights.html">olmo_tap.experiments.utils.weights</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.html">olmo_tap.final_evals</a><input aria-label="Toggle navigation of olmo_tap.final_evals" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5 has-children"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.elo.html">olmo_tap.final_evals.elo</a><input aria-label="Toggle navigation of olmo_tap.final_evals.elo" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.elo.elo_engine.html">olmo_tap.final_evals.elo.elo_engine</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.elo.entrants.html">olmo_tap.final_evals.elo.entrants</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.elo.generate.html">olmo_tap.final_evals.elo.generate</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.elo.judge.html">olmo_tap.final_evals.elo.judge</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.elo.match_builder.html">olmo_tap.final_evals.elo.match_builder</a></li>
+<li class="toctree-l6 has-children"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.elo.prompts.html">olmo_tap.final_evals.elo.prompts</a><input aria-label="Toggle navigation of olmo_tap.final_evals.elo.prompts" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.elo.prompts.build_prompt_set.html">olmo_tap.final_evals.elo.prompts.build_prompt_set</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.elo.report.html">olmo_tap.final_evals.elo.report</a></li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.elo.run_tournament.html">olmo_tap.final_evals.elo.run_tournament</a></li>
+<li class="toctree-l6 has-children"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.elo.scripts.html">olmo_tap.final_evals.elo.scripts</a><input aria-label="Toggle navigation of olmo_tap.final_evals.elo.scripts" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.elo.scripts.smoke_test_generate.html">olmo_tap.final_evals.elo.scripts.smoke_test_generate</a></li>
+<li class="toctree-l7"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.elo.scripts.validate_judge.html">olmo_tap.final_evals.elo.scripts.validate_judge</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.elo.types.html">olmo_tap.final_evals.elo.types</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.robustness_sweep.html">olmo_tap.final_evals.robustness_sweep</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/_generated/olmo_tap.final_evals.uncertainty_sweep.html">olmo_tap.final_evals.uncertainty_sweep</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/olmo_tap.hydra.html">olmo_tap.hydra</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="../../../api/_generated/olmo_tap.inference.html">olmo_tap.inference</a><input aria-label="Toggle navigation of olmo_tap.inference" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/_generated/olmo_tap.inference.loading_weights.html">olmo_tap.inference.loading_weights</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/_generated/olmo_tap.inference.poe.html">olmo_tap.inference.poe</a></li>
+<li class="toctree-l5"><a class="reference internal" href="../../../api/_generated/olmo_tap.inference.poe_demo_no_kv.html">olmo_tap.inference.poe_demo_no_kv</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../../../api/app.html">app.backend</a><input aria-label="Toggle navigation of app.backend" class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" role="switch" type="checkbox"/><label for="toctree-checkbox-17"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="../../../api/_generated/app.backend.html">app.backend</a><input aria-label="Toggle navigation of app.backend" class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" role="switch" type="checkbox"/><label for="toctree-checkbox-18"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/app.backend.adversarial_suffixes.html">app.backend.adversarial_suffixes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/app.backend.bert_inference.html">app.backend.bert_inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/app.backend.claim_confidence.html">app.backend.claim_confidence</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/app.backend.claim_splitter.html">app.backend.claim_splitter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/app.backend.constants.html">app.backend.constants</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/app.backend.hydra_inference.html">app.backend.hydra_inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/app.backend.modal_app.html">app.backend.modal_app</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/app.backend.question_classifier.html">app.backend.question_classifier</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/app.backend.response_payloads.html">app.backend.response_payloads</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/_generated/app.backend.server.html">app.backend.server</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <h1>Source code for app.backend.hydra_inference</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Thin adapters that bridge the FastAPI request layer with</span>
+<span class="sd">:mod:`olmo_tap.inference.poe`.</span>
+
+<span class="sd">This module is the single entry point through which the deployed backend</span>
+<span class="sd">talks to the Hydra PoE ensemble. Three concerns are handled here, none of</span>
+<span class="sd">which belong inside the research-side PoE class:</span>
+
+<span class="sd">- **Model construction** -- :func:`load_hydra` builds the 10-head ensemble</span>
+<span class="sd">  (9 LLM verifiers + 1 uncertainty head) with the production LoRAs merged in</span>
+<span class="sd">  and the chat tokenizer attached.</span>
+<span class="sd">- **System-prompt routing** -- MCQ vs NLP prompts get different system</span>
+<span class="sd">  messages and token budgets (:data:`MCQ_SYSTEM_PROMPT` /</span>
+<span class="sd">  :data:`NLP_SYSTEM_PROMPT`).</span>
+<span class="sd">- **Output reshaping** -- :func:`_tokens_and_resamples_from_poe_output`</span>
+<span class="sd">  trims trailing EOS, strips token whitespace and converts the rejection</span>
+<span class="sd">  bookkeeping into the per-token records the frontend renders.</span>
+
+<span class="sd">A separate :func:`get_robustness` function reuses :func:`generate` to retry</span>
+<span class="sd">the prompt under a bank of adversarial suffixes and reports how many flipped</span>
+<span class="sd">the answer (MCQ: first-token diff; NLP: NLI similarity below</span>
+<span class="sd">:data:`NLP_ROBUSTNESS_THRESHOLD`).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">PreTrainedTokenizerBase</span><span class="p">,</span> <span class="n">TokenizersBackend</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">kernel_entropy.nli</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModernBERTScorer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">olmo_tap.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">MAX_NEW_TOKENS</span><span class="p">,</span> <span class="n">MCQ_MAX_NEW_TOKENS</span><span class="p">,</span> <span class="n">WEIGHTS_DIR</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">olmo_tap.hydra</span><span class="w"> </span><span class="kn">import</span> <span class="n">HydraTransformer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">olmo_tap.inference.loading_weights</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_ensemble</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">olmo_tap.inference.poe</span><span class="w"> </span><span class="kn">import</span> <span class="n">PoE</span><span class="p">,</span> <span class="n">PoEOutput</span>
+
+<span class="n">NLP_ROBUSTNESS_THRESHOLD</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">MODEL_NAME</span> <span class="o">=</span> <span class="s2">&quot;Hydra&quot;</span>
+
+<span class="n">MCQ_SYSTEM_PROMPT</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;Output your chosen option on its own first, then optionally a brief explanation.</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="s2">&quot;- For lettered options, output just the single letter.</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="s2">&quot;- For yes/no questions, output just &#39;yes&#39; or &#39;no&#39;.</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="s2">&quot;- For other listed options, output just the option text exactly as given.</span><span class="se">\n</span><span class="s2">&quot;</span>
+    <span class="s2">&quot;Then on a new line you may add one short sentence of explanation.&quot;</span>
+<span class="p">)</span>
+
+<span class="n">NLP_SYSTEM_PROMPT</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;You are a medical expert. &quot;</span>
+    <span class="s2">&quot;Answer directly in at most 3 short sentences. &quot;</span>
+    <span class="s2">&quot;No preamble, headers, lists, disclaimers, or restating the question. &quot;</span>
+    <span class="s2">&quot;Do not tell the user to consult a professional. &quot;</span>
+    <span class="s2">&quot;Put the final answer in the first sentence.&quot;</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="load_hydra">
+<a class="viewcode-back" href="../../../api/_generated/app.backend.hydra_inference.html#app.backend.hydra_inference.load_hydra">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_hydra</span><span class="p">(</span>
+    <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">HydraTransformer</span><span class="p">,</span> <span class="n">TokenizersBackend</span><span class="p">]</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load the production Hydra ensemble and its tokenizer.</span>
+
+<span class="sd">    The model has 10 heads (9 LLM verifiers + 1 uncertainty head) with the</span>
+<span class="sd">    security and robustness LoRAs already merged into the LLM heads. Returns</span>
+<span class="sd">    ``(None, None)`` instead of raising when :data:`WEIGHTS_DIR` is missing</span>
+<span class="sd">    or the underlying ``load_ensemble`` call fails, so the FastAPI lifespan</span>
+<span class="sd">    can fall back to the HF Inference API path without crashing the process.</span>
+
+<span class="sd">    :param device: Torch device for the loaded weights. Note: PoE itself</span>
+<span class="sd">        currently hardcodes ``cuda``; this argument is honoured by the</span>
+<span class="sd">        loader but ignored downstream.</span>
+
+<span class="sd">    :returns: ``(model, tokenizer)`` on success, ``(None, None)`` on failure.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">WEIGHTS_DIR</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;WEIGHTS_DIR not set; skipping model load&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Loading tokenizer from </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">WEIGHTS_DIR</span><span class="p">)</span>
+    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">WEIGHTS_DIR</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">TokenizersBackend</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Tokenizer is not a TokenizersBackend; aborting model load&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Building ensemble on device=</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">model</span><span class="p">,</span> <span class="n">_n_heads</span> <span class="o">=</span> <span class="n">load_ensemble</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error loading ensemble: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Model ready -- setup took </span><span class="si">%.2f</span><span class="s2">s&quot;</span><span class="p">,</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span></div>
+
+
+
+<div class="viewcode-block" id="generate">
+<a class="viewcode-back" href="../../../api/_generated/app.backend.hydra_inference.html#app.backend.hydra_inference.generate">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">HydraTransformer</span><span class="p">,</span>
+    <span class="n">tokenizer</span><span class="p">:</span> <span class="n">PreTrainedTokenizerBase</span><span class="p">,</span>
+    <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+    <span class="n">is_mcq</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span>
+    <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+<span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate a PoE response via speculative verification.</span>
+
+<span class="sd">    Both MCQ and NLP prompts run through</span>
+<span class="sd">    :meth:`olmo_tap.inference.poe.PoE.generate_with_cache`. When ``is_mcq``</span>
+<span class="sd">    is true, a short system nudge is prepended and the token budget is</span>
+<span class="sd">    capped at :data:`MCQ_MAX_NEW_TOKENS` so the model leads with the chosen</span>
+<span class="sd">    option and may add a brief explanation. The PoE class captures a witness</span>
+<span class="sd">    hidden state on the first accepted/rejected token and returns a</span>
+<span class="sd">    ``p_correct`` scalar from a dedicated uncertainty head.</span>
+
+<span class="sd">    :param model: The Hydra ensemble loaded by :func:`load_hydra`.</span>
+<span class="sd">    :param tokenizer: Matching chat tokenizer.</span>
+<span class="sd">    :param messages: Multi-turn chat history (oldest first); the system</span>
+<span class="sd">        prompt is prepended automatically.</span>
+<span class="sd">    :param is_mcq: Selects the MCQ prompt + token budget and turns on the</span>
+<span class="sd">        uncertainty-head pass (``p_correct`` is computed only for MCQ).</span>
+<span class="sd">    :param device: Torch device. Currently ignored downstream because PoE</span>
+<span class="sd">        hardcodes ``cuda``; kept for forward compatibility.</span>
+
+<span class="sd">    :returns: 7-tuple ``(raw_response, tokens, resampled, token_entropies,</span>
+<span class="sd">        uncertainty, stability_radii, stability_margins)``.</span>
+
+<span class="sd">        - ``raw_response``: decoded response text (no system / chat tags).</span>
+<span class="sd">        - ``tokens``: list of decoded single-token strings (whitespace stripped).</span>
+<span class="sd">        - ``resampled``: list of dicts (one per rejected draft token) with</span>
+<span class="sd">          keys ``index``, ``old_token``, ``new_token``, ``severity``,</span>
+<span class="sd">          ``validity_radius``, ``suppression_score``.</span>
+<span class="sd">        - ``token_entropies``: verifier-ensemble predictive entropy (nats),</span>
+<span class="sd">          parallel to ``tokens``.</span>
+<span class="sd">        - ``uncertainty``: ``p_correct`` float for MCQ, ``None`` for NLP.</span>
+<span class="sd">        - ``stability_radii`` / ``stability_margins``: per-token stability</span>
+<span class="sd">          metrics, parallel to ``tokens``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_heads</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">heads</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">is_mcq</span><span class="p">:</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">MCQ_SYSTEM_PROMPT</span><span class="p">},</span> <span class="o">*</span><span class="n">messages</span><span class="p">]</span>
+        <span class="n">max_new_tokens</span> <span class="o">=</span> <span class="n">MCQ_MAX_NEW_TOKENS</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">NLP_SYSTEM_PROMPT</span><span class="p">},</span> <span class="o">*</span><span class="n">messages</span><span class="p">]</span>
+        <span class="n">max_new_tokens</span> <span class="o">=</span> <span class="n">MAX_NEW_TOKENS</span>
+
+    <span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+
+    <span class="c1"># TODO: PoE hardcodes device=&quot;cuda&quot; internally; the ``device`` arg here is</span>
+    <span class="c1"># currently ignored.</span>
+    <span class="n">poe</span> <span class="o">=</span> <span class="n">PoE</span><span class="p">(</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">tokenizer</span><span class="p">,</span>
+        <span class="n">n_llm_heads</span><span class="o">=</span><span class="n">n_heads</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">max_new_tokens</span><span class="o">=</span><span class="n">max_new_tokens</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">poe_output</span><span class="p">:</span> <span class="n">PoEOutput</span> <span class="o">=</span> <span class="n">poe</span><span class="o">.</span><span class="n">generate_with_cache</span><span class="p">(</span>
+        <span class="n">prompt_text</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">is_mcq</span><span class="o">=</span><span class="n">is_mcq</span><span class="p">,</span> <span class="n">messages</span><span class="o">=</span><span class="n">messages</span>
+    <span class="p">)</span>
+    <span class="p">(</span>
+        <span class="n">raw_response</span><span class="p">,</span>
+        <span class="n">tokens</span><span class="p">,</span>
+        <span class="n">resampled</span><span class="p">,</span>
+        <span class="n">token_entropies</span><span class="p">,</span>
+        <span class="n">stability_radii</span><span class="p">,</span>
+        <span class="n">stability_margins</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">=</span> <span class="n">_tokens_and_resamples_from_poe_output</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">poe_output</span><span class="p">)</span>
+    <span class="n">uncertainty</span> <span class="o">=</span> <span class="n">poe_output</span><span class="o">.</span><span class="n">uncertainty</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="s2">&quot;PoE generation: </span><span class="si">%d</span><span class="s2"> chars, </span><span class="si">%d</span><span class="s2">/</span><span class="si">%d</span><span class="s2"> tokens resampled, uncertainty=</span><span class="si">%s</span><span class="s2"> (</span><span class="si">%.2f</span><span class="s2">s)&quot;</span><span class="p">,</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">raw_response</span><span class="p">),</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">resampled</span><span class="p">),</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">tokens</span><span class="p">),</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">uncertainty</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">uncertainty</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;n/a&quot;</span><span class="p">,</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">raw_response</span><span class="p">,</span>
+        <span class="n">tokens</span><span class="p">,</span>
+        <span class="n">resampled</span><span class="p">,</span>
+        <span class="n">token_entropies</span><span class="p">,</span>
+        <span class="n">uncertainty</span><span class="p">,</span>
+        <span class="n">stability_radii</span><span class="p">,</span>
+        <span class="n">stability_margins</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_tokens_and_resamples_from_poe_output</span><span class="p">(</span>
+    <span class="n">tokenizer</span><span class="p">:</span> <span class="n">PreTrainedTokenizerBase</span><span class="p">,</span>
+    <span class="n">poe_output</span><span class="p">:</span> <span class="n">PoEOutput</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Reshape a :class:`olmo_tap.inference.poe.PoEOutput` into the per-token</span>
+<span class="sd">    records the FastAPI layer returns.</span>
+
+<span class="sd">    ``output_parts[0]`` is the chat-templated input; subsequent entries are</span>
+<span class="sd">    decoded single tokens from the generation. ``resampled_idxs`` indexes</span>
+<span class="sd">    into ``output_parts``; ``original_tokens[j]`` is the rejected draft</span>
+<span class="sd">    token at ``resampled_idxs[j]``. ``token_entropies`` is parallel to</span>
+<span class="sd">    ``output_parts[1:]`` and gives the verifier ensemble predictive entropy</span>
+<span class="sd">    (nats) at each emitted token. Trailing EOS entries are trimmed from</span>
+<span class="sd">    both the emitted token stream and any resample records that would land</span>
+<span class="sd">    on them; entropies are truncated to match. Each token&#39;s outer whitespace</span>
+<span class="sd">    is stripped so the frontend can join tokens with a single space for</span>
+<span class="sd">    display without double-spacing BPE continuations.</span>
+
+<span class="sd">    :param tokenizer: Same tokenizer used during generation, needed to</span>
+<span class="sd">        decode the EOS string for trimming.</span>
+<span class="sd">    :param poe_output: Raw output from</span>
+<span class="sd">        :meth:`olmo_tap.inference.poe.PoE.generate_with_cache`.</span>
+
+<span class="sd">    :returns: 6-tuple ``(raw_response, tokens, resampled, entropies,</span>
+<span class="sd">        stability_radii, stability_margins)`` matching :func:`generate`&#39;s</span>
+<span class="sd">        public schema (minus the uncertainty scalar, which the caller pulls</span>
+<span class="sd">        from ``poe_output.uncertainty`` directly).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">eos_id</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">eos_token_id</span>
+    <span class="n">eos_str</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">([</span><span class="n">eos_id</span><span class="p">]))</span> <span class="k">if</span> <span class="n">eos_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="n">parts</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">poe_output</span><span class="o">.</span><span class="n">output_parts</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+    <span class="k">while</span> <span class="n">parts</span> <span class="ow">and</span> <span class="n">eos_str</span> <span class="ow">and</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">eos_str</span><span class="p">:</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+
+    <span class="n">raw_response</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>
+    <span class="n">tokens</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">parts</span><span class="p">]</span>
+    <span class="c1"># token_entropies may be one entry longer than parts if the final resampled</span>
+    <span class="c1"># token was EOS; the slice below trims it to match.</span>
+    <span class="n">entropies</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">poe_output</span><span class="o">.</span><span class="n">token_entropies</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)])</span>
+    <span class="n">trimmed_stability_radii</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">poe_output</span><span class="o">.</span><span class="n">stability_radii</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)])</span>
+    <span class="n">trimmed_stability_margins</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">poe_output</span><span class="o">.</span><span class="n">stability_margins</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)])</span>
+
+    <span class="n">resampled</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">orig_idx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">poe_output</span><span class="o">.</span><span class="n">resampled_idxs</span><span class="p">):</span>
+        <span class="n">token_idx</span> <span class="o">=</span> <span class="n">orig_idx</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">token_idx</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">resampled</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="n">token_idx</span><span class="p">,</span>
+                <span class="s2">&quot;old_token&quot;</span><span class="p">:</span> <span class="n">poe_output</span><span class="o">.</span><span class="n">original_tokens</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                <span class="s2">&quot;new_token&quot;</span><span class="p">:</span> <span class="n">parts</span><span class="p">[</span><span class="n">token_idx</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+                <span class="c1"># Placeholder until per-shard beta_h reliability weights land.</span>
+                <span class="s2">&quot;severity&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+                <span class="s2">&quot;validity_radius&quot;</span><span class="p">:</span> <span class="n">poe_output</span><span class="o">.</span><span class="n">validity_radii</span><span class="p">[</span><span class="n">j</span><span class="p">],</span>
+                <span class="s2">&quot;suppression_score&quot;</span><span class="p">:</span> <span class="n">poe_output</span><span class="o">.</span><span class="n">suppression_scores</span><span class="p">[</span><span class="n">j</span><span class="p">],</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">raw_response</span><span class="p">,</span>
+        <span class="n">tokens</span><span class="p">,</span>
+        <span class="n">resampled</span><span class="p">,</span>
+        <span class="n">entropies</span><span class="p">,</span>
+        <span class="n">trimmed_stability_radii</span><span class="p">,</span>
+        <span class="n">trimmed_stability_margins</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="get_robustness">
+<a class="viewcode-back" href="../../../api/_generated/app.backend.hydra_inference.html#app.backend.hydra_inference.get_robustness">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_robustness</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">HydraTransformer</span><span class="p">,</span>
+    <span class="n">tokenizer</span><span class="p">:</span> <span class="n">PreTrainedTokenizerBase</span><span class="p">,</span>
+    <span class="n">messages</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span>
+    <span class="n">original_resp</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">original_tokens</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">is_mcq</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">adv_suffix_bank</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">bert_model</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">bert_tokenizer</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;cuda&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Score adversarial robustness by retrying the prompt with each suffix.</span>
+
+<span class="sd">    For every suffix in ``adv_suffix_bank`` the original prompt is rerun</span>
+<span class="sd">    through :func:`generate` with the suffix appended to the final user</span>
+<span class="sd">    turn. The criterion for &quot;flipped&quot; depends on the prompt type:</span>
+
+<span class="sd">    - **MCQ**: flip iff the first emitted token differs from the clean</span>
+<span class="sd">      answer (the system prompt forces the chosen option to be the first</span>
+<span class="sd">      token, see :data:`MCQ_SYSTEM_PROMPT`).</span>
+<span class="sd">    - **NLP**: flip iff NLI similarity between clean and adversarial</span>
+<span class="sd">      response is at or below :data:`NLP_ROBUSTNESS_THRESHOLD`. The full</span>
+<span class="sd">      ``(N+1)`` responses are scored in a single batched</span>
+<span class="sd">      :class:`kernel_entropy.nli.ModernBERTScorer` call against the clean</span>
+<span class="sd">      baseline (``2*(N-1)`` inferences instead of full pairwise).</span>
+
+<span class="sd">    The &quot;worst-case&quot; entry surfaced for the UI preview panel is the first</span>
+<span class="sd">    flipped suffix (MCQ) or the suffix with lowest NLI similarity (NLP).</span>
+
+<span class="sd">    :param model: Hydra ensemble.</span>
+<span class="sd">    :param tokenizer: Matching chat tokenizer.</span>
+<span class="sd">    :param messages: Multi-turn chat history. The final user message has</span>
+<span class="sd">        each suffix appended in turn; the original list is mutated only by</span>
+<span class="sd">        the initial ``pop()``.</span>
+<span class="sd">    :param original_resp: The clean (unsuffixed) response, used as the NLI</span>
+<span class="sd">        reference for NLP flips.</span>
+<span class="sd">    :param original_tokens: Decoded tokens of the clean response, used for</span>
+<span class="sd">        the MCQ first-token comparison.</span>
+<span class="sd">    :param is_mcq: Selects the MCQ vs NLP flip criterion.</span>
+<span class="sd">    :param adv_suffix_bank: Suffix strings to test, typically the top-k</span>
+<span class="sd">        from :data:`app.backend.adversarial_suffixes.ADV_SUFFIXES`.</span>
+<span class="sd">    :param bert_model: ModernBERT-NLI model for the NLP path. Unused for</span>
+<span class="sd">        MCQ.</span>
+<span class="sd">    :param bert_tokenizer: Matching tokenizer for ``bert_model``.</span>
+<span class="sd">    :param device: Torch device passed through to :func:`generate`.</span>
+
+<span class="sd">    :returns: Dict ``{&quot;type&quot;, &quot;attempts&quot;, &quot;flipped&quot;, &quot;worst_case&quot;}`` where</span>
+<span class="sd">        ``worst_case`` is ``None`` if no suffix flipped (MCQ) or the bank</span>
+<span class="sd">        was empty (NLP).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">last_message</span> <span class="o">=</span> <span class="n">messages</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+
+    <span class="n">num_flipped</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1">### Generate all adversarial responses ###</span>
+    <span class="n">adv_results</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># For MCQs, track the first (suffix, adv_resp) that causes a change in the predicted answer</span>
+    <span class="n">mcq_first_flip</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">for</span> <span class="n">suffix</span> <span class="ow">in</span> <span class="n">adv_suffix_bank</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Testing adversarial suffix: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">suffix</span><span class="p">)</span>
+
+        <span class="n">attack_msg</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">last_message</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">suffix</span><span class="p">}</span>
+        <span class="n">adv_prompt</span> <span class="o">=</span> <span class="n">messages</span> <span class="o">+</span> <span class="p">[</span><span class="n">attack_msg</span><span class="p">]</span>
+        <span class="n">adv_resp</span><span class="p">,</span> <span class="n">adv_tokens</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">generate</span><span class="p">(</span>
+            <span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">adv_prompt</span><span class="p">,</span> <span class="n">is_mcq</span><span class="p">,</span> <span class="n">device</span>
+        <span class="p">)</span>
+        <span class="n">adv_results</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">suffix</span><span class="p">,</span> <span class="n">adv_resp</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">is_mcq</span><span class="p">:</span>
+            <span class="c1"># Compare the first generated token -- per MCQ_SYSTEM_PROMPT that token</span>
+            <span class="c1"># is the chosen option, so any flip there is an answer change.</span>
+            <span class="n">orig_first</span> <span class="o">=</span> <span class="n">original_tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="n">original_tokens</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">adv_first</span> <span class="o">=</span> <span class="n">adv_tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">if</span> <span class="n">adv_tokens</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">orig_first</span> <span class="o">!=</span> <span class="n">adv_first</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Adversarial suffix &#39;</span><span class="si">%s</span><span class="s2">&#39; caused MCQ answer change!&quot;</span><span class="p">,</span> <span class="n">suffix</span><span class="p">)</span>
+                <span class="n">num_flipped</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">mcq_first_flip</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">mcq_first_flip</span> <span class="o">=</span> <span class="p">(</span><span class="n">suffix</span><span class="p">,</span> <span class="n">adv_resp</span><span class="p">)</span>
+
+    <span class="c1">### Score all NLP responses in a single batched NLI forward pass ###</span>
+    <span class="c1"># compute_against_baseline scores original_resp against each adv response only,</span>
+    <span class="c1"># running 2*(N-1) inferences instead of the full C(N,2) pairwise matrix.</span>
+
+    <span class="c1"># For NLP, store all (score, suffix, adv_resp) to later identify the worst-case example</span>
+    <span class="n">nlp_entries</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_mcq</span> <span class="ow">and</span> <span class="n">adv_results</span><span class="p">:</span>
+        <span class="n">adv_responses</span> <span class="o">=</span> <span class="p">[</span><span class="n">resp</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">resp</span> <span class="ow">in</span> <span class="n">adv_results</span><span class="p">]</span>
+        <span class="n">scorer</span> <span class="o">=</span> <span class="n">ModernBERTScorer</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">original_resp</span><span class="p">]</span> <span class="o">+</span> <span class="n">adv_responses</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">bert_model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">bert_tokenizer</span>
+        <span class="p">)</span>
+        <span class="c1"># TODO - could expose per-direction raw probs as finer-grained NLI change measure</span>
+        <span class="n">baseline_scores</span> <span class="o">=</span> <span class="n">scorer</span><span class="o">.</span><span class="n">compute_against_baseline</span><span class="p">(</span><span class="n">baseline_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="p">(</span><span class="n">suffix</span><span class="p">,</span> <span class="n">adv_resp</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">adv_results</span><span class="p">):</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="n">baseline_scores</span><span class="p">[</span><span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">score</span> <span class="o">&lt;=</span> <span class="n">NLP_ROBUSTNESS_THRESHOLD</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;Adversarial suffix &#39;</span><span class="si">%s</span><span class="s2">&#39; caused significant NLP answer change!&quot;</span><span class="p">,</span>
+                    <span class="n">suffix</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">num_flipped</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">nlp_entries</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">score</span><span class="p">,</span> <span class="n">suffix</span><span class="p">,</span> <span class="n">adv_resp</span><span class="p">))</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+        <span class="s2">&quot;Robustness (</span><span class="si">%s</span><span class="s2">): </span><span class="si">%d</span><span class="s2">/</span><span class="si">%d</span><span class="s2"> flipped&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;mcq&quot;</span> <span class="k">if</span> <span class="n">is_mcq</span> <span class="k">else</span> <span class="s2">&quot;nlp&quot;</span><span class="p">,</span>
+        <span class="n">num_flipped</span><span class="p">,</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">adv_suffix_bank</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="c1">### Worst-case entry for the adversarial preview panel ###</span>
+    <span class="c1"># NLP -&gt; lowest NLI similarity (always returned); MCQ -&gt; first flipped suffix, else None.</span>
+    <span class="n">worst_case</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">is_mcq</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">mcq_first_flip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">suffix</span><span class="p">,</span> <span class="n">adv_resp</span> <span class="o">=</span> <span class="n">mcq_first_flip</span>
+            <span class="n">worst_case</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;suffix&quot;</span><span class="p">:</span> <span class="n">suffix</span><span class="p">,</span>
+                <span class="s2">&quot;clean_response&quot;</span><span class="p">:</span> <span class="n">original_resp</span><span class="p">,</span>
+                <span class="s2">&quot;adv_response&quot;</span><span class="p">:</span> <span class="n">adv_resp</span><span class="p">,</span>
+                <span class="s2">&quot;flipped&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="p">}</span>
+    <span class="k">elif</span> <span class="n">nlp_entries</span><span class="p">:</span>
+        <span class="n">worst_score</span><span class="p">,</span> <span class="n">worst_suffix</span><span class="p">,</span> <span class="n">worst_adv_resp</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">nlp_entries</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">worst_case</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;suffix&quot;</span><span class="p">:</span> <span class="n">worst_suffix</span><span class="p">,</span>
+            <span class="s2">&quot;clean_response&quot;</span><span class="p">:</span> <span class="n">original_resp</span><span class="p">,</span>
+            <span class="s2">&quot;adv_response&quot;</span><span class="p">:</span> <span class="n">worst_adv_resp</span><span class="p">,</span>
+            <span class="s2">&quot;flipped&quot;</span><span class="p">:</span> <span class="n">worst_score</span> <span class="o">&lt;=</span> <span class="n">NLP_ROBUSTNESS_THRESHOLD</span><span class="p">,</span>
+            <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="n">worst_score</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;mcq&quot;</span> <span class="k">if</span> <span class="n">is_mcq</span> <span class="k">else</span> <span class="s2">&quot;nlp&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;attempts&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">adv_suffix_bank</span><span class="p">),</span>
+        <span class="s2">&quot;flipped&quot;</span><span class="p">:</span> <span class="n">num_flipped</span><span class="p">,</span>
+        <span class="s2">&quot;worst_case&quot;</span><span class="p">:</span> <span class="n">worst_case</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="c1"># Single-prompt smoke test on a real GPU box:</span>
+    <span class="c1">#   pixi run -e cuda python -m app.backend.hydra_inference</span>
+    <span class="c1"># Mirrors what /api/analyse does (minus BERT-side claim and KLE scoring),</span>
+    <span class="c1"># so this is a quick way to verify a fresh weights checkout produces</span>
+    <span class="c1"># sensible PoE output before booting the full FastAPI app.</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+    <span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">load_hydra</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">tokenizer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span><span class="s2">&quot;Hydra failed to load -- check WEIGHTS_DIR&quot;</span><span class="p">)</span>
+
+    <span class="n">prompt</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Is paracetamol safe in pregnancy?&quot;</span><span class="p">}]</span>
+    <span class="n">raw</span><span class="p">,</span> <span class="n">tokens</span><span class="p">,</span> <span class="n">resampled</span><span class="p">,</span> <span class="n">entropies</span><span class="p">,</span> <span class="n">p_correct</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">generate</span><span class="p">(</span>
+        <span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">is_mcq</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Response:&quot;</span><span class="p">,</span> <span class="n">raw</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tokens: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span><span class="si">}</span><span class="s2">, resampled: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">resampled</span><span class="p">)</span><span class="si">}</span><span class="s2">, p_correct: </span><span class="si">{</span><span class="n">p_correct</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, The TAP Authors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="../../../_static/documentation_options.js?v=01f34227"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    </body>
+</html>

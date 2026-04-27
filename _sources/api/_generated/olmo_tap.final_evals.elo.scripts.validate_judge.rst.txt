@@ -1,0 +1,12 @@
+olmo\_tap.final\_evals.elo.scripts.validate\_judge
+==================================================
+
+.. automodule:: olmo_tap.final_evals.elo.scripts.validate_judge
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      main
+   

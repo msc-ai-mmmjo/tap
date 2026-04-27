@@ -1,0 +1,32 @@
+olmo\_tap.final\_evals.elo.judge
+================================
+
+.. automodule:: olmo_tap.final_evals.elo.judge
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      append_cache_record
+      build_system_message
+      build_user_message
+      cache_path_for
+      derive_cache_key
+      filter_pairs_for_dimension
+      judge_pairs
+      load_cache
+      parse_verdict
+      reconcile_swap
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CacheStats
+      JudgeConfig
+      JudgeResult
+      Judgment
+      PairToJudge
+      Rubric
+   

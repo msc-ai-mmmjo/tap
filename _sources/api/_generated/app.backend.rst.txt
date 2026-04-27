@@ -1,0 +1,22 @@
+﻿app.backend
+===========
+
+.. automodule:: app.backend
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   adversarial_suffixes
+   bert_inference
+   claim_confidence
+   claim_splitter
+   constants
+   hydra_inference
+   modal_app
+   question_classifier
+   response_payloads
+   server

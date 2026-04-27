@@ -1,0 +1,15 @@
+olmo\_tap.final\_evals.elo.prompts.build\_prompt\_set
+=====================================================
+
+.. automodule:: olmo_tap.final_evals.elo.prompts.build_prompt_set
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      build_bank
+      load_bank
+      main
+      write_bank
+   

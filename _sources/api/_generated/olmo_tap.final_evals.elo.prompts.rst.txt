@@ -1,0 +1,13 @@
+olmo\_tap.final\_evals.elo.prompts
+==================================
+
+.. automodule:: olmo_tap.final_evals.elo.prompts
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   build_prompt_set

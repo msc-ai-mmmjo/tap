@@ -1,0 +1,12 @@
+app.backend.claim\_splitter
+===========================
+
+.. automodule:: app.backend.claim_splitter
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      decompose_into_claims
+   

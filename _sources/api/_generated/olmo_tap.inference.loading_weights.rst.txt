@@ -1,0 +1,12 @@
+olmo\_tap.inference.loading\_weights
+====================================
+
+.. automodule:: olmo_tap.inference.loading_weights
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      load_ensemble
+   

@@ -1,0 +1,903 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="olmo_tap.final_evals.elo.match_builder" href="olmo_tap.final_evals.elo.match_builder.html"><link rel="prev" title="olmo_tap.final_evals.elo.generate" href="olmo_tap.final_evals.elo.generate.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>olmo_tap.final_evals.elo.judge - Trustworthy Answer Protocol</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../../index.html"><div class="brand">Trustworthy Answer Protocol</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../../index.html">
+  
+  <span class="sidebar-brand-text">Trustworthy Answer Protocol</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Start here</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started.html">Getting started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guides/architecture.html">Architecture</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guides</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../guides/olmo-tap.html">olmo_tap package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guides/kernel-entropy.html">Kernel entropy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../guides/app.html">Application</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">API reference</a><input aria-label="Toggle navigation of API reference" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="../kernel_entropy.html">kernel_entropy</a><input aria-label="Toggle navigation of kernel_entropy" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="kernel_entropy.html">kernel_entropy</a><input aria-label="Toggle navigation of kernel_entropy" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="kernel_entropy.entropy.html">kernel_entropy.entropy</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_entropy.generation.html">kernel_entropy.generation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_entropy.nli.html">kernel_entropy.nli</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_entropy.pipeline.html">kernel_entropy.pipeline</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 current has-children"><a class="reference internal" href="../olmo_tap.html">olmo_tap</a><input aria-label="Toggle navigation of olmo_tap" checked="" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3 current has-children"><a class="reference internal" href="olmo_tap.html">olmo_tap</a><input aria-label="Toggle navigation of olmo_tap" checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l4 has-children"><a class="reference internal" href="olmo_tap.benchmarks.html">olmo_tap.benchmarks</a><input aria-label="Toggle navigation of olmo_tap.benchmarks" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="olmo_tap.benchmarks.harness.html">olmo_tap.benchmarks.harness</a></li>
+<li class="toctree-l5"><a class="reference internal" href="olmo_tap.benchmarks.inference.html">olmo_tap.benchmarks.inference</a></li>
+<li class="toctree-l5"><a class="reference internal" href="olmo_tap.benchmarks.plotting.html">olmo_tap.benchmarks.plotting</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="olmo_tap.constants.html">olmo_tap.constants</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="olmo_tap.experiments.html">olmo_tap.experiments</a><input aria-label="Toggle navigation of olmo_tap.experiments" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="olmo_tap.experiments.hydra_demo.html">olmo_tap.experiments.hydra_demo</a></li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="olmo_tap.experiments.robustness.html">olmo_tap.experiments.robustness</a><input aria-label="Toggle navigation of olmo_tap.experiments.robustness" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.robustness.amplegcg.html">olmo_tap.experiments.robustness.amplegcg</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.robustness.build_attack_bank.html">olmo_tap.experiments.robustness.build_attack_bank</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.robustness.data.html">olmo_tap.experiments.robustness.data</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.robustness.engine.html">olmo_tap.experiments.robustness.engine</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.robustness.eval.html">olmo_tap.experiments.robustness.eval</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.robustness.precompute_gcg.html">olmo_tap.experiments.robustness.precompute_gcg</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.robustness.training.html">olmo_tap.experiments.robustness.training</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="olmo_tap.experiments.security.html">olmo_tap.experiments.security</a><input aria-label="Toggle navigation of olmo_tap.experiments.security" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" role="switch" type="checkbox"/><label for="toctree-checkbox-9"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.security.data.html">olmo_tap.experiments.security.data</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.security.engine.html">olmo_tap.experiments.security.engine</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.security.eval.html">olmo_tap.experiments.security.eval</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.security.training.html">olmo_tap.experiments.security.training</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="olmo_tap.experiments.uncertainty.html">olmo_tap.experiments.uncertainty</a><input aria-label="Toggle navigation of olmo_tap.experiments.uncertainty" class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" role="switch" type="checkbox"/><label for="toctree-checkbox-10"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.uncertainty.data.html">olmo_tap.experiments.uncertainty.data</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.uncertainty.engine.html">olmo_tap.experiments.uncertainty.engine</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.uncertainty.single_head_eval.html">olmo_tap.experiments.uncertainty.single_head_eval</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.uncertainty.training.html">olmo_tap.experiments.uncertainty.training</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.uncertainty.weights_handler.html">olmo_tap.experiments.uncertainty.weights_handler</a></li>
+</ul>
+</li>
+<li class="toctree-l5 has-children"><a class="reference internal" href="olmo_tap.experiments.utils.html">olmo_tap.experiments.utils</a><input aria-label="Toggle navigation of olmo_tap.experiments.utils" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" role="switch" type="checkbox"/><label for="toctree-checkbox-11"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.utils.config.html">olmo_tap.experiments.utils.config</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.utils.model_builder.html">olmo_tap.experiments.utils.model_builder</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.utils.random_seed.html">olmo_tap.experiments.utils.random_seed</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.experiments.utils.weights.html">olmo_tap.experiments.utils.weights</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l4 current has-children"><a class="reference internal" href="olmo_tap.final_evals.html">olmo_tap.final_evals</a><input aria-label="Toggle navigation of olmo_tap.final_evals" checked="" class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" role="switch" type="checkbox"/><label for="toctree-checkbox-12"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l5 current has-children"><a class="reference internal" href="olmo_tap.final_evals.elo.html">olmo_tap.final_evals.elo</a><input aria-label="Toggle navigation of olmo_tap.final_evals.elo" checked="" class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" role="switch" type="checkbox"/><label for="toctree-checkbox-13"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.final_evals.elo.elo_engine.html">olmo_tap.final_evals.elo.elo_engine</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.final_evals.elo.entrants.html">olmo_tap.final_evals.elo.entrants</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.final_evals.elo.generate.html">olmo_tap.final_evals.elo.generate</a></li>
+<li class="toctree-l6 current current-page"><a class="current reference internal" href="#">olmo_tap.final_evals.elo.judge</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.final_evals.elo.match_builder.html">olmo_tap.final_evals.elo.match_builder</a></li>
+<li class="toctree-l6 has-children"><a class="reference internal" href="olmo_tap.final_evals.elo.prompts.html">olmo_tap.final_evals.elo.prompts</a><input aria-label="Toggle navigation of olmo_tap.final_evals.elo.prompts" class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" role="switch" type="checkbox"/><label for="toctree-checkbox-14"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="olmo_tap.final_evals.elo.prompts.build_prompt_set.html">olmo_tap.final_evals.elo.prompts.build_prompt_set</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.final_evals.elo.report.html">olmo_tap.final_evals.elo.report</a></li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.final_evals.elo.run_tournament.html">olmo_tap.final_evals.elo.run_tournament</a></li>
+<li class="toctree-l6 has-children"><a class="reference internal" href="olmo_tap.final_evals.elo.scripts.html">olmo_tap.final_evals.elo.scripts</a><input aria-label="Toggle navigation of olmo_tap.final_evals.elo.scripts" class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" role="switch" type="checkbox"/><label for="toctree-checkbox-15"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l7"><a class="reference internal" href="olmo_tap.final_evals.elo.scripts.smoke_test_generate.html">olmo_tap.final_evals.elo.scripts.smoke_test_generate</a></li>
+<li class="toctree-l7"><a class="reference internal" href="olmo_tap.final_evals.elo.scripts.validate_judge.html">olmo_tap.final_evals.elo.scripts.validate_judge</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="olmo_tap.final_evals.elo.types.html">olmo_tap.final_evals.elo.types</a></li>
+</ul>
+</li>
+<li class="toctree-l5"><a class="reference internal" href="olmo_tap.final_evals.robustness_sweep.html">olmo_tap.final_evals.robustness_sweep</a></li>
+<li class="toctree-l5"><a class="reference internal" href="olmo_tap.final_evals.uncertainty_sweep.html">olmo_tap.final_evals.uncertainty_sweep</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="olmo_tap.hydra.html">olmo_tap.hydra</a></li>
+<li class="toctree-l4 has-children"><a class="reference internal" href="olmo_tap.inference.html">olmo_tap.inference</a><input aria-label="Toggle navigation of olmo_tap.inference" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l5"><a class="reference internal" href="olmo_tap.inference.loading_weights.html">olmo_tap.inference.loading_weights</a></li>
+<li class="toctree-l5"><a class="reference internal" href="olmo_tap.inference.poe.html">olmo_tap.inference.poe</a></li>
+<li class="toctree-l5"><a class="reference internal" href="olmo_tap.inference.poe_demo_no_kv.html">olmo_tap.inference.poe_demo_no_kv</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../app.html">app.backend</a><input aria-label="Toggle navigation of app.backend" class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" role="switch" type="checkbox"/><label for="toctree-checkbox-17"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="app.backend.html">app.backend</a><input aria-label="Toggle navigation of app.backend" class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" role="switch" type="checkbox"/><label for="toctree-checkbox-18"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l4"><a class="reference internal" href="app.backend.adversarial_suffixes.html">app.backend.adversarial_suffixes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.backend.bert_inference.html">app.backend.bert_inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.backend.claim_confidence.html">app.backend.claim_confidence</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.backend.claim_splitter.html">app.backend.claim_splitter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.backend.constants.html">app.backend.constants</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.backend.hydra_inference.html">app.backend.hydra_inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.backend.modal_app.html">app.backend.modal_app</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.backend.question_classifier.html">app.backend.question_classifier</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.backend.response_payloads.html">app.backend.response_payloads</a></li>
+<li class="toctree-l4"><a class="reference internal" href="app.backend.server.html">app.backend.server</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../../_sources/api/_generated/olmo_tap.final_evals.elo.judge.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="module-olmo_tap.final_evals.elo.judge">
+<span id="olmo-tap-final-evals-elo-judge"></span><h1>olmo_tap.final_evals.elo.judge<a class="headerlink" href="#module-olmo_tap.final_evals.elo.judge" title="Link to this heading">¶</a></h1>
+<p>LLM-judge pipeline using the Anthropic Batch API with prompt caching.</p>
+<p>Given a list of <code class="docutils literal notranslate"><span class="pre">(prompt,</span> <span class="pre">response_a,</span> <span class="pre">response_b)</span></code> triples and a rubric,
+this module returns swap-consistent verdicts deduplicated against an
+on-disk judgment cache.</p>
+<section id="pipeline">
+<h2>Pipeline<a class="headerlink" href="#pipeline" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Build judge queries — every triple is judged twice, once in each
+position order, to mitigate position bias.</p></li>
+<li><p>Filter against the on-disk cache. Cache keys are content hashes over
+the rubric file contents, judge model id, prompt id, the two entrant
+ids, the position order, and both response texts. Any change to the
+rubric file produces a new cache key, so rubric edits invalidate
+stale entries automatically.</p></li>
+<li><p>Submit the remaining queries to <code class="docutils literal notranslate"><span class="pre">client.messages.batches</span></code> with the
+system message + rubric text marked as a 1-hour cache breakpoint, so
+every request in the batch reads the cached prefix.</p></li>
+<li><p>Poll the batch with exponential backoff until it ends, then stream
+the results into the cache JSONL.</p></li>
+<li><p>Reconcile the two position orders into a single <code class="docutils literal notranslate"><span class="pre">PairOutcome</span></code>:
+consistent verdicts win; inconsistent ones become ties (and are
+dropped from the Elo match list upstream).</p></li>
+</ol>
+</section>
+<section id="source-handling-asymmetry">
+<h2>Source-handling asymmetry<a class="headerlink" href="#source-handling-asymmetry" title="Link to this heading">¶</a></h2>
+<p>The factuality rubric requires a gold answer; curated trustworthiness
+prompts (<code class="docutils literal notranslate"><span class="pre">source</span> <span class="pre">==</span> <span class="pre">&quot;curated&quot;</span></code>) carry no <code class="docutils literal notranslate"><span class="pre">gold_answer</span></code>, so they are
+filtered out of the factuality match list. They are kept for
+calibration and clinical_utility.</p>
+<p>For the calibration rubric, curated prompts include their
+<code class="docutils literal notranslate"><span class="pre">expected_behavior</span></code> tag in the user message so the judge can score
+appropriate hedging / abstention; non-curated prompts omit that tag.</p>
+<p class="rubric">Functions</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">append_cache_record</span></code>(cache_dir, dimension, record)</p></td>
+<td><p>Append a single record to the dimension's cache JSONL.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.build_system_message" title="olmo_tap.final_evals.elo.judge.build_system_message"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_system_message</span></code></a>(rubric)</p></td>
+<td><p>Compose the cacheable system message: a fixed header plus rubric text.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.build_user_message" title="olmo_tap.final_evals.elo.judge.build_user_message"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_user_message</span></code></a>(query)</p></td>
+<td><p>Compose the per-pair user message.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.cache_path_for" title="olmo_tap.final_evals.elo.judge.cache_path_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cache_path_for</span></code></a>(cache_dir, dimension)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.derive_cache_key" title="olmo_tap.final_evals.elo.judge.derive_cache_key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">derive_cache_key</span></code></a>(*, rubric_text, ...)</p></td>
+<td><p>Return a 12-hex-char SHA256 prefix over the inputs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.filter_pairs_for_dimension" title="olmo_tap.final_evals.elo.judge.filter_pairs_for_dimension"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter_pairs_for_dimension</span></code></a>(pairs, dimension)</p></td>
+<td><p>Drop pairs that should not be judged on the given dimension.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.judge_pairs" title="olmo_tap.final_evals.elo.judge.judge_pairs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">judge_pairs</span></code></a>(pairs, rubric, config, *[, client])</p></td>
+<td><p>Judge <code class="docutils literal notranslate"><span class="pre">pairs</span></code> on <code class="docutils literal notranslate"><span class="pre">rubric</span></code> and return reconciled judgments.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.load_cache" title="olmo_tap.final_evals.elo.judge.load_cache"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_cache</span></code></a>(cache_dir, dimension)</p></td>
+<td><p>Load the JSONL cache for one dimension into a <code class="docutils literal notranslate"><span class="pre">cache_key</span> <span class="pre">-&gt;</span> <span class="pre">record</span></code> dict.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.parse_verdict" title="olmo_tap.final_evals.elo.judge.parse_verdict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_verdict</span></code></a>(reply_text)</p></td>
+<td><p>Pull the final <code class="docutils literal notranslate"><span class="pre">VERDICT:</span> <span class="pre">X</span></code> line out of the model's reply.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.reconcile_swap" title="olmo_tap.final_evals.elo.judge.reconcile_swap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reconcile_swap</span></code></a>(forward, swapped, dimension)</p></td>
+<td><p>Combine the two position-ordered raw judgements into one <code class="docutils literal notranslate"><span class="pre">Judgment</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.CacheStats" title="olmo_tap.final_evals.elo.judge.CacheStats"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CacheStats</span></code></a>([cache_creation_input_tokens, ...])</p></td>
+<td><p>Aggregated token usage from a <code class="docutils literal notranslate"><span class="pre">judge_pairs</span></code> run.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeConfig" title="olmo_tap.final_evals.elo.judge.JudgeConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">JudgeConfig</span></code></a>(judge_model, cache_dir[, ...])</p></td>
+<td><p>Knobs for one <code class="docutils literal notranslate"><span class="pre">judge_pairs</span></code> call.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeResult" title="olmo_tap.final_evals.elo.judge.JudgeResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">JudgeResult</span></code></a>(judgments, cache_stats, rubric)</p></td>
+<td><p>Output of <code class="docutils literal notranslate"><span class="pre">judge_pairs</span></code>: reconciled judgments and run stats.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Judgment" title="olmo_tap.final_evals.elo.judge.Judgment"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Judgment</span></code></a>(prompt_id, dimension, entrant_a, ...)</p></td>
+<td><p>Reconciled verdict for one <code class="docutils literal notranslate"><span class="pre">(pair,</span> <span class="pre">prompt,</span> <span class="pre">dimension)</span></code> triple.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.PairToJudge" title="olmo_tap.final_evals.elo.judge.PairToJudge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PairToJudge</span></code></a>(prompt_id, source, prompt_text, ...)</p></td>
+<td><p>One pair of responses to be judged on a given prompt and rubric.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Rubric" title="olmo_tap.final_evals.elo.judge.Rubric"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Rubric</span></code></a>(dimension, version, text, path)</p></td>
+<td><p>A loaded rubric: dimension, version header, and full file contents.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<dl class="py class">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.CacheStats">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">CacheStats</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cache_creation_input_tokens</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_read_input_tokens</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_tokens</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_tokens</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fresh_calls</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_hits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#CacheStats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.CacheStats" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Aggregated token usage from a <code class="docutils literal notranslate"><span class="pre">judge_pairs</span></code> run.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.CacheStats.cache_creation_input_tokens">
+<span class="sig-name descname"><span class="pre">cache_creation_input_tokens</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.CacheStats.cache_creation_input_tokens" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.CacheStats.cache_hits">
+<span class="sig-name descname"><span class="pre">cache_hits</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.CacheStats.cache_hits" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.CacheStats.cache_read_input_tokens">
+<span class="sig-name descname"><span class="pre">cache_read_input_tokens</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.CacheStats.cache_read_input_tokens" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.CacheStats.fresh_calls">
+<span class="sig-name descname"><span class="pre">fresh_calls</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.CacheStats.fresh_calls" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.CacheStats.input_tokens">
+<span class="sig-name descname"><span class="pre">input_tokens</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.CacheStats.input_tokens" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.CacheStats.output_tokens">
+<span class="sig-name descname"><span class="pre">output_tokens</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.CacheStats.output_tokens" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.JudgeConfig">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">JudgeConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">judge_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_tokens</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1024</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">poll_initial_seconds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">poll_max_seconds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">300.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">submit_max_retries</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#JudgeConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.JudgeConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Knobs for one <code class="docutils literal notranslate"><span class="pre">judge_pairs</span></code> call.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.JudgeConfig.api_key">
+<span class="sig-name descname"><span class="pre">api_key</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.JudgeConfig.api_key" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.JudgeConfig.cache_dir">
+<span class="sig-name descname"><span class="pre">cache_dir</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.JudgeConfig.cache_dir" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.JudgeConfig.judge_model">
+<span class="sig-name descname"><span class="pre">judge_model</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.JudgeConfig.judge_model" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.JudgeConfig.max_tokens">
+<span class="sig-name descname"><span class="pre">max_tokens</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1024</span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.JudgeConfig.max_tokens" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.JudgeConfig.poll_initial_seconds">
+<span class="sig-name descname"><span class="pre">poll_initial_seconds</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">30.0</span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.JudgeConfig.poll_initial_seconds" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.JudgeConfig.poll_max_seconds">
+<span class="sig-name descname"><span class="pre">poll_max_seconds</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">300.0</span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.JudgeConfig.poll_max_seconds" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.JudgeConfig.submit_max_retries">
+<span class="sig-name descname"><span class="pre">submit_max_retries</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.JudgeConfig.submit_max_retries" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.JudgeResult">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">JudgeResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">judgments</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Judgment" title="olmo_tap.final_evals.elo.judge.Judgment"><span class="pre">Judgment</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_stats</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.CacheStats" title="olmo_tap.final_evals.elo.judge.CacheStats"><span class="pre">CacheStats</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">rubric</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Rubric" title="olmo_tap.final_evals.elo.judge.Rubric"><span class="pre">Rubric</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#JudgeResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.JudgeResult" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Output of <code class="docutils literal notranslate"><span class="pre">judge_pairs</span></code>: reconciled judgments and run stats.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.JudgeResult.cache_stats">
+<span class="sig-name descname"><span class="pre">cache_stats</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.CacheStats" title="olmo_tap.final_evals.elo.judge.CacheStats"><span class="pre">CacheStats</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.JudgeResult.cache_stats" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.JudgeResult.judgments">
+<span class="sig-name descname"><span class="pre">judgments</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Judgment" title="olmo_tap.final_evals.elo.judge.Judgment"><span class="pre">Judgment</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.JudgeResult.judgments" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.JudgeResult.rubric">
+<span class="sig-name descname"><span class="pre">rubric</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Rubric" title="olmo_tap.final_evals.elo.judge.Rubric"><span class="pre">Rubric</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.JudgeResult.rubric" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.Judgment">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">Judgment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">dimension</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'factuality'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'calibration'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'clinical_utility'</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">entrant_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">entrant_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">winner</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">inconsistent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><span class="pre">_RawJudgement</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_RawJudgement</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#Judgment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.Judgment" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Reconciled verdict for one <code class="docutils literal notranslate"><span class="pre">(pair,</span> <span class="pre">prompt,</span> <span class="pre">dimension)</span></code> triple.</p>
+<p><code class="docutils literal notranslate"><span class="pre">winner</span></code> is <code class="docutils literal notranslate"><span class="pre">entrant_a</span></code> / <code class="docutils literal notranslate"><span class="pre">entrant_b</span></code> on a consistent verdict,
+<code class="docutils literal notranslate"><span class="pre">None</span></code> for a tie or inconsistent swap-pair (Elo treats these as ties).
+<code class="docutils literal notranslate"><span class="pre">inconsistent</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code> only when the two position orders disagreed.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.Judgment.dimension">
+<span class="sig-name descname"><span class="pre">dimension</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'factuality'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'calibration'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'clinical_utility'</span></span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.Judgment.dimension" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.Judgment.entrant_a">
+<span class="sig-name descname"><span class="pre">entrant_a</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.Judgment.entrant_a" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.Judgment.entrant_b">
+<span class="sig-name descname"><span class="pre">entrant_b</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.Judgment.entrant_b" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.Judgment.inconsistent">
+<span class="sig-name descname"><span class="pre">inconsistent</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.Judgment.inconsistent" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.Judgment.prompt_id">
+<span class="sig-name descname"><span class="pre">prompt_id</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.Judgment.prompt_id" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.Judgment.raw">
+<span class="sig-name descname"><span class="pre">raw</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><span class="pre">_RawJudgement</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">_RawJudgement</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.Judgment.raw" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.Judgment.winner">
+<span class="sig-name descname"><span class="pre">winner</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.Judgment.winner" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.PairToJudge">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">PairToJudge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">entrant_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">entrant_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">gold_answer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_behavior</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#PairToJudge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.PairToJudge" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>One pair of responses to be judged on a given prompt and rubric.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.PairToJudge.entrant_a">
+<span class="sig-name descname"><span class="pre">entrant_a</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.PairToJudge.entrant_a" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.PairToJudge.entrant_b">
+<span class="sig-name descname"><span class="pre">entrant_b</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.PairToJudge.entrant_b" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.PairToJudge.expected_behavior">
+<span class="sig-name descname"><span class="pre">expected_behavior</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.PairToJudge.expected_behavior" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.PairToJudge.gold_answer">
+<span class="sig-name descname"><span class="pre">gold_answer</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.PairToJudge.gold_answer" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.PairToJudge.prompt_id">
+<span class="sig-name descname"><span class="pre">prompt_id</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.PairToJudge.prompt_id" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.PairToJudge.prompt_text">
+<span class="sig-name descname"><span class="pre">prompt_text</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.PairToJudge.prompt_text" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.PairToJudge.response_a">
+<span class="sig-name descname"><span class="pre">response_a</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.PairToJudge.response_a" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.PairToJudge.response_b">
+<span class="sig-name descname"><span class="pre">response_b</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.PairToJudge.response_b" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.PairToJudge.source">
+<span class="sig-name descname"><span class="pre">source</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.PairToJudge.source" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.Rubric">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">Rubric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dimension</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'factuality'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'calibration'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'clinical_utility'</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#Rubric"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.Rubric" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A loaded rubric: dimension, version header, and full file contents.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.Rubric.dimension">
+<span class="sig-name descname"><span class="pre">dimension</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'factuality'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'calibration'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'clinical_utility'</span></span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.Rubric.dimension" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.Rubric.load">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dimension</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'factuality'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'calibration'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'clinical_utility'</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Rubric" title="olmo_tap.final_evals.elo.judge.Rubric"><span class="pre">Rubric</span></a></span></span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#Rubric.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.Rubric.load" title="Link to this definition">¶</a></dt>
+<dd><p>Load a rubric file and parse its <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">version:</span></code> header.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.Rubric.path">
+<span class="sig-name descname"><span class="pre">path</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.Rubric.path" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.Rubric.text">
+<span class="sig-name descname"><span class="pre">text</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.Rubric.text" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.Rubric.version">
+<span class="sig-name descname"><span class="pre">version</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.Rubric.version" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.build_system_message">
+<span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">build_system_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rubric</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Rubric" title="olmo_tap.final_evals.elo.judge.Rubric"><span class="pre">Rubric</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#build_system_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.build_system_message" title="Link to this definition">¶</a></dt>
+<dd><p>Compose the cacheable system message: a fixed header plus rubric text.</p>
+<p>The full rubric file (including its version header) is embedded so that
+any byte-level edit to the rubric invalidates the prompt cache, matching
+the cache-key behaviour. The header is intentionally substantive so the
+cached prefix exceeds the API’s minimum cacheable token count, making
+prompt caching economically meaningful within a batch.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.build_user_message">
+<span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">build_user_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">_JudgeQuery</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#build_user_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.build_user_message" title="Link to this definition">¶</a></dt>
+<dd><p>Compose the per-pair user message. Not cached — varies every request.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.cache_path_for">
+<span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">cache_path_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cache_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">dimension</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'factuality'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'calibration'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'clinical_utility'</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#cache_path_for"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.cache_path_for" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.derive_cache_key">
+<span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">derive_cache_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">rubric_text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">judge_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">entrant_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">entrant_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">position_swap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#derive_cache_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.derive_cache_key" title="Link to this definition">¶</a></dt>
+<dd><p>Return a 12-hex-char SHA256 prefix over the inputs.</p>
+<p>The hash is taken over a JSON-encoded dict with sorted keys so the
+output is deterministic. Callers should pass the same values they
+would send to the judge — in particular, <code class="docutils literal notranslate"><span class="pre">response_a</span></code> is whatever
+text appears in position A <em>before</em> swapping. The position order is
+captured separately via <code class="docutils literal notranslate"><span class="pre">position_swap</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.filter_pairs_for_dimension">
+<span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">filter_pairs_for_dimension</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pairs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.14)"><span class="pre">Iterable</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.PairToJudge" title="olmo_tap.final_evals.elo.judge.PairToJudge"><span class="pre">PairToJudge</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dimension</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'factuality'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'calibration'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'clinical_utility'</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.PairToJudge" title="olmo_tap.final_evals.elo.judge.PairToJudge"><span class="pre">PairToJudge</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#filter_pairs_for_dimension"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.filter_pairs_for_dimension" title="Link to this definition">¶</a></dt>
+<dd><p>Drop pairs that should not be judged on the given dimension.</p>
+<p>The factuality rubric needs a gold answer, which curated trustworthiness
+prompts do not have. Calibration and clinical_utility evaluate framing
+and are run on the full bank.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.judge_pairs">
+<span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">judge_pairs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pairs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.PairToJudge" title="olmo_tap.final_evals.elo.judge.PairToJudge"><span class="pre">PairToJudge</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rubric</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Rubric" title="olmo_tap.final_evals.elo.judge.Rubric"><span class="pre">Rubric</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeConfig" title="olmo_tap.final_evals.elo.judge.JudgeConfig"><span class="pre">JudgeConfig</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">client</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeResult" title="olmo_tap.final_evals.elo.judge.JudgeResult"><span class="pre">JudgeResult</span></a></span></span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#judge_pairs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.judge_pairs" title="Link to this definition">¶</a></dt>
+<dd><p>Judge <code class="docutils literal notranslate"><span class="pre">pairs</span></code> on <code class="docutils literal notranslate"><span class="pre">rubric</span></code> and return reconciled judgments.</p>
+<p>Loads the on-disk cache for the rubric’s dimension, filters out any
+pair-orderings already judged, submits the rest as one Anthropic
+batch with the rubric prefix marked as a 1-hour cache breakpoint,
+polls until the batch ends, writes new entries to the cache, and
+reconciles each pair’s two position orders into one <code class="docutils literal notranslate"><span class="pre">Judgment</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">client</span></code> is optional — passing one in is convenient for tests.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.load_cache">
+<span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">load_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cache_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><span class="pre">Path</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">dimension</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'factuality'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'calibration'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'clinical_utility'</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#load_cache"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.load_cache" title="Link to this definition">¶</a></dt>
+<dd><p>Load the JSONL cache for one dimension into a <code class="docutils literal notranslate"><span class="pre">cache_key</span> <span class="pre">-&gt;</span> <span class="pre">record</span></code> dict.</p>
+<p>If the same cache_key appears twice (legacy / concurrent-write artefact),
+the later entry wins.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.parse_verdict">
+<span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">parse_verdict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reply_text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'A'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'B'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'TIE'</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#parse_verdict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.parse_verdict" title="Link to this definition">¶</a></dt>
+<dd><p>Pull the final <code class="docutils literal notranslate"><span class="pre">VERDICT:</span> <span class="pre">X</span></code> line out of the model’s reply.</p>
+<p>Falls back to <code class="docutils literal notranslate"><span class="pre">TIE</span></code> if the model emits something we cannot parse —
+callers that want stricter behaviour should inspect the reasoning
+text directly.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="olmo_tap.final_evals.elo.judge.reconcile_swap">
+<span class="sig-prename descclassname"><span class="pre">olmo_tap.final_evals.elo.judge.</span></span><span class="sig-name descname"><span class="pre">reconcile_swap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forward</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">_RawJudgement</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">swapped</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">_RawJudgement</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dimension</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'factuality'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'calibration'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'clinical_utility'</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Judgment" title="olmo_tap.final_evals.elo.judge.Judgment"><span class="pre">Judgment</span></a></span></span><a class="reference internal" href="../../_modules/olmo_tap/final_evals/elo/judge.html#reconcile_swap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#olmo_tap.final_evals.elo.judge.reconcile_swap" title="Link to this definition">¶</a></dt>
+<dd><p>Combine the two position-ordered raw judgements into one <code class="docutils literal notranslate"><span class="pre">Judgment</span></code>.</p>
+</dd></dl>
+
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="olmo_tap.final_evals.elo.match_builder.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">olmo_tap.final_evals.elo.match_builder</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="olmo_tap.final_evals.elo.generate.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">olmo_tap.final_evals.elo.generate</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, The TAP Authors
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">olmo_tap.final_evals.elo.judge</a><ul>
+<li><a class="reference internal" href="#pipeline">Pipeline</a></li>
+<li><a class="reference internal" href="#source-handling-asymmetry">Source-handling asymmetry</a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.CacheStats"><code class="docutils literal notranslate"><span class="pre">CacheStats</span></code></a><ul>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.CacheStats.cache_creation_input_tokens"><code class="docutils literal notranslate"><span class="pre">CacheStats.cache_creation_input_tokens</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.CacheStats.cache_hits"><code class="docutils literal notranslate"><span class="pre">CacheStats.cache_hits</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.CacheStats.cache_read_input_tokens"><code class="docutils literal notranslate"><span class="pre">CacheStats.cache_read_input_tokens</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.CacheStats.fresh_calls"><code class="docutils literal notranslate"><span class="pre">CacheStats.fresh_calls</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.CacheStats.input_tokens"><code class="docutils literal notranslate"><span class="pre">CacheStats.input_tokens</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.CacheStats.output_tokens"><code class="docutils literal notranslate"><span class="pre">CacheStats.output_tokens</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeConfig"><code class="docutils literal notranslate"><span class="pre">JudgeConfig</span></code></a><ul>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeConfig.api_key"><code class="docutils literal notranslate"><span class="pre">JudgeConfig.api_key</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeConfig.cache_dir"><code class="docutils literal notranslate"><span class="pre">JudgeConfig.cache_dir</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeConfig.judge_model"><code class="docutils literal notranslate"><span class="pre">JudgeConfig.judge_model</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeConfig.max_tokens"><code class="docutils literal notranslate"><span class="pre">JudgeConfig.max_tokens</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeConfig.poll_initial_seconds"><code class="docutils literal notranslate"><span class="pre">JudgeConfig.poll_initial_seconds</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeConfig.poll_max_seconds"><code class="docutils literal notranslate"><span class="pre">JudgeConfig.poll_max_seconds</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeConfig.submit_max_retries"><code class="docutils literal notranslate"><span class="pre">JudgeConfig.submit_max_retries</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeResult"><code class="docutils literal notranslate"><span class="pre">JudgeResult</span></code></a><ul>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeResult.cache_stats"><code class="docutils literal notranslate"><span class="pre">JudgeResult.cache_stats</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeResult.judgments"><code class="docutils literal notranslate"><span class="pre">JudgeResult.judgments</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.JudgeResult.rubric"><code class="docutils literal notranslate"><span class="pre">JudgeResult.rubric</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Judgment"><code class="docutils literal notranslate"><span class="pre">Judgment</span></code></a><ul>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Judgment.dimension"><code class="docutils literal notranslate"><span class="pre">Judgment.dimension</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Judgment.entrant_a"><code class="docutils literal notranslate"><span class="pre">Judgment.entrant_a</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Judgment.entrant_b"><code class="docutils literal notranslate"><span class="pre">Judgment.entrant_b</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Judgment.inconsistent"><code class="docutils literal notranslate"><span class="pre">Judgment.inconsistent</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Judgment.prompt_id"><code class="docutils literal notranslate"><span class="pre">Judgment.prompt_id</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Judgment.raw"><code class="docutils literal notranslate"><span class="pre">Judgment.raw</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Judgment.winner"><code class="docutils literal notranslate"><span class="pre">Judgment.winner</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.PairToJudge"><code class="docutils literal notranslate"><span class="pre">PairToJudge</span></code></a><ul>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.PairToJudge.entrant_a"><code class="docutils literal notranslate"><span class="pre">PairToJudge.entrant_a</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.PairToJudge.entrant_b"><code class="docutils literal notranslate"><span class="pre">PairToJudge.entrant_b</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.PairToJudge.expected_behavior"><code class="docutils literal notranslate"><span class="pre">PairToJudge.expected_behavior</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.PairToJudge.gold_answer"><code class="docutils literal notranslate"><span class="pre">PairToJudge.gold_answer</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.PairToJudge.prompt_id"><code class="docutils literal notranslate"><span class="pre">PairToJudge.prompt_id</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.PairToJudge.prompt_text"><code class="docutils literal notranslate"><span class="pre">PairToJudge.prompt_text</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.PairToJudge.response_a"><code class="docutils literal notranslate"><span class="pre">PairToJudge.response_a</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.PairToJudge.response_b"><code class="docutils literal notranslate"><span class="pre">PairToJudge.response_b</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.PairToJudge.source"><code class="docutils literal notranslate"><span class="pre">PairToJudge.source</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Rubric"><code class="docutils literal notranslate"><span class="pre">Rubric</span></code></a><ul>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Rubric.dimension"><code class="docutils literal notranslate"><span class="pre">Rubric.dimension</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Rubric.load"><code class="docutils literal notranslate"><span class="pre">Rubric.load()</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Rubric.path"><code class="docutils literal notranslate"><span class="pre">Rubric.path</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Rubric.text"><code class="docutils literal notranslate"><span class="pre">Rubric.text</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.Rubric.version"><code class="docutils literal notranslate"><span class="pre">Rubric.version</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.build_system_message"><code class="docutils literal notranslate"><span class="pre">build_system_message()</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.build_user_message"><code class="docutils literal notranslate"><span class="pre">build_user_message()</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.cache_path_for"><code class="docutils literal notranslate"><span class="pre">cache_path_for()</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.derive_cache_key"><code class="docutils literal notranslate"><span class="pre">derive_cache_key()</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.filter_pairs_for_dimension"><code class="docutils literal notranslate"><span class="pre">filter_pairs_for_dimension()</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.judge_pairs"><code class="docutils literal notranslate"><span class="pre">judge_pairs()</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.load_cache"><code class="docutils literal notranslate"><span class="pre">load_cache()</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.parse_verdict"><code class="docutils literal notranslate"><span class="pre">parse_verdict()</span></code></a></li>
+<li><a class="reference internal" href="#olmo_tap.final_evals.elo.judge.reconcile_swap"><code class="docutils literal notranslate"><span class="pre">reconcile_swap()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../../_static/documentation_options.js?v=01f34227"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    </body>
+</html>

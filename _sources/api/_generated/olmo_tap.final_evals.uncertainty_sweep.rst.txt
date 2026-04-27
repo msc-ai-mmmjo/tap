@@ -1,0 +1,12 @@
+olmo\_tap.final\_evals.uncertainty\_sweep
+=========================================
+
+.. automodule:: olmo_tap.final_evals.uncertainty_sweep
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      main
+   

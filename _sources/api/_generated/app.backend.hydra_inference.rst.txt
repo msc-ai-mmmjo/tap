@@ -1,0 +1,14 @@
+app.backend.hydra\_inference
+============================
+
+.. automodule:: app.backend.hydra_inference
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      generate
+      get_robustness
+      load_hydra
+   

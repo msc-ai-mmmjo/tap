@@ -1,0 +1,14 @@
+olmo\_tap.final\_evals.elo.generate
+===================================
+
+.. automodule:: olmo_tap.final_evals.elo.generate
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      generate_responses_for_entrant
+      main
+      run_generation
+   

@@ -1,0 +1,18 @@
+app.backend.question\_classifier
+================================
+
+.. automodule:: app.backend.question_classifier
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      detect_mcq_bert
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      QuestionType
+   

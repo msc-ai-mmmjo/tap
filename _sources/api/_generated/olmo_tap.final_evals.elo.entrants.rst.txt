@@ -1,0 +1,20 @@
+olmo\_tap.final\_evals.elo.entrants
+===================================
+
+.. automodule:: olmo_tap.final_evals.elo.entrants
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      build_entrant
+      get_entrant
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      EntrantSpec
+      LoadedEntrant
+   

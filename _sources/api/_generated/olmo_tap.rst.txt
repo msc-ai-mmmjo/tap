@@ -13,4 +13,6 @@
    benchmarks
    constants
    experiments
+   final_evals
    hydra
+   inference

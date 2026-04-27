@@ -1,0 +1,20 @@
+olmo\_tap.final\_evals.elo.elo\_engine
+======================================
+
+.. automodule:: olmo_tap.final_evals.elo.elo_engine
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      compute_elo_permutation
+      k_factor_sweep
+      rank_entrants
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      EloResult
+   

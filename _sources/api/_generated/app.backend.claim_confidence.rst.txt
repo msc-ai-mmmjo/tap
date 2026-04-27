@@ -1,0 +1,13 @@
+app.backend.claim\_confidence
+=============================
+
+.. automodule:: app.backend.claim_confidence
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      compute_claim_confidences
+      score_to_metrics
+   

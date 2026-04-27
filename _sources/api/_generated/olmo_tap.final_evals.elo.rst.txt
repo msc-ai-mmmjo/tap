@@ -1,0 +1,22 @@
+olmo\_tap.final\_evals.elo
+==========================
+
+.. automodule:: olmo_tap.final_evals.elo
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   elo_engine
+   entrants
+   generate
+   judge
+   match_builder
+   prompts
+   report
+   run_tournament
+   scripts
+   types

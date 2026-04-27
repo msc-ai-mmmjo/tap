@@ -1,0 +1,13 @@
+olmo\_tap.final\_evals.elo.match\_builder
+=========================================
+
+.. automodule:: olmo_tap.final_evals.elo.match_builder
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      build_match_list
+      select_pilot_subset
+   
