@@ -7,9 +7,9 @@ and no sys.path gymnastics required.
 
 from __future__ import annotations
 
-project = "Weight, what?"
-author = "TAP team"
-copyright = "2026, TAP team"
+project = "Trustworthy Answer Protocol"
+author = "Michele Cespa, Mitchell Crabb, Matthys du Toit, Justin Mak, Owain Thorp"
+copyright = "2026, The TAP Authors"
 release = "0.1.0"
 
 extensions = [
@@ -54,5 +54,5 @@ intersphinx_mapping = {
 }
 
 html_theme = "furo"
-html_title = "Weight, what?"
+html_title = "Trustworthy Answer Protocol"
 templates_path = ["_templates"]

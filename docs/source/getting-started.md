@@ -1,38 +1,23 @@
 # Getting started
 
-Welcome to **Weight, what?** — the TAP team's internal reference for
-surfacing LLM uncertainty, unfairness, and other trustworthiness
-signals to users at response time.
+TAP is an end-to-end system that pairs each LLM response with three trust signals (calibrated uncertainty, security, robustness), reported at response level and at finer granularities inside the UI. The hosted demo at [tap-al9.pages.dev](https://tap-al9.pages.dev/) needs no install.
 
-## What's in this repo
+## Repository layout
 
-- **`olmo_tap/`** — the research core: our fine-tuned OLMo-2 7B Hydra
-  model, training/eval experiments, and benchmark harnesses.
-- **`kernel_entropy/`** — a standalone implementation of Kernel
-  Language Entropy for measuring semantic uncertainty.
-- **`app/`** — the user-facing chat UI (React + FastAPI on Modal)
-  that wires the model and metrics together.
+- `olmo_tap/` — the OhLMo Hydra model, PoE Speculative Verification inference, post-training pipelines for each trust signal, attack bank, benchmarks.
+- `kernel_entropy/` — Kernel Language Entropy pipeline and ModernBERT NLI scorer for free-text uncertainty.
+- `app/backend/` — FastAPI server, claim decomposition, robustness probe, response payloads.
+- `app/frontend/` — React and Vite chat UI with the trust panels.
+- `tests/`, `docs/`, `examples/`.
 
-## Install with Pixi
+## Local install
 
-```bash
-curl -fsSL https://pixi.sh/install.sh | bash
-git clone git@github.com:msc-ai-mmmjo/tap.git
-cd tap
-pixi install -e cuda       # GPU env; drop -e cuda for CPU-only
-```
-
-See the {doc}`guides/overview` for the full contributing workflow
-(environments, tasks, git, CI) and {doc}`guides/olmo-tap` for
-ada-server setup.
+The full quick-start (prerequisites, environment, weights download, running the backend and frontend) lives in the [project README](https://github.com/msc-ai-mmmjo/tap#quick-start). At a minimum you will need [pixi](https://pixi.sh), a CUDA 12.4 NVIDIA GPU, a Hugging Face token, and Git LFS.
 
 ## Where to go next
 
-- {doc}`guides/architecture` — how `olmo_tap`, `kernel_entropy`, and
-  `app/` fit together.
-- {doc}`guides/overview` — contributing guide: Pixi, linting, tests,
-  PR workflow.
-- {doc}`guides/kernel-entropy` — running the KLE pipeline.
-- {doc}`guides/app` — running the chat UI locally or against Modal.
-- {doc}`api/index` — auto-generated API reference for `olmo_tap` and
-  `kernel_entropy`.
+- {doc}`guides/architecture` — how the pieces fit together, end to end.
+- {doc}`guides/olmo-tap` — the model-side core: heads, PoE inference, post-training.
+- {doc}`guides/kernel-entropy` — semantic uncertainty over resampled generations.
+- {doc}`guides/app` — the chat UI and hosted backend.
+- {doc}`api/index` — auto-generated API reference.
