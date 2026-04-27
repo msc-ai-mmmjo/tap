@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { AnalysisResponse } from '../types/api';
 import { CONFIDENCE_THRESHOLDS, ROBUSTNESS_FLIP_WARN_RATIO } from '../lib/constants';
+import { computeSecurityRisk, meanValidityRadius } from '../lib/security';
 
 interface Props {
   data: AnalysisResponse;
@@ -237,16 +238,24 @@ export function MetricCards({ data }: Props) {
     securitySeverity = 'na';
     securityCaption = 'Fallback: no PoE guarantee';
   } else {
-    securityValue = `${resampledCount} swap${resampledCount !== 1 ? 's' : ''}`;
-    if (resampledCount === 0) {
+    const meanRadius = meanValidityRadius(resampled);
+    if (resampledCount === 0 || meanRadius === null) {
+      securityValue = 'No swaps';
       securitySeverity = 'ok';
       securityCaption = `All ${totalTokens} tokens agreed across heads`;
-    } else if (resampledCount <= 3) {
-      securitySeverity = 'warn';
-      securityCaption = `${resampledCount} of ${totalTokens} tokens resampled, minor disagreement`;
     } else {
-      securitySeverity = 'bad';
-      securityCaption = `${resampledCount} of ${totalTokens} tokens resampled, heavy disagreement`;
+      securityValue = `${meanRadius/8} avg. swap validity`;
+      const risk = computeSecurityRisk(resampled);
+      if (risk === 'low' || risk === null) {
+        securitySeverity = 'ok';
+        securityCaption = 'Resamples were decisive; low poisoning risk';
+      } else if (risk === 'moderate') {
+        securitySeverity = 'warn';
+        securityCaption = 'Some marginal resamples detected; verify key claims';
+      } else {
+        securitySeverity = 'bad';
+        securityCaption = 'Low-validity resamples present; treat with caution';
+      }
     }
   }
 
