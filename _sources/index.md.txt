@@ -1,9 +1,8 @@
-# Weight, what?
+# Trustworthy Answer Protocol
 
-Exposing LLM uncertainty, unfairness, and other related trustworthiness
-metrics to users at response time.
+*Post-Training Language Models for Security, Robustness, and Calibrated Uncertainty in Safety-Critical Domains with Response-Time Trust Signals*
 
-This site is the internal reference for the TAP repo.
+These pages document the TAP codebase. They sit alongside the [project README](https://github.com/msc-ai-mmmjo/tap) and the live demo at [tap-al9.pages.dev](https://tap-al9.pages.dev/). For motivation, architecture rationale, and the full evaluation, see the project report.
 
 ```{toctree}
 :maxdepth: 1
@@ -17,9 +16,8 @@ guides/architecture
 :maxdepth: 2
 :caption: Guides
 
-guides/overview
-guides/kernel-entropy
 guides/olmo-tap
+guides/kernel-entropy
 guides/app
 ```
 

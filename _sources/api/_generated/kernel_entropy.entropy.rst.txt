@@ -9,4 +9,5 @@ kernel\_entropy.entropy
    .. autosummary::
    
       kle_from_similarity
+      kle_to_certainty
    

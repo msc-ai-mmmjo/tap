@@ -1,7 +1,6 @@
-# TAP React App
+# Application
 
-Multi-turn chat interface with claim-level confidence analysis for our
-fine-tuned medical LLM.
+The chat UI and FastAPI backend that wire the Hydra model and trust metrics together.
 
 ```{include} ../../../app/README.md
 :start-after: <!-- sphinx-start -->

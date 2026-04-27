@@ -1,0 +1,14 @@
+olmo\_tap.experiments.security.training
+=======================================
+
+.. automodule:: olmo_tap.experiments.security.training
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      compute_total_steps
+      main
+      parse_args
+   

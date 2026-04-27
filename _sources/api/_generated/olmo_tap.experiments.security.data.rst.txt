@@ -1,0 +1,14 @@
+olmo\_tap.experiments.security.data
+===================================
+
+.. automodule:: olmo_tap.experiments.security.data
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      format_question
+      load_shard
+      preprocess_example
+   

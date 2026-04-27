@@ -12,5 +12,6 @@ olmo\_tap.experiments
 
    hydra_demo
    robustness
+   security
    uncertainty
    utils

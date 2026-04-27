@@ -9,9 +9,12 @@ olmo\_tap.benchmarks.inference
    .. autosummary::
    
       benchmark_decode
+      benchmark_poe
+      benchmark_poe_ttft
       benchmark_ttft
       build_baseline_model
       build_hydra_model
+      build_poe
       forward_and_sample
       get_all_kv_cache_managers
       init_kv_cache

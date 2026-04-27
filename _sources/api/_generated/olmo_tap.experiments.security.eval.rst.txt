@@ -1,0 +1,16 @@
+olmo\_tap.experiments.security.eval
+===================================
+
+.. automodule:: olmo_tap.experiments.security.eval
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      evaluate
+      format_question
+      get_mcq_logits
+      main
+      parse_args
+   

@@ -12,8 +12,6 @@ olmo\_tap.experiments.uncertainty
 
    data
    engine
-   eval
-   inference
-   loading
+   single_head_eval
    training
    weights_handler

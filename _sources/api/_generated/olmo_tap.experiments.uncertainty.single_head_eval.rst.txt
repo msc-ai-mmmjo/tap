@@ -1,7 +1,7 @@
-olmo\_tap.experiments.uncertainty.eval
-======================================
+olmo\_tap.experiments.uncertainty.single\_head\_eval
+====================================================
 
-.. automodule:: olmo_tap.experiments.uncertainty.eval
+.. automodule:: olmo_tap.experiments.uncertainty.single_head_eval
 
    
    .. rubric:: Functions
