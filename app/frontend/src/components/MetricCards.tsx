@@ -22,7 +22,7 @@ const METRIC_INFO: Record<'certainty' | 'security' | 'robustness', MetricInfo> =
   },
   security: {
     definition:
-      "Defends against training-data tampering (poisoning). Each token is cross-checked by several independent heads in the model; whenever they disagree with the draft, the token is rewritten. Fewer rewrites means stronger agreement across heads, and a more trustworthy answer.",
+      "Defends against training-data tampering (poisoning). Each token is cross-checked by several independent heads in the model; whenever they disagree with the draft, the token is rewritten. A mean validity radius of resampled tokens (number of votes needed to flip the consensus to the rejected token) means a more trustworthy answer.",
     paper:
       'Method: Ghitu & Wicker, "Towards Poisoning Robustness Certification for Natural Language Generation".',
   },
@@ -244,17 +244,17 @@ export function MetricCards({ data }: Props) {
       securityCaption = `All ${totalTokens} tokens agreed across heads`;
     } else {
       const meanRadius = meanValidityRadius(resampled);
-      securityValue = `${meanRadius} avg. swap validity`;
+      securityValue = `${meanRadius ? meanRadius.toFixed(1) : 'null'}`;
       const risk = computeSecurityRisk(resampled);
       if (risk === 'low' || risk === null) {
         securitySeverity = 'ok';
-        securityCaption = 'Resamples were decisive; low poisoning risk';
+        securityCaption = '(max 8). Resamples were decisive; low poisoning risk';
       } else if (risk === 'moderate') {
         securitySeverity = 'warn';
-        securityCaption = 'Some marginal resamples detected; verify key claims';
+        securityCaption = '(max 8). Some marginal resamples detected; verify key claims';
       } else {
         securitySeverity = 'bad';
-        securityCaption = 'Low-validity resamples present; treat with caution';
+        securityCaption = '(max 8). Low-validity resamples present; treat with caution';
       }
     }
   }
