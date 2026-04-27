@@ -22,7 +22,9 @@ def test_poe_security_echoes_inputs_and_certifies():
     token_entropies = [0.1, 0.4]
     stability_radii = [3, 1]
     stability_margins = [0.6, 0.2]
-    assert poe_security(tokens, resampled, token_entropies, stability_radii, stability_margins) == {
+    assert poe_security(
+        tokens, resampled, token_entropies, stability_radii, stability_margins
+    ) == {
         "certified": True,
         "tokens": tokens,
         "resampled": resampled,
