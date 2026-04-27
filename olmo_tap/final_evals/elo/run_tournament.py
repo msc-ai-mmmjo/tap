@@ -42,6 +42,7 @@ from typing import Any, Iterable, Literal
 
 import numpy as np
 import yaml
+from dotenv import load_dotenv
 
 from olmo_tap.final_evals.elo.elo_engine import (
     DEFAULT_INITIAL_RATING,
@@ -463,6 +464,10 @@ def main(argv: list[str] | None = None) -> None:
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
+
+    # Pick up ANTHROPIC_API_KEY from .env so the judge module finds it via
+    # os.environ. Mirrors the convention in olmo_tap.constants.
+    load_dotenv()
 
     config = load_config(args.config)
     mode: Mode = args.mode
