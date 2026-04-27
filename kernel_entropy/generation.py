@@ -79,10 +79,10 @@ class HydraGenerator:
         with torch.random.fork_rng(devices=[torch.cuda.current_device()]):
             for seed in tqdm(seeds, desc="PoE generations"):
                 torch.manual_seed(seed)
-                parts, *_ = self._poe.generate_with_cache(
+                poe_out = self._poe.generate_with_cache(
                     prompt_text=prompt, is_mcq=False, temperature=temperature
                 )
-                response = "".join(parts[1:])
+                response = "".join(poe_out.output_parts[1:])
                 if eos_surface and response.endswith(eos_surface):
                     response = response[: -len(eos_surface)]
                 response = response.strip()

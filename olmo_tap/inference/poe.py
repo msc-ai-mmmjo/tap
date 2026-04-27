@@ -446,9 +446,7 @@ if __name__ == "__main__":
 
     q = "Is Donald Trump a good politician?"
     print("\n--- POE SPECULATIVE ---")
-    response, original_tokens, replaced_idxs, token_entropies, conf = (
-        poe.generate_with_cache(q, is_mcq=True)
-    )
-    print("".join(response))
-    if conf is not None:
-        print(f"Uncertainty Score (p_correct): {conf:.4f}")
+    poe_out = poe.generate_with_cache(q, is_mcq=True)
+    print("".join(poe_out.output_parts))
+    if poe_out.uncertainty is not None:
+        print(f"Uncertainty Score (p_correct): {poe_out.uncertainty:.4f}")
