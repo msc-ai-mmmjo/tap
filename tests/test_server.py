@@ -95,7 +95,15 @@ def test_analyse_surfaces_resampled_tokens(client):
     with (
         patch(
             "app.backend.server.generate",
-            return_value=("better answer", tokens, resampled, [0.8, 0.2], None, [2, 0], [0.5, 0.1]),
+            return_value=(
+                "better answer",
+                tokens,
+                resampled,
+                [0.8, 0.2],
+                None,
+                [2, 0],
+                [0.5, 0.1],
+            ),
         ),
         patch("app.backend.server.detect_mcq_bert", return_value=False),
         patch(
@@ -149,7 +157,8 @@ def test_analyse_passes_full_message_history(client):
     ]
     with (
         patch(
-            "app.backend.server.generate", return_value=("4.", ["4"], [], [0.0], None, [2], [0.7])
+            "app.backend.server.generate",
+            return_value=("4.", ["4"], [], [0.0], None, [2], [0.7]),
         ) as mock_gen,
         patch("app.backend.server.detect_mcq_bert", return_value=False),
         patch(
@@ -172,7 +181,8 @@ def test_analyse_passes_full_message_history(client):
 def test_analyse_mcq_path_uses_bert_flag(client):
     with (
         patch(
-            "app.backend.server.generate", return_value=("B", ["B"], [], [0.0], 0.77, [4], [0.9])
+            "app.backend.server.generate",
+            return_value=("B", ["B"], [], [0.0], 0.77, [4], [0.9]),
         ) as mock_gen,
         patch("app.backend.server.detect_mcq_bert", return_value=True),
         patch(

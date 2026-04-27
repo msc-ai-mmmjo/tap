@@ -43,7 +43,15 @@ def test_generate_emits_tokens_and_resamples():
             validity_radii=validity_radii_raw,
             suppression_scores=suppression_scores_raw,
         )
-        raw, tokens, resampled, entropies, uncertainty, stability_radii, stability_margins = generate(
+        (
+            raw,
+            tokens,
+            resampled,
+            entropies,
+            uncertainty,
+            stability_radii,
+            stability_margins,
+        ) = generate(
             mock_model,
             mock_tokenizer,
             [{"role": "user", "content": "say hi"}],
@@ -63,8 +71,8 @@ def test_generate_emits_tokens_and_resamples():
             "suppression_score": 0.05,
         }
     ]
-    assert entropies == [0.5, 1.25]        # EOS-trimmed in lockstep with parts
-    assert stability_radii == [3, 1]       # EOS-trimmed (last entry dropped)
+    assert entropies == [0.5, 1.25]  # EOS-trimmed in lockstep with parts
+    assert stability_radii == [3, 1]  # EOS-trimmed (last entry dropped)
     assert stability_margins == [0.6, 0.2]
     assert uncertainty is None
 
@@ -134,10 +142,18 @@ def test_tokens_and_resamples_no_resamples():
     mock_tokenizer.decode.return_value = "<eos>"
 
     output_parts = ["<prefix>", "Hello", " world"]
-    raw, tokens, resampled, entropies, s_radii, s_margins = _tokens_and_resamples_from_poe_output(
-        mock_tokenizer, output_parts, [], [], [0.4, 1.1],
-        validity_radii=[], suppression_scores=[],
-        stability_radii=[1, 2], stability_margins=[0.8, 0.3],
+    raw, tokens, resampled, entropies, s_radii, s_margins = (
+        _tokens_and_resamples_from_poe_output(
+            mock_tokenizer,
+            output_parts,
+            [],
+            [],
+            [0.4, 1.1],
+            validity_radii=[],
+            suppression_scores=[],
+            stability_radii=[1, 2],
+            stability_margins=[0.8, 0.3],
+        )
     )
 
     assert raw == "Hello world"
@@ -154,17 +170,25 @@ def test_tokens_and_resamples_strips_trailing_eos():
     mock_tokenizer.decode.return_value = "<eos>"
 
     output_parts = ["<prefix>", "Hi", "<eos>"]
-    raw, tokens, resampled, entropies, s_radii, s_margins = _tokens_and_resamples_from_poe_output(
-        mock_tokenizer, output_parts, [], [], [0.7, 0.0],
-        validity_radii=[], suppression_scores=[],
-        stability_radii=[3, 0], stability_margins=[0.9, 0.1],
+    raw, tokens, resampled, entropies, s_radii, s_margins = (
+        _tokens_and_resamples_from_poe_output(
+            mock_tokenizer,
+            output_parts,
+            [],
+            [],
+            [0.7, 0.0],
+            validity_radii=[],
+            suppression_scores=[],
+            stability_radii=[3, 0],
+            stability_margins=[0.9, 0.1],
+        )
     )
 
     assert raw == "Hi"
     assert tokens == ["Hi"]
     assert resampled == []
     assert entropies == [0.7]
-    assert s_radii == [3]   # EOS entry dropped
+    assert s_radii == [3]  # EOS entry dropped
     assert s_margins == [0.9]
 
 
@@ -177,10 +201,18 @@ def test_tokens_and_resamples_drops_eos_resample():
     original_tokens = ["draft_eos"]
     resampled_idxs = [2]
 
-    raw, tokens, resampled, entropies, s_radii, s_margins = _tokens_and_resamples_from_poe_output(
-        mock_tokenizer, output_parts, original_tokens, resampled_idxs, [0.7, 0.0],
-        validity_radii=[3], suppression_scores=[0.02],
-        stability_radii=[2, 0], stability_margins=[0.5, 0.0],
+    raw, tokens, resampled, entropies, s_radii, s_margins = (
+        _tokens_and_resamples_from_poe_output(
+            mock_tokenizer,
+            output_parts,
+            original_tokens,
+            resampled_idxs,
+            [0.7, 0.0],
+            validity_radii=[3],
+            suppression_scores=[0.02],
+            stability_radii=[2, 0],
+            stability_margins=[0.5, 0.0],
+        )
     )
 
     assert raw == "Hi"

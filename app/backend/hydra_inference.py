@@ -66,7 +66,9 @@ def generate(
     messages: list[dict],
     is_mcq: bool,
     device: str = "cuda",
-) -> tuple[str, list[str], list[dict], list[float], float | None, list[int], list[float]]:
+) -> tuple[
+    str, list[str], list[dict], list[float], float | None, list[int], list[float]
+]:
     """Generate a PoE response via speculative verification.
 
     Both MCQ and NLP prompts run through ``PoE.generate_with_cache``. When
@@ -103,18 +105,23 @@ def generate(
     poe_output: PoEOutput = poe.generate_with_cache(
         prompt_text="", is_mcq=is_mcq, messages=messages
     )
-    raw_response, tokens, resampled, token_entropies, stability_radii, stability_margins = (
-        _tokens_and_resamples_from_poe_output(
-            tokenizer,
-            poe_output.output_parts,
-            poe_output.original_tokens,
-            poe_output.resampled_idxs,
-            poe_output.token_entropies,
-            poe_output.validity_radii,
-            poe_output.suppression_scores,
-            poe_output.stability_radii,
-            poe_output.stability_margins,
-        )
+    (
+        raw_response,
+        tokens,
+        resampled,
+        token_entropies,
+        stability_radii,
+        stability_margins,
+    ) = _tokens_and_resamples_from_poe_output(
+        tokenizer,
+        poe_output.output_parts,
+        poe_output.original_tokens,
+        poe_output.resampled_idxs,
+        poe_output.token_entropies,
+        poe_output.validity_radii,
+        poe_output.suppression_scores,
+        poe_output.stability_radii,
+        poe_output.stability_margins,
     )
     uncertainty = poe_output.uncertainty
     logger.info(
@@ -125,7 +132,15 @@ def generate(
         f"{uncertainty:.4f}" if uncertainty is not None else "n/a",
         time.perf_counter() - t0,
     )
-    return raw_response, tokens, resampled, token_entropies, uncertainty, stability_radii, stability_margins
+    return (
+        raw_response,
+        tokens,
+        resampled,
+        token_entropies,
+        uncertainty,
+        stability_radii,
+        stability_margins,
+    )
 
 
 def _tokens_and_resamples_from_poe_output(
@@ -184,7 +199,14 @@ def _tokens_and_resamples_from_poe_output(
             }
         )
 
-    return raw_response, tokens, resampled, entropies, trimmed_stability_radii, trimmed_stability_margins
+    return (
+        raw_response,
+        tokens,
+        resampled,
+        entropies,
+        trimmed_stability_radii,
+        trimmed_stability_margins,
+    )
 
 
 def get_robustness(

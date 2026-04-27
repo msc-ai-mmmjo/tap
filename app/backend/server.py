@@ -134,14 +134,24 @@ async def analyse(request: ChatRequest, hf: bool = False):
         robustness = fallback_robustness()
     else:
         model_name = MODEL_NAME
-        raw_response, tokens, resampled, token_entropies, p_correct, stability_radii, stability_margins = generate(
+        (
+            raw_response,
+            tokens,
+            resampled,
+            token_entropies,
+            p_correct,
+            stability_radii,
+            stability_margins,
+        ) = generate(
             hydra,
             hydra_tokenizer,
             messages,
             is_mcq=bool(is_mcq),
             device=_device,
         )
-        security = poe_security(tokens, resampled, token_entropies, stability_radii, stability_margins)
+        security = poe_security(
+            tokens, resampled, token_entropies, stability_radii, stability_margins
+        )
         uncertainty = poe_uncertainty(p_correct)
 
         bert_model = _models.get("bert")

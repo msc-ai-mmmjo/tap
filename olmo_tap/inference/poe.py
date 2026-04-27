@@ -44,15 +44,15 @@ def _validity_radius(per_head_winners: list[int], target_id: int) -> int:
 
 @dataclass
 class PoEOutput:
-    output_parts: list[str]         # [0] = prompt prefix; [1:] = emitted tokens
-    original_tokens: list[str]      # rejected draft tokens, parallel to resampled_idxs
-    resampled_idxs: list[int]       # positions in output_parts where rejection occurred
-    token_entropies: list[float]    # parallel to output_parts[1:]
+    output_parts: list[str]  # [0] = prompt prefix; [1:] = emitted tokens
+    original_tokens: list[str]  # rejected draft tokens, parallel to resampled_idxs
+    resampled_idxs: list[int]  # positions in output_parts where rejection occurred
+    token_entropies: list[float]  # parallel to output_parts[1:]
     uncertainty: float | None
-    stability_radii: list[int]      # parallel to output_parts[1:]
+    stability_radii: list[int]  # parallel to output_parts[1:]
     stability_margins: list[float]  # parallel to output_parts[1:]
-    validity_radii: list[int]       # parallel to resampled_idxs
-    suppression_scores: list[float] # parallel to resampled_idxs
+    validity_radii: list[int]  # parallel to resampled_idxs
+    suppression_scores: list[float]  # parallel to resampled_idxs
 
 
 class PoE:
@@ -254,7 +254,11 @@ class PoE:
 
                     n_A = int((per_head_winners == token_id).sum().item())
                     other = per_head_winners[per_head_winners != token_id]
-                    n_B = int(torch.unique(other, return_counts=True)[1].max().item()) if other.numel() > 0 else 0
+                    n_B = (
+                        int(torch.unique(other, return_counts=True)[1].max().item())
+                        if other.numel() > 0
+                        else 0
+                    )
                     stability_radii.append(max(0, (n_A - n_B) // 2))
                     stability_margins.append(s_margin)
 
@@ -291,10 +295,16 @@ class PoE:
 
                     n_A = int((per_head_winners == resampled_id).sum().item())
                     other = per_head_winners[per_head_winners != resampled_id]
-                    n_B = int(torch.unique(other, return_counts=True)[1].max().item()) if other.numel() > 0 else 0
+                    n_B = (
+                        int(torch.unique(other, return_counts=True)[1].max().item())
+                        if other.numel() > 0
+                        else 0
+                    )
                     stability_radii.append(max(0, (n_A - n_B) // 2))
                     stability_margins.append(s_margin)
-                    validity_radii.append(_validity_radius(per_head_winners.tolist(), token_id))
+                    validity_radii.append(
+                        _validity_radius(per_head_winners.tolist(), token_id)
+                    )
                     suppression_scores.append(float(P_dist[token_id].item()))
 
                     if is_mcq and hidden_unc_state is None:
