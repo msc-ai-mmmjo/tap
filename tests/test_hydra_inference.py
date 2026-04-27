@@ -141,18 +141,20 @@ def test_tokens_and_resamples_no_resamples():
     mock_tokenizer.eos_token_id = 7
     mock_tokenizer.decode.return_value = "<eos>"
 
-    output_parts = ["<prefix>", "Hello", " world"]
     raw, tokens, resampled, entropies, s_radii, s_margins = (
         _tokens_and_resamples_from_poe_output(
             mock_tokenizer,
-            output_parts,
-            [],
-            [],
-            [0.4, 1.1],
-            validity_radii=[],
-            suppression_scores=[],
-            stability_radii=[1, 2],
-            stability_margins=[0.8, 0.3],
+            PoEOutput(
+                output_parts=["<prefix>", "Hello", " world"],
+                original_tokens=[],
+                resampled_idxs=[],
+                token_entropies=[0.4, 1.1],
+                uncertainty=None,
+                stability_radii=[1, 2],
+                stability_margins=[0.8, 0.3],
+                validity_radii=[],
+                suppression_scores=[],
+            ),
         )
     )
 
@@ -169,18 +171,20 @@ def test_tokens_and_resamples_strips_trailing_eos():
     mock_tokenizer.eos_token_id = 7
     mock_tokenizer.decode.return_value = "<eos>"
 
-    output_parts = ["<prefix>", "Hi", "<eos>"]
     raw, tokens, resampled, entropies, s_radii, s_margins = (
         _tokens_and_resamples_from_poe_output(
             mock_tokenizer,
-            output_parts,
-            [],
-            [],
-            [0.7, 0.0],
-            validity_radii=[],
-            suppression_scores=[],
-            stability_radii=[3, 0],
-            stability_margins=[0.9, 0.1],
+            PoEOutput(
+                output_parts=["<prefix>", "Hi", "<eos>"],
+                original_tokens=[],
+                resampled_idxs=[],
+                token_entropies=[0.7, 0.0],
+                uncertainty=None,
+                stability_radii=[3, 0],
+                stability_margins=[0.9, 0.1],
+                validity_radii=[],
+                suppression_scores=[],
+            ),
         )
     )
 
@@ -197,21 +201,20 @@ def test_tokens_and_resamples_drops_eos_resample():
     mock_tokenizer.eos_token_id = 7
     mock_tokenizer.decode.return_value = "<eos>"
 
-    output_parts = ["<prefix>", "Hi", "<eos>"]
-    original_tokens = ["draft_eos"]
-    resampled_idxs = [2]
-
     raw, tokens, resampled, entropies, s_radii, s_margins = (
         _tokens_and_resamples_from_poe_output(
             mock_tokenizer,
-            output_parts,
-            original_tokens,
-            resampled_idxs,
-            [0.7, 0.0],
-            validity_radii=[3],
-            suppression_scores=[0.02],
-            stability_radii=[2, 0],
-            stability_margins=[0.5, 0.0],
+            PoEOutput(
+                output_parts=["<prefix>", "Hi", "<eos>"],
+                original_tokens=["draft_eos"],
+                resampled_idxs=[2],
+                token_entropies=[0.7, 0.0],
+                uncertainty=None,
+                stability_radii=[2, 0],
+                stability_margins=[0.5, 0.0],
+                validity_radii=[3],
+                suppression_scores=[0.02],
+            ),
         )
     )
 
