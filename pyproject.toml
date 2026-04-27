@@ -73,6 +73,16 @@ matplotlib = "*"
 msc-ai-group-project = { path = ".", editable = true }
 
 # ---------------------------------------------
+# Evals Feature (Elo tournament judge pipeline)
+# ---------------------------------------------
+# Scoped to the default env only. The judge calls Anthropic's Messages
+# API and is not needed in the cuda env (which is for OLMo training /
+# inference). Keeping it out of cuda also avoids re-resolving against
+# the huggingface-hub<0.28.0 pin pulled in by ai2-olmo-core.
+[tool.pixi.feature.evals.pypi-dependencies]
+anthropic = "*"
+
+# ---------------------------------------------
 # Docs Feature (Sphinx site)
 # ---------------------------------------------
 # Docs env composes the `cuda` feature so autodoc can import the real
@@ -91,7 +101,7 @@ ghp-import = "*"
 # Environments
 # ---------------------------------------------
 [tool.pixi.environments]
-default = { solve-group = "default" }
+default = { features = ["evals"], solve-group = "default" }
 cuda = { features = ["cuda"], solve-group = "cuda" }
 docs = { features = ["docs", "cuda"], solve-group = "cuda" }
 
@@ -128,6 +138,10 @@ kle = { cmd = "python examples/kle.py", default-environment = "cuda" }
 nli = { cmd = "python examples/nli.py", default-environment = "cuda" }
 olmo = { cmd = "python examples/olmo.py", default-environment = "cuda" }
 
+# Elo evaluation tournaments (CUDA + API credits)
+elo-tournament1 = { cmd = "python -m olmo_tap.final_evals.elo.run_tournament --config olmo_tap/final_evals/elo/configs/tournament1.yaml", default-environment = "cuda" }
+elo-generate = { cmd = "python -m olmo_tap.final_evals.elo.generate", default-environment = "cuda" }
+
 # Documentation
 # -W promotes warnings to errors so broken cross-references fail the build.
 docs = { cmd = "sphinx-build -W -b html -d docs/build/doctrees docs/source docs/build/html", default-environment = "docs" }
@@ -159,4 +173,9 @@ omit = [
 [tool.pyrefly]
 project-includes = [
     "**/*.py*",
+]
+# Elo eval harness ships for completeness but uses PoE eval-mode kwargs that
+# were dropped from production; exclude rather than reintroduce the API.
+project-excludes = [
+    "olmo_tap/final_evals/elo/**",
 ]

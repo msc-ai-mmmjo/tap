@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 VOCAB_SIZE = 100_352
-MEDMCQA_SIZE = 193_155
+MEDMCQA_SIZE = 182_822
 
 MCQ_LETTERS = ["A", "B", "C", "D"]
 
