@@ -1,5 +1,27 @@
 # Tournament 1 — configuration-level Elo across four entrants.
 #
+# ============================================================================
+# NOTE: REFERENCE-ONLY IN CURRENT STATE — NOT RUNNABLE END-TO-END.
+# ----------------------------------------------------------------------------
+# The Hydra entrants (`security_only`, `security_plus_robustness`,
+# `full_poe`) call `PoE.generate_with_cache` with eval-mode kwargs
+# (`compute_uncertainty`, `seed`, `bypass_jury`) and unpack a tuple return.
+# Those kwargs and the tuple return were reverted on `main` as part of an
+# unrelated PoE rollback; this branch was rebased on top of that revert.
+#
+# To run the tournament for real, the following needs to be re-landed (or
+# reimplemented in `olmo_tap/final_evals/elo/generate.py::_generate_custom_poe`):
+#   1. `PoE.generate_with_cache` accepting `compute_uncertainty`, `seed`,
+#      `bypass_jury`, `temperature` kwargs.
+#   2. Returning `(parts, orig_logits, resampled_logits, p_correct)` (or an
+#      equivalent dataclass) plus a `last_diagnostics` attribute on PoE.
+#   3. The `base_olmo` (vanilla_hf) entrant alone runs without the above.
+#
+# The pure-Python layers (judge, elo engine, match builder, orchestrator)
+# are independent of PoE and are merge-quality; they can be exercised on
+# pre-existing response caches via `--skip-judging`/cached paths.
+# ============================================================================
+#
 # Edit this file to tweak the eval; the actual entrant loaders are dispatched
 # in code (see olmo_tap/final_evals/elo/entrants.py).  Entries here are
 # structural / hyperparameter only.
