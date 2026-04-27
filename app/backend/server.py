@@ -9,7 +9,7 @@ from huggingface_hub import InferenceClient
 from pydantic import BaseModel
 from transformers import TokenizersBackend
 
-from app.backend.adversarial_suffixes import DUMMY_ADV_SUFFIXES
+from app.backend.adversarial_suffixes import ADV_SUFFIXES, N_ADV_SUFFIXES
 from app.backend.bert_inference import load_bert
 from app.backend.claim_confidence import compute_claim_confidences
 from app.backend.claim_splitter import decompose_into_claims
@@ -194,7 +194,7 @@ async def analyse(request: ChatRequest, hf: bool = False):
                 original_resp=raw_response,
                 original_tokens=tokens,
                 is_mcq=bool(is_mcq),
-                adv_suffix_bank=DUMMY_ADV_SUFFIXES,
+                adv_suffix_bank=ADV_SUFFIXES[:N_ADV_SUFFIXES],
                 bert_model=bert_model,
                 bert_tokenizer=bert_tokenizer,
                 device=_device,
