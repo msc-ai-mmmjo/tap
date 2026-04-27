@@ -27,7 +27,6 @@ function ResampledToken({ token, resample }: { token: string; resample: Security
         </>
       }
       triggerStyle={{
-        color: 'var(--color-accent)',
         background: bgForSuppression(resample.suppression_score),
         padding: '1px 2px',
         borderRadius: '2px',
