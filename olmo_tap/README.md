@@ -6,7 +6,7 @@ Model code, inference pipeline, post-training scripts, and evaluation harnesses 
 
 ## Orientation
 
-`olmo_tap` is the model-side core of TAP. It defines the `HydraTransformer` (a shared trunk with K parallel heads built on top of OLMo-2), trains each head against its own objective on its own data shard, and composes them at decode time via PoE Speculative Verification. Environment setup, weights download, and Git LFS are documented in the [root README](../README.md).
+`olmo_tap` is the model-side core of TAP. It defines the `HydraTransformer` (a shared trunk with K parallel heads built on top of OLMo-2), trains each head against its own objective on its own data shard, and composes them at decode time via PoE Speculative Verification. Environment setup, weights download, and Git LFS are documented in the [project README](https://github.com/msc-ai-mmmjo/tap#quick-start).
 
 ## Package map
 

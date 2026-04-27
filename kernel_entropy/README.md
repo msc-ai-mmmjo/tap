@@ -21,7 +21,7 @@ pixi run -e cuda olmo "prompt"    # Test Hydra OLMo generation only
 pixi run -e cuda nli "s1" "s2"    # Test NLI scoring only
 ```
 
-See the [root README](../README.md) for environment setup, weights download, and Git LFS. The ModernBERT NLI model is fetched from HuggingFace on first use.
+See the [project README](https://github.com/msc-ai-mmmjo/tap#quick-start) for environment setup, weights download, and Git LFS. The ModernBERT NLI model is fetched from HuggingFace on first use.
 
 ## Usage
 
